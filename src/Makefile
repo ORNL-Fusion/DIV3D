@@ -86,7 +86,6 @@ OBJS_C_FXDR := cxdrinit.o cxdrint.o cxdrclose.o cxdrreal.o cxdrdouble.o \
 #-----------------------------------------------------------------------
 
 $(EXEC): $(OBJS90) $(OBJS90_W7X) $(OBJS90_FXDR) $(MODS90) $(MODS90_W7X) $(MODS90_FXDR) $(LIBS)
-	@echo "Creating "$@" in directory "$(PWD)"."
 	${FC} -o $@ $(FF) $(OBJS90) $(OBJS90_W7X) $(OBJS90_FXDR) $(LIBDIR) $(FL)
 
 .PHONY.: debug
@@ -132,8 +131,7 @@ inside_vessel_mod.mod: kind_mod.mod
 read_parts_mod.mod: kind_mod.mod io_unit_spec.mod  
 integrator_routines_mod.o: kind_mod.mod
 integrator_routines_mod.mod: kind_mod.mod
-diffuse_lines3.o: kind_mod.mod integrator_routines_mod.mod math_routines_mod.mod \
-fieldline_following_mod.mod
+diffuse_lines3.o: kind_mod.mod integrator_routines_mod.mod math_routines_mod.mod fieldline_following_mod.mod
 fieldline_following_mod.o: kind_mod.mod bfield_xdr.mod
 fieldline_following_mod.mod: kind_mod.mod
 find_nearby_triangles.o: read_parts_mod.mod math_routines_mod.mod
