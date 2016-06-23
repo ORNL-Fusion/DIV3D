@@ -207,8 +207,7 @@ If (rank .eq. 0) Then
   Write(6,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
   write(6,*) 'Beginning MPI line diffusion'
   Call diffuse_lines3(fname_launch,dmag,dphi_line_diff,ns_line_diff, &
-       fname_hit,period,fname_intpts,fname_nhit,nhitline, &
-       lsfi_tol)
+       fname_hit,period,fname_intpts,fname_nhit,nhitline)
 
   Deallocate(ntri_parts)
   Deallocate(xtri,ytri,ztri,check_tri)

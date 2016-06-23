@@ -1,0 +1,50 @@
+Horizontal target (divhorn9)
+  divhtop.part - divhorn9_sh_le5.t.w7x.part
+  divhbot.part - divhorn9_sh_le5.b.w7x.part
+Vertical target (divvern8) 
+  divvtop.part - divvern8_sh_le3.t.w7x.part
+  divvbot.part - divvern8_sh_le3.b.w7x.part
+Scraper
+  scraper_bot.part - pumpspaltab_17-29_h.b.w7x.part
+  scraper_top.part - pumpspaltab_17-29_h.t.w7x.part
+High iota component
+  divhoran7_bot.part - divhoran7_sh4.b.w7x.part
+  divhoran7_top.part - divhoran7_sh4.t.w7x.part
+--Vertical baffles
+
+*Bafvern8 
+  bafvern8_bot.part - bafvern8_sh_le3.b.w7x.part
+  bafvern8_top.part - bafvern8_sh_le3.t.w7x.part
+Bafver3
+  bafver3_bot.part - mbver3r2-010123.div.b.w7x.part
+  bafver3_bot.part - mbver3r2-010123.div.t.w7x.part
+Bafver2
+  bafver2_bot.part - mbver2r2-010123.div.b.w7x.part
+  bafver2_top.part - mbver2r2-010123.div.t.w7x.part
+*Bafver1
+  bafver1_bot.part - mbver1r1-red.b.w7x.part
+  bafver1_top.part - mbver1r1-red.t.w7x.part
+*Bafhormid
+  bafhormid_bot.part - bafhormid.b.w7x.part
+  bafhormid_top.part - bafhormid.t.w7x.part
+
+--Horizontal baffles
+
+*Bafhor1
+  bafhor1_bot.part - mbhor1r-010123.div.b.w7x.part
+  bafhor1_top.part - mbhor1r-010123.div.t.w7x.part
+Bafhor2
+  bafhor2_bot.part - mbhor2r-010123.div.b.w7x.part
+  bafhor2_top.part - mbhor2r-010123.div.t.w7x.part
+
+--Extra baffles
+
+bafmod1
+  bafmod1_bot.part - baf-v1.b.w7x.part
+  bafmod1_top.part - baf-v1.t.w7x.part
+baf_m02
+  baf_m02_bot.part - baf_m02v1.b.w7x.part
+  baf_m02_top.part - baf_m02v1.t.w7x.part
+baf_m03
+  baf_m03_bot.part - baf_m03v1.b.w7x.part
+  baf_m03_top.part - baf_m03v1.t.w7x.part

@@ -1,2 +1,2 @@
-time mpirun -np 15 /home/jjl/DIV3D/fortran/trunk/bin/div3d_follow_and_int
+time mpirun -np 15 ../../../../bin/div3d.exe
 #./check_output

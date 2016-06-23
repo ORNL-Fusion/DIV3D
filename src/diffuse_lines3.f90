@@ -2,7 +2,7 @@
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
 Subroutine diffuse_lines3(fname_launch,dmag,dphi_line,nsteps_line,fname_hit, &
-period,fname_intpts,fname_nhit,nhitline,lsfi_tol)
+period,fname_intpts,fname_nhit,nhitline)
 !
 ! Description: 
 !
@@ -24,21 +24,20 @@ Use parallel_mod
 Use inside_vessel_mod, Only: &
 inside_vessel
 Use io_unit_spec, Only: &
-iu_hit, iu_launch, iu_nhit, iu_vhit, iu_int
+iu_hit, iu_launch, iu_nhit, iu_int
 Use read_parts_mod
 Use fieldline_following_mod
 Implicit none
 
 ! Input/output
 Character(len=100),Intent(in) :: fname_launch, fname_hit, fname_intpts, fname_nhit
-Real(rknd), Intent(in) :: dmag, dphi_line, period,lsfi_tol
+Real(rknd), Intent(in) :: dmag, dphi_line, period
 Integer(iknd), Intent(in) :: nsteps_line, nhitline
 
 ! Local scalars
 Integer(iknd) :: numl, iline, ii, hitcount, &
-  ihit, iocheck, dest, source
+  ihit, iocheck, dest
 Real(rknd) :: Rstart, Zstart, Phistart
-Integer(iknd) :: ierr_follow
 Integer(iknd) :: tag, flag, work_done, work_done_count
 
 ! Local arrays
@@ -235,7 +234,7 @@ Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 
 Real(rknd), Dimension(nsteps_line+1) :: rout,zout,phiout
-Integer(iknd) :: ifail, imin
+Integer(iknd) :: ifail
 
 !Real(rknd) :: rtol, atol, dphimin
 !Integer(iknd) :: nmax_step, method, imin
@@ -256,321 +255,6 @@ r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,
 
 End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-!-----------------------------------------------------------------------------
-!+ 
-!-----------------------------------------------------------------------------
-
-Subroutine check_line_segment_for_intersections(period,pint,iout, &
-linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
-
-!r_hitline,z_hitline,phi_hitline,nhitline,& 
-
-Use kind_mod
-Use read_parts_mod
-Use inside_vessel_mod, Only: &
-inside_vessel
-Use math_routines_mod, Only: line_seg_facet_int
-Implicit None
-
-Real(rknd), Intent(in) :: period, lsfi_tol
-Integer(iknd), Intent(in) :: linenum, nsteps_line,ifail
-Integer(iknd), Intent(out), Dimension(4) :: iout
-Real(rknd), Dimension(3), Intent(out) :: pint
-Real(rknd), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
-
-!Integer(iknd), Intent(in) :: nhitline
-!Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-
-Integer(iknd) :: iseg, nparts_tmp, ipart_ind, itri_ind
-Integer(iknd) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
-Integer(iknd), Dimension(1) :: ind_min, ind_max
-Real(rknd) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
-Real(rknd) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
-Real(Rknd), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(rknd) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
-
-
-Real(rknd), Dimension(3) :: Pt1, pt2, pa, pb, pc
-
-Real(rknd) :: rtol, atol, dphimin
-Integer(iknd) :: nmax_step, method, imin
-
-
-logical :: close_part_check = .false.
-
-!- End of header -------------------------------------------------------------
-
-!r_hitline = 0.d0
-!z_hitline = 0.d0
-!phi_hitline = 0.d0
-
-
-if (close_part_check) Then
-  nparts_tmp = ic_near
-Else
-  nparts_tmp = nparts
-Endif
-
-npts_line = nsteps_line + 1
-If (ifail .ne. 0) npts_line = ifail - 1
-
-ihit = 0
-pint(:) = 0.
-iout(:) = -1
-iout(1) = ihit
-Do i=1,npts_line - 1
-
-  ! Current point along line
-  R1 = rout(i)
-  Z1 = zout(i)
-  P1 = phiout(i)
-
-  ! next point
-  R2 = rout(i+1)
-  Z2 = zout(i+1)
-  P2 = phiout(i+1)
-  
-  ! Convert to Cartesian coordinates
-  dphi1 = P2-P1
-
-  Do While (P1 .lt. 0.d0)
-    P1 = P1 + period
-  Enddo
-  P1 = Mod(P1,period)
-  X1 = R1*cos(P1)
-  Y1 = R1*sin(P1)
-
-  Do While (P2 .lt. 0.d0)
-    P2 = P2 + period
-  Enddo
-  P2 = Mod(P2,period)
-  X2 = R2*cos(P2)
-  Y2 = R2*sin(P2)
-
-  dphi2 = P2-P1
-
-  ! Check for lines that cross symmetry (field period) plane
-  twofer = 0
-  If ( abs(dphi1-dphi2) .gt. 1.d-12) Then 
-    twofer = 1
-    P1a = Minval([P1,P2])
-    P2a = Maxval([P1,P2])
-    ind_min = Minloc([P1,P2])
-    ind_max = Maxloc([P1,P2])
-    Rtmp = [R1,R2]
-    Ztmp = [Z1,Z2]
-    Xtmp = [X1,X2]
-    Ytmp = [Y1,Y2]
-
-    ! Define adjusted two original points
-    X1a = Xtmp(ind_min(1))
-    Y1a = Ytmp(ind_min(1))
-    Z1a = Ztmp(ind_min(1))
-    X2a = Xtmp(ind_max(1))
-    Y2a = Ytmp(ind_max(1))
-    Z2a = Ztmp(ind_max(1))
-
-
-    !---------------------------------------------
-    ! Find intersection of line segment with plane
-    !---------------------------------------------
-    pt1(1) = Rtmp(ind_min(1))*cos(P1a+period)
-    pt1(2) = Rtmp(ind_min(1))*sin(P1a+period)
-    pt1(3) = Ztmp(ind_min(1))
-    pt2(1) = Xtmp(ind_max(1))
-    pt2(2) = Ytmp(ind_max(1))
-    pt2(3) = Ztmp(ind_max(1))
-
-    ! Define explicit form of plane at 2*pi/Nfp 
-    pa = [0.d0,0.d0,0.d0]
-    pb = [0.d0,0.d0,1.d0]
-    pc = [cos(period),sin(period),0.d0]
-    
-    ! Calc unit vector normal to plane of Pa-c (gives plane components A-C)
-    Aplane=-sin(period)
-    Bplane= cos(period)
-
-    ! Calculate the position on the line that intersects the plane
-    denom = Aplane*(pt2(1) - pt1(1)) + Bplane*(pt2(2) - pt1(2))
-    If (abs(denom) .lt. 1.d-15) Then
-      Write(6,*) 'Error: Line did not hit plane at 2*pi/Nfp'
-      Stop
-    Endif
-    mu = - (Aplane*pt1(1) + Bplane*pt1(2)) / denom
-    X3 = pt1(1) + mu * (pt2(1) - pt1(1))
-    Y3 = pt1(2) + mu * (pt2(2) - pt1(2))
-    Z3 = pt1(3) + mu * (pt2(3) - pt1(3))
-    R3 = sqrt(X3*X3+Y3*Y3)
-    
-    ! Define two new points 
-    P1 = 0._rknd
-    X1 = R3*cos(P1)
-    Y1 = R3*sin(P1)
-    Z1 = Z3
-    P2 = period
-    X2 = R3*cos(P2)
-    Y2 = R3*sin(P2)
-    Z2 = Z3
-  endif
-
-  Do iseg = 1,1+twofer
-
-  if (twofer .eq. 0) Then
-    p_start = P1
-    x_start = X1
-    y_start = Y1
-    z_start = Z1
-    p_end   = P2
-    x_end   = X2
-    y_end   = Y2
-    z_end   = Z2
-  endif
-  if (twofer .eq. 1) Then
-    if ( iseg .eq. 1) Then
-        p_start = P1
-        x_start = X1
-        y_start = Y1
-        z_start = Z1
-        p_end   = P1a
-        x_end   = X1a
-        y_end   = Y1a
-        z_end   = Z1a
-    else
-        p_start = P2a
-        x_start = X2a
-        y_start = Y2a
-        z_start = Z2a
-        p_end   = P2
-        x_end   = X2
-        y_end   = Y2
-        z_end   = Z2
-    endif
-  endif
-
-    
-  ihit = 0
-  Do ipart_ind=1,nparts_tmp
-
-    if (close_part_check) Then
-      ipart = near_part(ipart_ind)
-    Else
-      ipart = ipart_ind
-    Endif
-
-    !Check if this line segment is within the phi bounds of the part
-    Pmin = Pmins(ipart)
-    Pmax = Pmaxs(ipart)
-
-    inphi = 0
-
-    If ( p_start .ge. Pmin .AND. p_start .le. Pmax ) inphi = 1
-    If ( p_end .ge. Pmin .AND. p_end .le. Pmax ) inphi = 1
-
-    If (inphi .eq. 1 ) Then
-
-      if (close_part_check) Then
-        ntri = ic_near
-      Else          
-        ntri = ntri_parts(ipart_ind)
-      Endif
-      Do itri_ind = 1,ntri
-          
-      if (close_part_check) Then
-        itri = near_tri(itri_ind)
-      Else          
-        itri = itri_ind
-      Endif
-
-
-!        If (check_tri(ipart,itri) .eq. 1 ) Then
-
-          pa = [xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)]
-          pb = [xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)]
-          pc = [xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)]
-          pt1 = [x_start,y_start,z_start]
-          pt2 = [x_end,y_end,z_end]
-
-          Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol)          
-
-          If (ihit_tmp .eq. 1) Then
-            ihit = 1
-            Write(6,'(A,I0,A,I0,A,I0,3(F8.3))') ' Line ',linenum,' hit! [i,ipart,P] ',i,' ',ipart,pint(1),pint(2),pint(3)
-            iout(1) = ihit
-            iout(2) = ipart
-            iout(3) = itri
-            iout(4) = i
-!            if ( (i - nhitline+1) .lt. 1 ) Then
-!              Write(*,*) 'Truncating hitline'
-!              r_hitline = 0.d0
-!              z_hitline = 0.d0
-!              phi_hitline = 0.d0
-!              r_hitline(1:i) = rout(1:i)
-!              z_hitline(1:i) = zout(1:i)
-!              phi_hitline(1:i) = phiout(1:i)
-!            Else
-!              r_hitline = rout(i-nhitline+1:i)
-!              z_hitline = zout(i-nhitline+1:i)
-!              phi_hitline = phiout(i-nhitline+1:i)
-!            Endif
-            Exit ! stop looking for triangle intersections
-          Endif
-
-!        Else ! check tri
-!          Write(6,*) 'Should not be here unless 3d parts have been implemented'
-!          stop
-!        Endif
-          
-      Enddo !triangle loop
-
-      If (ihit .eq. 1 ) Exit  ! Stop looking for part intersections
-    Endif !inphi check
-  Enddo ! part index
-
-      If (ihit .eq. 1 ) Exit  ! Stop looking for segment intersections
-  Enddo ! seg index (twofer)
-
-  If (ihit .eq. 1 ) Exit  ! Quit fieldline if it hit a part
-Enddo ! points along line (i)
-
-
-if (.false.) Then
-If ( ihit .eq. 0 ) Then
-  Write(6,'(A,I0,A)') ' No part intersections found for line ',linenum,', checking for vessel intersection'
-  Do i=1,npts_line
-    ! Current point along line
-    R1 = rout(i)
-    Z1 = zout(i)
-    P1 = phiout(i)
-
-    inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
-    If (inside_it .eq. 0 ) Then
-      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,R,Z,P]=',i,R1,Z1,P1
-      ihit = 2
-      iout(1) = ihit
-      iout(2) = -2
-      iout(3) = -2
-      iout(4) = i
-      Exit
-    Endif
-  Enddo
-Endif
-Endif
-
-End subroutine check_line_segment_for_intersections
-
-
-
-
 
 
 
@@ -606,8 +290,8 @@ Real(rknd) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a,
 Real(rknd), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 Real(rknd), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
-Real(rknd) :: rtol, atol, dphimin
-Integer(iknd) :: nmax_step, method, imin
+!Real(rknd) :: rtol, atol, dphimin
+!Integer(iknd) :: imin
 
 !- End of header -------------------------------------------------------------
 

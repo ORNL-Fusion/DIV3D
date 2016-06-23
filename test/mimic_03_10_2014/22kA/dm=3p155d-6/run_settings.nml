@@ -1,7 +1,7 @@
 &run_settings
 fname_bfile = '/home/jjl/w7/w7_geiger_output_files/hauke_mimic_3_10_2014/field_w7vac181x181x96.w7x.0990_1010_1115_1125_+0531_-0406_-2109_(SEmimic22kA).xdr'
 fname_plist = 'parts.list'
-fname_ves = '/home/jjl/DIV3D/runs/W7X/geo_files/vessel.part'
+fname_ves = '../../geo_files/vessel.part'
 fname_surf = 'surface_line.out'
 fname_launch='launch_pts.out'
 fname_parts = 'allparts.out'
@@ -20,14 +20,14 @@ Phistart = 0.d0
 dphi_line_surf_deg = 0.1d0
 ntran_surf = 200
 
-npts_start = 10000
+npts_start = 100
 dmag = 3.155d-6
 !dmag = 0.d-6
 dphi_line_diff_deg = 0.5d0
 ntran_diff = 1000
 
 xdr_check = .false.
-working_master = .true.
+working_master = .false.
 trace_surface_opt=.true.
 myseed = 110115
 

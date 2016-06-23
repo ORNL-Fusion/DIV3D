@@ -25,8 +25,8 @@ if (CMAKE_COMPILER_IS_GNUCC)
     # gfortran
   Message ("Using gfortran flags")
   set (CMAKE_Fortran_FLAGS_RELEASE "-O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG "-g -frange-check -fbounds-check -Wall -Wline-truncation -Wcharacter-truncation -Wsurprising -Waliasing -Wimplicit-interface -Wunused-parameter -fcheck=all -fbacktrace")
-  #-ffpe-trap=zero,underflow,overflow,invalid)
+  set (CMAKE_Fortran_FLAGS_DEBUG "-g -frange-check -fbounds-check -Wall -Wline-truncation -Wcharacter-truncation -Wsurprising -Waliasing  -Wunused-parameter -fcheck=all -fbacktrace")
+  #-ffpe-trap=zero,underflow,overflow,invalid) -Wimplicit-interface
 else ()
   Message ("Did not recognize compiler -- no flags set!")  
 endif ()
@@ -90,7 +90,6 @@ add_executable( grid_driver
   ${SRC_DIR}/read_parts_mod.f90
   ${SRC_DIR}/diffuse_lines3.f90
   ${SRC_DIR}/parallel_mod.f90
-  ${SRC_DIR}/integrator_routines_mod.f90
   ${SRC_DIR}/fieldline_following_mod.f90
   ${SRC_DIR}/W7X_routines/bfield_xdr.f90  
   )
