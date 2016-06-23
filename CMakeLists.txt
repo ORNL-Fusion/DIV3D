@@ -20,14 +20,6 @@ enable_language (Fortran)
 # 2) cmake -DCMAKE_BUILD_TYPE=Debug ..
 # 
 
-set (CMAKE_Fortran_COMPILER "mpif90")
-
-# libbjdl location (top directory that includes "lib" and "include")
-set  (LIBBJDL_DIR /home/jjl/util-library/fortran/bfield_library_jdl )
-set ( LIBBJDL_LIB_PATH ${LIBBJDL_DIR}/lib ) 
-set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
-message ("Using libbjdl files from: " ${LIBBJDL_DIR})
-
 # Compiler flags
 if (CMAKE_COMPILER_IS_GNUCC)
     # gfortran
@@ -47,12 +39,23 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif ()
 
 # libbjdl setup
-find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
-include_directories (${LIBBJDL_INC_PATH})
-if (BJDL_F MATCHES NOTFOUND)
-  message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
+if (${HAVE_BJDL} MATCHES 1)
+  message( "Compiling with LIBBJDL library" )
+  # libbjdl location (top directory that includes "lib" and "include")
+#  set  (LIBBJDL_DIR /home/jjl/util-library/fortran/bfield_library_jdl )
+  set ( LIBBJDL_LIB_PATH ${LIBBJDL_DIR}/lib ) 
+  set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
+  message ("Using libbjdl files from: " ${LIBBJDL_DIR})
+  find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
+  include_directories (${LIBBJDL_INC_PATH})
+  if (BJDL_F MATCHES NOTFOUND)
+    message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
+  endif ()
+  include_directories(${LIBBJDL_INC_PATH})
+  add_definitions(-DHAVE_BJDL)
+else ()
+    message( "Not compiling with LIBBJDL library" )
 endif ()
-include_directories(${LIBBJDL_INC_PATH})
 
 # Set up directories and options
 set (SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -75,12 +78,12 @@ add_library( fxdr STATIC
   )
 
 add_executable( grid_driver
-  ${SRC_DIR}/follow_fieldlines_rzphi.f90
+  ${SRC_DIR}/follow_fieldlines_rzphi.F90
   ${SRC_DIR}/inside_vessel_mod.f90
   ${SRC_DIR}/kind_mod.f90
   ${SRC_DIR}/math_routines_mod.f90
   ${SRC_DIR}/io_unit_spec.f90
-  ${SRC_DIR}/div3d_follow_and_int.f90
+  ${SRC_DIR}/div3d_follow_and_int.F90
   ${SRC_DIR}/init_points_line.f90
   ${SRC_DIR}/trace_surface.f90
   ${SRC_DIR}/init_random_seed.f90

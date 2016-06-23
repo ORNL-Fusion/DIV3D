@@ -33,8 +33,10 @@ Subroutine follow_fieldline_rzphi(rstart,zstart,phistart,dphi,nsteps,r,z,phi,dif
 Use kind_mod                ! Import rknd, iknd specifications
 use bfield_xdr, Only: &
 ! Imported subroutines
-bint
+     bint
+#ifdef HAVE_BJDL
 Use g3d_module, Only : bfield_geq_bicub
+#endif
 Implicit None
 
 ! Input/output                      !See above for descriptions
@@ -90,10 +92,14 @@ Do ii=2,nsteps+1
     If (method .eq. 0) Then
       call bint(xvec,bval_bint,idiv)  
     Else
+#ifdef HAVE_BJDL      
       Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
+#else
+      stop "Code compiled without BJDL, method ne 0 not allowed"
+#endif
     Endif
 
     if (idiv .ne. 0) then
@@ -111,10 +117,14 @@ Do ii=2,nsteps+1
     If (method .eq. 0) Then
       call bint(xvec,bval_bint,idiv)  
     Else
+#ifdef HAVE_BJDL      
       Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
+#else
+      stop "Code compiled without BJDL, method ne 0 not allowed"
+#endif      
     Endif
 
     if (idiv .ne. 0) then
@@ -132,10 +142,14 @@ Do ii=2,nsteps+1
     If (method .eq. 0) Then
       call bint(xvec,bval_bint,idiv)  
     Else
+#ifdef HAVE_BJDL      
       Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
+#else
+      stop "Code compiled without BJDL, method ne 0 not allowed"
+#endif
     Endif
 
     if (idiv .ne. 0) then
@@ -153,10 +167,14 @@ Do ii=2,nsteps+1
     If (method .eq. 0) Then
       call bint(xvec,bval_bint,idiv)  
     Else
+#ifdef HAVE_BJDL
       Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
+#else
+      stop "Code compiled without BJDL, method ne 0 not allowed"
+#endif      
     Endif
  
     if (idiv .ne. 0) then
@@ -184,10 +202,14 @@ Do ii=2,nsteps+1
     If (method .eq. 0) Then
       call bint(xvec,bval_bint,idiv)  
     Else
+#ifdef HAVE_BJDL
       Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
+#else
+      stop "Code compiled without BJDL, method ne 0 not allowed"
+#endif      
     Endif
 
     if (idiv .ne. 0) then

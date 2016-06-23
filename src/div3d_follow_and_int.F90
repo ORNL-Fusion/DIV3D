@@ -38,7 +38,9 @@ iu_surf,  &
 iu_hit,   &
 iu_int
 Use read_parts_mod
+#ifdef HAVE_BJDL
 Use g3d_module, Only : readg_g3d
+#endif
 Implicit none
 
 ! Local scalars
@@ -131,6 +133,7 @@ If ( device .eq. 'W7X' .OR. device .eq. 'W7-X') Then
   if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is W7-X'
   Call readbgrid(fname_bfile,xdr_check,verbose)
   div3d_bfield_method = 0  ! no rmp implemented yet
+#ifdef HAVE_BJDL  
 Elseif ( device .eq. 'NSTX' ) Then
   if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is NSTX'
   Call readg_g3d(fname_bfile)
@@ -139,9 +142,10 @@ Elseif ( device .eq. 'DIIID' .OR. device .eq. 'D3D' .OR. device .eq. 'DIII-D') T
   if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is DIIID'
   Call readg_g3d(fname_bfile)
   div3d_bfield_method = 1  ! no rmp implemented yet
+#endif  
 Else
   write(*,*) 'Unknown device'
-  stop
+  stop  
 Endif
 
 !----------------------------------------------------------------
