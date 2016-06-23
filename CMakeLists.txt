@@ -92,7 +92,6 @@ add_executable( grid_driver
   ${SRC_DIR}/parallel_mod.f90
   ${SRC_DIR}/integrator_routines_mod.f90
   ${SRC_DIR}/fieldline_following_mod.f90
-  ${SRC_DIR}/find_nearby_triangles.f90
   ${SRC_DIR}/W7X_routines/bfield_xdr.f90  
   )
 

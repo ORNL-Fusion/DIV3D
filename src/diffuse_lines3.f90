@@ -242,12 +242,6 @@ Integer(iknd) :: ifail, imin
 
 !- End of header -------------------------------------------------------------
 
-
-
-
-if ( .true.) Then
-
-!
 !
 !  FIRST FOLLOW LINE THEN CHECK FOR INTERSECTIONS
 !
@@ -257,35 +251,8 @@ if ( .true.) Then
 Call follow_fieldline_rzphi(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,ifail,div3d_bfield_method)
 !Write(*,*) 'done with line follow'
 
-!write(*,*) 'rout',rout(1:5)
-!  rtol = 1.e-3_rknd ; atol = 1.e-6_rknd ; nmax_step = 100000 ; dphimin = 1.e-9_rknd
-!  method = 2
-!  Call follow_fieldline_rzphi_ci(Rstart,Zstart,Phistart,dphi_line,nsteps_line,method,rtol,atol, &
-!       dphimin,nmax_step,rout,zout,phiout,ifail,.true.,dmag)
-!write(*,*) '2out',rout(1:5)
-!stop
-
 Call check_line_for_intersections(period,pint,iout, &
 r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
-
-
-Else
-!
-!
-!  CHECK FOR INTERSECTIONS AT EACH FIELDLINE FOLLOWING STEP
-!
-!
-
-Call follow_fieldline_rzphi_and_check(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,&
-ifail,period,imin,lsfi_tol,linenum,pint,iout)
-
-r_hitline = 0._rknd
-phi_hitline = 0._rknd
-z_hitline = 0._rknd
-
-
-Endif
-
 
 End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
