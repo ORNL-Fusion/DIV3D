@@ -365,7 +365,7 @@ Real(rknd), Intent(Out), Dimension(n) :: df
 
 Real(rknd), Dimension(3) :: xvec, bval
 Integer(iknd) :: idiv
-Real(rknd) :: Bx, By, Bz
+!Real(rknd) :: Bx, By, Bz
 
 idiv = 0
 bval = 0._rknd

@@ -6,10 +6,8 @@ Use math_routines_mod, Only: line_seg_facet_int
 Implicit None
 Real(rknd),Intent(in) :: rr,pp,zz,dL, period
 Real(rknd) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
-Integer(iknd) :: ipart, itri, icount, itmp,linenum
+Integer(iknd) :: ipart, itri, icount, itmp
 Real(rknd), allocatable :: near_part_tmp(:), near_tri_tmp(:)
-!Real(rknd), Intent(out) :: dmin
-!Integer(iknd), Intent(out) :: imin, iclose, ipart_close
 Integer(iknd) :: ii
 
 
