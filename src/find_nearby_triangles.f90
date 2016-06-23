@@ -9,7 +9,7 @@ Real(rknd) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
 Integer(iknd) :: ipart, itri, icount, itmp
 Real(rknd), allocatable :: near_part_tmp(:), near_tri_tmp(:)
 Integer(iknd) :: ii
-
+! test
 
 itmp = sum(ntri_parts(1:nparts))
 allocate(near_part_tmp(itmp))
