@@ -1,5 +1,6 @@
 !-----------------------------------------------------------------------------
 !+ Module to read bfield (xdr) file and perform interpolation
+!  JDL -- modified from routines provided by J. Geiger (IPP-Greifswald)
 !-----------------------------------------------------------------------------
 module bfield_xdr
 use fxdr_module
