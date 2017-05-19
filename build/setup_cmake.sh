@@ -6,7 +6,7 @@
 
 BUILD_TYPE=Release
 VERBOSE_BUILD=0
-HAVE_BJDL=1
+HAVE_BJDL=0
 
 MACHINE_ID=`uname -n`
 
@@ -42,7 +42,7 @@ elif [ "$MACHINE_ID" == "fusion2.ornl.gov" ]
 then
     # fusion2
     #
-    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
+#    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
     cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..
 else
     echo $MACHINE_ID is not supported by this script.

@@ -129,7 +129,7 @@ int_pts.out
 Column 1: R_hit
 Column 2: Z_hit
 Column 3: Phi_hit (radians)
-Column 4: ihit               ! = 1 if it hit a part
+Column 4: ihit               ! = 1 if it hit a part, = 2 if it hit the vessel, = 0 if it did not hit anything
 Column 5: ipart              ! Index of the part hit (from allparts)
 Column 6: itri               ! Index of the triangle intersected (from part_triangles)
 Column 7: iline              ! Index of the line (from launch_points)
