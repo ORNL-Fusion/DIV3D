@@ -28,8 +28,10 @@ Subroutine trace_surface(Rstart,Zstart,Phistart,dphi_line,nsteps_line,period,fna
 
 ! Modules used:
 Use kind_mod
-Use io_unit_spec, Only: &
-iu_surf
+Use io_unit_spec, Only : iu_surf
+Use fieldline_follow_mod, Only : follow_fieldlines_rzphi
+Use setup_bfield_module, Only : bfield
+Use parallel_mod
 Implicit none
 
 ! Input/output
@@ -40,7 +42,7 @@ Integer(iknd), Intent(in) :: div3d_bfield_method
 Character(len=100), Intent(in) :: fname_surf
 
 ! Local scalars
-Integer(iknd) :: ifail, ii, ip_step, nip0
+Integer(iknd) :: ifail, ii, ip_step, nip0, ierr
 Real(rknd) :: adp
 
 ! Local arrays
@@ -65,17 +67,15 @@ If (Real(period/adp,rknd) - Real(ip_step,rknd) .gt. 1.d-12 ) Then
   Write(6,*) 'Periodicity, (ip_step,nip0) = ', ip_step, nip0
   Stop
 Else
-  Write(6,*) 'Periodicity ok, (ip_step,nip0) = ', ip_step, nip0
+  Write(6,*) 'Periodicity ok. (ip_step,nip0) = ', ip_step, nip0
 Endif
 
 ! Trace out surface
-!Write(6,*) 'Following fieldline from [R,Z,phi] = ' &
-!  ,Rstart,Zstart,phistart*180./pi
-Call follow_fieldline_rzphi(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rsurf,zsurf,phisurf,.false.,0.d0,ifail&
-     ,div3d_bfield_method)
-
-If (ifail .ne. 0 ) Then
-  Write(6,*) 'fieldline following error',ifail
+!Write(6,*) 'Following fieldline from [R,Z,phi] = ',Rstart,Zstart,phistart*180./pi
+Call follow_fieldlines_rzphi(bfield,Rstart,Zstart,Phistart,dphi_line,nsteps_line,rsurf,zsurf,phisurf,ierr,ifail)
+If (ierr .ne. 0 ) Then
+  Write(6,*) 'fieldline following error',ierr
+  Call flush()
   Stop
 Endif
 

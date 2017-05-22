@@ -47,11 +47,14 @@ if (${HAVE_BJDL} MATCHES 1)
   set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
   message ("Using libbjdl files from: " ${LIBBJDL_DIR})
   find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
-  include_directories (${LIBBJDL_INC_PATH})
+#  include_directories (${LIBBJDL_INC_PATH})
   if (BJDL_F MATCHES NOTFOUND)
     message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
   endif ()
+  find_library( FIO NAMES fusionio PATHS "/home/jjl/m3dc1/install/lib" NO_DEFAULT_PATH)
+  find_library( M3D NAMES m3dc1 PATHS /home/jjl/m3dc1/install/lib NO_DEFAULT_PATH)
   include_directories(${LIBBJDL_INC_PATH})
+  #  include_directories(${FIO_INSTALL_DIR/inc})
   add_definitions(-DHAVE_BJDL)
 else ()
     message( "Not compiling with LIBBJDL library" )
@@ -60,24 +63,7 @@ endif ()
 # Set up directories and options
 set (SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_library( fxdr STATIC
-  ${SRC_DIR}/fxdr/cxdrinit.c
-  ${SRC_DIR}/fxdr/cxdrint.c
-  ${SRC_DIR}/fxdr/cxdrclose.c
-  ${SRC_DIR}/fxdr/cxdrreal.c
-  ${SRC_DIR}/fxdr/cxdrdouble.c 
-  ${SRC_DIR}/fxdr/cxdrrmat.c
-  ${SRC_DIR}/fxdr/cxdrdmat.c
-  ${SRC_DIR}/fxdr/cxdrimat.c
-  ${SRC_DIR}/fxdr/cxdrstring.c
-  ${SRC_DIR}/fxdr/cxdrreal64.c
-  ${SRC_DIR}/fxdr/cxdrrewind.c
-  ${SRC_DIR}/fxdr/cxdrrmat64.c
-  ${SRC_DIR}/fxdr/cxdrshort.c
-  ${SRC_DIR}/fxdr/fxdr_module.f90
-  )
-
-add_executable( grid_driver
+add_executable( div3d
   ${SRC_DIR}/follow_fieldlines_rzphi.F90
   ${SRC_DIR}/inside_vessel_mod.f90
   ${SRC_DIR}/kind_mod.f90
@@ -96,11 +82,11 @@ add_executable( grid_driver
   ${SRC_DIR}/W7X_routines/bfield_xdr.f90  
   )
 
-target_link_libraries (grid_driver ${BJDL_F} fxdr lapack)
+target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} z hdf5 stdc++ lapack)
 
 # Installation
-set_target_properties( grid_driver PROPERTIES OUTPUT_NAME "div3d.exe")
-set_target_properties( grid_driver PROPERTIES DEBUG_OUTPUT_NAME "div3d_debug.exe")
+set_target_properties( div3d PROPERTIES OUTPUT_NAME "div3d.exe")
+set_target_properties( div3d PROPERTIES DEBUG_OUTPUT_NAME "div3d_debug.exe")
 install( DIRECTORY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin )
-install( TARGETS grid_driver
+install( TARGETS div3d
   RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)

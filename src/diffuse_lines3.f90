@@ -221,8 +221,11 @@ r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,div3d_bfield_method)
 
 Use kind_mod
 Use read_parts_mod
+Use bfield
 Use math_routines_mod, Only: line_seg_facet_int
 Use fieldline_following_mod
+Use fieldline_follow_mod
+Use setup_bfield_module
 Implicit None
 
 Real(rknd), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
@@ -235,7 +238,7 @@ Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 
 Real(rknd), Dimension(nsteps_line+1) :: rout,zout,phiout
-Integer(iknd) :: ifail, imin
+Integer(iknd) :: ifail, imin, ierr(1),ilg(1)
 
 !Real(rknd) :: rtol, atol, dphimin
 !Integer(iknd) :: nmax_step, method, imin
@@ -254,9 +257,13 @@ if ( .true.) Then
 !
 
 !Write(*,*) 'starting line follow'
-Call follow_fieldline_rzphi(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,ifail,div3d_bfield_method)
+!!!!!!! THIS ONE IS GOOD Call follow_fieldline_rzphi(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,ifail,div3d_bfield_method)
 !Write(*,*) 'done with line follow'
 
+  Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
+       dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
+  ifail = ilg(1)
+  
 !write(*,*) 'rout',rout(1:5)
 !  rtol = 1.e-3_rknd ; atol = 1.e-6_rknd ; nmax_step = 100000 ; dphimin = 1.e-9_rknd
 !  method = 2
@@ -650,7 +657,7 @@ phi_hitline = 0.d0
 
 
 npts_line = nsteps_line + 1
-If (ifail .ne. 0) npts_line = ifail - 1
+If (ifail .ne. nsteps_line) npts_line = ifail - 1
 
 ihit = 0
 pint(:) = 0.

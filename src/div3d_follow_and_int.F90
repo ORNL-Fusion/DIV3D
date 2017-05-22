@@ -40,6 +40,7 @@ iu_int
 Use read_parts_mod
 #ifdef HAVE_BJDL
 Use g3d_module, Only : readg_g3d
+Use setup_bfield_module
 #endif
 Implicit none
 
@@ -59,9 +60,9 @@ Integer(iknd) :: div3d_bfield_method
 
 Character(len=300) :: fname_hit, fname_bfile, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
-Character(len=300) :: fname_plist, fname_nhit, device
+Character(len=300) :: fname_plist, fname_nhit
 
-Logical :: xdr_check, verbose, trace_surface_opt
+Logical :: verbose, trace_surface_opt
 
 ! Local arrays
 
@@ -78,12 +79,12 @@ Integer(iknd), Dimension(5) :: line_done_data_i
 Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
 
 ! Namelists
-Namelist / run_settings / fname_bfile, fname_plist, fname_ves,  &
+Namelist / run_settings / fname_plist, fname_ves,  &
   fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, nfp, &
   Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
-  npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, xdr_check, &
+  npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
   fname_nhit, hit_length, lsfi_tol, working_master, trace_surface_opt, &
-  device, fname_ptri, fname_ptri_mid
+  fname_ptri, fname_ptri_mid
 
 !- End of header -------------------------------------------------------------
 
@@ -107,6 +108,8 @@ If ( iocheck .ne. 0 ) Then
   Stop 'Exiting: I/O Error in div3d_follow_and_int.f90'
 Endif
 Read(iu_nl,nml=run_settings)
+Rewind(iu_nl)
+Read(iu_nl,nml=bfield_nml)
 Close(iu_nl)
 
 If (verbose) Write(6,*) 'Initializing random number with base seed:',myseed
@@ -129,24 +132,24 @@ ns_line_diff = Floor(ntran_diff*2.d0*pi/Abs(dphi_line_diff))
 !     Load the gfile
 !     --> RMP etc not implemented yet
 !----------------------------------------------------------
-If ( device .eq. 'W7X' .OR. device .eq. 'W7-X') Then
-  if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is W7-X'
-  Call readbgrid(fname_bfile,xdr_check,verbose)
-  div3d_bfield_method = 0  ! no rmp implemented yet
-#ifdef HAVE_BJDL  
-Elseif ( device .eq. 'NSTX' ) Then
-  if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is NSTX'
-  Call readg_g3d(fname_bfile)
-  div3d_bfield_method = 1  ! no rmp implemented yet
-Elseif ( device .eq. 'DIIID' .OR. device .eq. 'D3D' .OR. device .eq. 'DIII-D') Then
-  if (verbose .AND. rank .EQ. 0) write(*,*) 'Device is DIIID'
-  Call readg_g3d(fname_bfile)
-  div3d_bfield_method = 1  ! no rmp implemented yet
-#endif  
-Else
-  write(*,*) 'Unknown device'
-  stop  
-Endif
+! Setup rmp field
+Select Case (rmp_type)
+  Case ('g3d')
+    Call setup_bfield_g3d
+    div3d_bfield_method = 1
+    if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is g3d'
+  Case ('xdr')
+    Call setup_bfield_xdr
+    div3d_bfield_method = 0
+    if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is xdr'
+  Case Default
+    If (rank == 0) Then
+      Write(*,*) 'Unknown rmp_type in div3d!'
+      Write(*,*) 'Current options are:'
+      Write(*,*) '''g3d'''
+    Endif
+    Stop      
+End Select
 
 !----------------------------------------------------------------
 ! 2. Load intersection components
@@ -163,7 +166,7 @@ Call make_triangles(fname_ptri,fname_ptri_mid)
 
 !----------------------------------------------------------------
 ! Master node traces initial surface and defines starting points
-! Master then calls diffuse_lines2 and distributes field
+! Master then calls diffuse_lines3 and distributes field
 !  lines to be followed
 !----------------------------------------------------------------
 If (rank .eq. 0) Then

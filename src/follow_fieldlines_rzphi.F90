@@ -30,13 +30,13 @@ Subroutine follow_fieldline_rzphi(rstart,zstart,phistart,dphi,nsteps,r,z,phi,dif
 ! Author(s): J.D. Lore - 04/20/2011 - xxx
 !
 ! Modules used:
-Use kind_mod                ! Import rknd, iknd specifications
+  Use kind_mod                ! Import rknd, iknd specifications
+  Use setup_bfield_module, only : bfield
 use bfield_xdr, Only: &
 ! Imported subroutines
      bint
-#ifdef HAVE_BJDL
-Use g3d_module, Only : bfield_geq_bicub
-#endif
+Use g3d_module
+
 Implicit None
 
 ! Input/output                      !See above for descriptions
@@ -93,7 +93,7 @@ Do ii=2,nsteps+1
       call bint(xvec,bval_bint,idiv)  
     Else
 #ifdef HAVE_BJDL      
-      Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
+      Call bfield_geq_bicub(bfield%g,(/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
@@ -118,7 +118,7 @@ Do ii=2,nsteps+1
       call bint(xvec,bval_bint,idiv)  
     Else
 #ifdef HAVE_BJDL      
-      Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
+      Call bfield_geq_bicub(bfield%g,(/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
@@ -143,7 +143,7 @@ Do ii=2,nsteps+1
       call bint(xvec,bval_bint,idiv)  
     Else
 #ifdef HAVE_BJDL      
-      Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
+      Call bfield_geq_bicub(bfield%g,(/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
@@ -168,7 +168,7 @@ Do ii=2,nsteps+1
       call bint(xvec,bval_bint,idiv)  
     Else
 #ifdef HAVE_BJDL
-      Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
+      Call bfield_geq_bicub(bfield%g,(/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
@@ -203,7 +203,7 @@ Do ii=2,nsteps+1
       call bint(xvec,bval_bint,idiv)  
     Else
 #ifdef HAVE_BJDL
-      Call bfield_geq_bicub((/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
+      Call bfield_geq_bicub(bfield%g,(/xvec(1)/),(/xvec(3)/),1,Bval,idiv)     
       bval_bint(1) = Bval(1,1)
       bval_bint(3) = Bval(1,2)
       bval_bint(2) = Bval(1,3)
@@ -225,13 +225,13 @@ Do ii=2,nsteps+1
     perpdir1(1) = bphi   !r 
     perpdir1(2) = -br    !phi
     perpdir1(3) = 0.d0   !z
-    perpdir1 = perpdir1/dsqrt(bphi*bphi + br*br)
+    perpdir1 = perpdir1/sqrt(bphi*bphi + br*br)
 
     ! B cross r^hat
     perpdir2(1) = 0.d0
     perpdir2(2) = bz
     perpdir2(3) = -bphi
-    perpdir2 = perpdir2/dsqrt(bz*bz + bphi*bphi)
+    perpdir2 = perpdir2/sqrt(bz*bz + bphi*bphi)
 
 !    rnum = rand()
     Call Random_number(rnum)
@@ -240,17 +240,7 @@ Do ii=2,nsteps+1
     dca = dcos(alpha)
     dsa = dsin(alpha)
 
-    delta_x = dsqrt(drat*dL)
-    
-!    delta_x = dsqrt(drat*dL*(1.+0.4d0*sin(3.*phi(ii)))*1.55d0/sqrt(br*br+bz*bz+bphi*bphi)**2)
-!    delta_x = dsqrt(drat*dL*(1.+0.99*sin(3.*phi(ii)))*0.3d0**2/sqrt(br*br+bz*bz+bphi*bphi)**2)
-    
-!    delta_x = 0.d0
-!    If ((r(ii) .gt. 1.d0) .AND. (abs(z(ii)) .lt. 0.1d0)) Then
-!      delta_x = sqrt(drat*dL*(1.+0.5*sin(3.*phi(ii))))
-!    Endif
-    
-
+    delta_x = sqrt(drat*dL)
 
     r(ii)   = r(ii)   + delta_x*(dca*perpdir1(1) + dsa*perpdir2(1))
     phi(ii) = phi(ii) + delta_x*(dca*perpdir1(2) + dsa*perpdir2(2))
@@ -261,6 +251,6 @@ Enddo
 
 If (idiv .ne. 0 ) ifail = ii - 1
 
-EndSubroutine follow_fieldline_rzphi
+End Subroutine follow_fieldline_rzphi
 
 
