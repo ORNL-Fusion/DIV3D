@@ -64,7 +64,6 @@ endif ()
 set (SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_executable( div3d
-  ${SRC_DIR}/follow_fieldlines_rzphi.F90
   ${SRC_DIR}/inside_vessel_mod.f90
   ${SRC_DIR}/kind_mod.f90
   ${SRC_DIR}/math_routines_mod.f90
@@ -76,10 +75,7 @@ add_executable( div3d
   ${SRC_DIR}/read_parts_mod.f90
   ${SRC_DIR}/diffuse_lines3.f90
   ${SRC_DIR}/parallel_mod.f90
-  ${SRC_DIR}/integrator_routines_mod.f90
-  ${SRC_DIR}/fieldline_following_mod.f90
   ${SRC_DIR}/find_nearby_triangles.f90
-  ${SRC_DIR}/W7X_routines/bfield_xdr.f90  
   )
 
 target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} z hdf5 stdc++ lapack)

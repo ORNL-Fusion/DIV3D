@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
-Subroutine trace_surface(Rstart,Zstart,Phistart,dphi_line,nsteps_line,period,fname_surf,div3d_bfield_method)
+Subroutine trace_surface(Rstart,Zstart,Phistart,dphi_line,nsteps_line,period,fname_surf)
 !
 ! Description: 
 !
@@ -38,7 +38,6 @@ Implicit none
 Real(rknd), Intent(in) :: Rstart, Zstart, Phistart
 Real(rknd), Intent(in) :: dphi_line, Period
 Integer(iknd), Intent(in) :: nsteps_line
-Integer(iknd), Intent(in) :: div3d_bfield_method
 Character(len=100), Intent(in) :: fname_surf
 
 ! Local scalars

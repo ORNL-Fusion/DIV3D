@@ -26,7 +26,6 @@ inside_vessel
 Use io_unit_spec, Only: &
 iu_hit, iu_launch, iu_nhit, iu_vhit, iu_int
 Use read_parts_mod
-Use fieldline_following_mod
 Implicit none
 
 ! Input/output
@@ -217,91 +216,39 @@ Endsubroutine diffuse_lines3
 !+ 
 !-----------------------------------------------------------------------------
 Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,div3d_bfield_method)
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol)
 
 Use kind_mod
 Use read_parts_mod
-Use bfield
 Use math_routines_mod, Only: line_seg_facet_int
-Use fieldline_following_mod
-Use fieldline_follow_mod
-Use setup_bfield_module
+Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
+Use setup_bfield_module, Only : bfield
 Implicit None
 
 Real(rknd), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
-Integer(iknd), Intent(in) :: nsteps_line, linenum !, ntri_max
+Integer(iknd), Intent(in) :: nsteps_line, linenum
 Integer(iknd), Intent(out), Dimension(4) :: iout
 Real(rknd), Dimension(3), Intent(out) :: pint
 Integer(iknd), Intent(in) :: nhitline
-Integer(iknd), Intent(in) :: div3d_bfield_method
 Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 
 Real(rknd), Dimension(nsteps_line+1) :: rout,zout,phiout
 Integer(iknd) :: ifail, imin, ierr(1),ilg(1)
 
-!Real(rknd) :: rtol, atol, dphimin
-!Integer(iknd) :: nmax_step, method, imin
-
 !- End of header -------------------------------------------------------------
 
 
-
-
-if ( .true.) Then
-
-!
-!
-!  FIRST FOLLOW LINE THEN CHECK FOR INTERSECTIONS
-!
-!
-
-!Write(*,*) 'starting line follow'
-!!!!!!! THIS ONE IS GOOD Call follow_fieldline_rzphi(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,ifail,div3d_bfield_method)
-!Write(*,*) 'done with line follow'
-
-  Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
-       dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
-  ifail = ilg(1)
-  
-!write(*,*) 'rout',rout(1:5)
-!  rtol = 1.e-3_rknd ; atol = 1.e-6_rknd ; nmax_step = 100000 ; dphimin = 1.e-9_rknd
-!  method = 2
-!  Call follow_fieldline_rzphi_ci(Rstart,Zstart,Phistart,dphi_line,nsteps_line,method,rtol,atol, &
-!       dphimin,nmax_step,rout,zout,phiout,ifail,.true.,dmag)
-!write(*,*) '2out',rout(1:5)
-!stop
+Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
+     dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
+ifail = ilg(1)
 
 Call check_line_for_intersections(period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
-
-
-Else
-!
-!
-!  CHECK FOR INTERSECTIONS AT EACH FIELDLINE FOLLOWING STEP
-!
-!
-
-Call follow_fieldline_rzphi_and_check(Rstart,Zstart,Phistart,dphi_line,nsteps_line,rout,zout,phiout,.true.,dmag,&
-ifail,period,imin,lsfi_tol,linenum,pint,iout)
-
-r_hitline = 0._rknd
-phi_hitline = 0._rknd
-z_hitline = 0._rknd
-
-
-Endif
+     r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
 
 
 End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
-
-
-
-
-
-
 
 
 
@@ -312,8 +259,6 @@ End Subroutine line_follow_and_int
 
 Subroutine check_line_segment_for_intersections(period,pint,iout, &
 linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
-
-!r_hitline,z_hitline,phi_hitline,nhitline,& 
 
 Use kind_mod
 Use read_parts_mod
@@ -327,9 +272,6 @@ Integer(iknd), Intent(in) :: linenum, nsteps_line,ifail
 Integer(iknd), Intent(out), Dimension(4) :: iout
 Real(rknd), Dimension(3), Intent(out) :: pint
 Real(rknd), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
-
-!Integer(iknd), Intent(in) :: nhitline
-!Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 Integer(iknd) :: iseg, nparts_tmp, ipart_ind, itri_ind
 Integer(iknd) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
@@ -549,26 +491,8 @@ Do i=1,npts_line - 1
             iout(2) = ipart
             iout(3) = itri
             iout(4) = i
-!            if ( (i - nhitline+1) .lt. 1 ) Then
-!              Write(*,*) 'Truncating hitline'
-!              r_hitline = 0.d0
-!              z_hitline = 0.d0
-!              phi_hitline = 0.d0
-!              r_hitline(1:i) = rout(1:i)
-!              z_hitline(1:i) = zout(1:i)
-!              phi_hitline(1:i) = phiout(1:i)
-!            Else
-!              r_hitline = rout(i-nhitline+1:i)
-!              z_hitline = zout(i-nhitline+1:i)
-!              phi_hitline = phiout(i-nhitline+1:i)
-!            Endif
             Exit ! stop looking for triangle intersections
           Endif
-
-!        Else ! check tri
-!          Write(6,*) 'Should not be here unless 3d parts have been implemented'
-!          stop
-!        Endif
           
       Enddo !triangle loop
 

@@ -26,9 +26,6 @@ program div3d_follow_and_int
 ! Modules used:
 Use kind_mod
 Use parallel_mod
-Use bfield_xdr, Only: &
-! Imported subroutines
-readbgrid
 Use io_unit_spec, Only: &
 iu_nl,    &  ! Run settings namelist file unit (run_settings.nml,input)
 iu_plist, &  ! Parts filename list file (input) 
@@ -38,10 +35,8 @@ iu_surf,  &
 iu_hit,   &
 iu_int
 Use read_parts_mod
-#ifdef HAVE_BJDL
-Use g3d_module, Only : readg_g3d
 Use setup_bfield_module
-#endif
+Use phys_const, Only : pi
 Implicit none
 
 ! Local scalars
@@ -56,7 +51,6 @@ Integer(iknd) :: iocheck
 Integer(iknd) :: ntran_surf, ns_line_surf
 Integer(iknd) :: ntran_diff, ns_line_diff
 Integer(iknd) :: my_numl, ifl, ierr_follow, iline, dest, num_myjobs, source, tag
-Integer(iknd) :: div3d_bfield_method
 
 Character(len=300) :: fname_hit, fname_bfile, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
@@ -74,9 +68,6 @@ Integer(iknd), Dimension(3) :: line_start_data_i
 Integer(iknd), Dimension(4) :: iout
 Real(rknd), Dimension(:), Allocatable :: line_done_data_r
 Integer(iknd), Dimension(5) :: line_done_data_i
-
-! Local Parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
 
 ! Namelists
 Namelist / run_settings / fname_plist, fname_ves,  &
@@ -101,6 +92,7 @@ If (rank .eq. 0) verbose = .true.
 If (verbose) Write(6,'(/A)') '-------------------------------------------------------------------------'
 
 ! Read the run settings namelist file
+setup_bfield_verbose = verbose
 If (verbose) Write(6,*) 'Reading run settings from run_settings.nml'
 Open(iu_nl,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
 If ( iocheck .ne. 0 ) Then
@@ -123,30 +115,29 @@ ns_line_diff = Floor(ntran_diff*2.d0*pi/Abs(dphi_line_diff))
 
 !----------------------------------------------------------
 ! 1. Initialize magnetic field
-!  W7X: 
-!     Read the bfield file
-!     -- The loaded variables are passed via the bfield_xdr
-!        module to subroutine bint (called during fieldline 
-!        following)
-!  NSTX: 
-!     Load the gfile
-!     --> RMP etc not implemented yet
 !----------------------------------------------------------
 ! Setup rmp field
+if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is ',rmp_type
 Select Case (rmp_type)
   Case ('g3d')
     Call setup_bfield_g3d
-    div3d_bfield_method = 1
-    if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is g3d'
   Case ('xdr')
     Call setup_bfield_xdr
-    div3d_bfield_method = 0
-    if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is xdr'
+  Case ('vmec_coils')
+    Call setup_bfield_vmec_coils
+  Case ('vmec_coils_to_fil')
+    Call setup_bfield_vmec_coils_to_fil
+  Case ('bgrid')
+    Call setup_bfield_bgrid        
   Case Default
     If (rank == 0) Then
       Write(*,*) 'Unknown rmp_type in div3d!'
       Write(*,*) 'Current options are:'
       Write(*,*) '''g3d'''
+      Write(*,*) '''vmec_coils'''
+      Write(*,*) '''vmec_coils_to_fil'''
+      Write(*,*) '''xdr'''
+      Write(*,*) '''bgrid'''            
     Endif
     Stop      
 End Select
@@ -189,8 +180,7 @@ If (rank .eq. 0) Then
   !----------------------------------------------------------
   If (trace_surface_opt .eqv. .true.) Then
     Write(6,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
-    If (.true.) Call trace_surface(Rstart,Zstart,Phistart,dphi_line_surf,ns_line_surf,period,fname_surf,&
-         div3d_bfield_method)
+    If (.true.) Call trace_surface(Rstart,Zstart,Phistart,dphi_line_surf,ns_line_surf,period,fname_surf)
 
     !----------------------------------------------------------
     ! 4. Initialize points on surface to carry heat
@@ -248,14 +238,10 @@ If (rank .gt. 0) Then
       Allocate(r_hitline(nhitline))
       Allocate(z_hitline(nhitline))
       Allocate(phi_hitline(nhitline))      
-      ! QQ -- clean this up
-!      Rstart_local = 
-!Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,period,pint,iout, &
-!r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol)
       Call line_follow_and_int(line_start_data_r(1),line_start_data_r(2), &
            line_start_data_r(3),line_start_data_r(4),line_start_data_i(1),&
            line_start_data_r(5),line_start_data_r(6),pint,iout,r_hitline, &
-           z_hitline,phi_hitline,nhitline,line_start_data_i(3),lsfi_tol,div3d_bfield_method)      
+           z_hitline,phi_hitline,nhitline,line_start_data_i(3),lsfi_tol)      
       ierr_follow = 0
 
       ! Compile results and send data back to master
