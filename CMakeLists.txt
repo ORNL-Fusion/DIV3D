@@ -85,7 +85,7 @@ target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} ${H5} z stdc++ lapack)
 
 # Installation
 set_target_properties( div3d PROPERTIES OUTPUT_NAME "div3d.exe")
-set_target_properties( div3d PROPERTIES DEBUG_OUTPUT_NAME "div3d_debug.exe")
+set_target_properties( div3d PROPERTIES DEBUG_OUTPUT_NAME "div3d.exe")
 install( DIRECTORY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin )
 install( TARGETS div3d
   RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)

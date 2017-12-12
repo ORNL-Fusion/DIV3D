@@ -8,8 +8,6 @@ Real(real64),Intent(in) :: rr,pp,zz,dL, period
 Real(real64) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
 Integer(int32) :: ipart, itri, icount, itmp
 Real(real64), allocatable :: near_part_tmp(:), near_tri_tmp(:)
-Integer(int32) :: ii
-! test
 
 itmp = sum(ntri_parts(1:nparts))
 allocate(near_part_tmp(itmp))

@@ -1,8 +1,8 @@
 !-----------------------------------------------------------------------------
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
-Subroutine diffuse_lines3(fname_launch,dmag,dphi_line,nsteps_line,fname_hit, &
-period,fname_intpts,fname_nhit,nhitline,lsfi_tol)
+Subroutine diffuse_lines3(fname_launch,dmag,nsteps_line,fname_hit, &
+fname_intpts,fname_nhit,nhitline)
 !
 ! Description: 
 !
@@ -24,20 +24,20 @@ Use parallel_mod
 Use inside_vessel_mod, Only: &
 inside_vessel
 Use io_unit_spec, Only: &
-iu_hit, iu_launch, iu_nhit, iu_vhit, iu_int
+iu_hit, iu_launch, iu_nhit, iu_int
 Use read_parts_mod
 Implicit none
 
 ! Input/output
 Character(len=100),Intent(in) :: fname_launch, fname_hit, fname_intpts, fname_nhit
-Real(real64), Intent(in) :: dmag, dphi_line, period,lsfi_tol
+Real(real64), Intent(in) :: dmag
 Integer(int32), Intent(in) :: nsteps_line, nhitline
 
 ! Local scalars
 Integer(int32) :: numl, iline, ii, hitcount, &
-  ihit, iocheck, dest, source
+  ihit, iocheck, dest
 Real(real64) :: Rstart, Zstart, Phistart
-Integer(int32) :: ierr_follow
+
 Integer(int32) :: tag, flag, work_done, work_done_count
 
 ! Local arrays
@@ -45,9 +45,10 @@ Real(real64), Dimension(3) :: pint
 Integer(int32), Dimension(4) :: iout
 Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
 Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-Real(real64), Dimension(6) :: line_start_data_r
+Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
-Real(real64), Dimension(3 + 3*nhitline) :: line_done_data_r
+Real(real64), Dimension(3) :: line_done_data_r
+Real(real64), Dimension(3*nhitline) :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 
 Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr, req_arr
@@ -78,7 +79,7 @@ work_done_count = 0
 req_arr = 0
 is_working_arr = 0
 Do dest = 1,nprocs - 1
-
+   
   tag = dest
 
   ! Send line start data
@@ -86,25 +87,22 @@ Do dest = 1,nprocs - 1
   Rstart   = R0(iline)
   Zstart   = Z0(iline)
   Phistart = Phi0(iline)
-  line_start_data_r(1) = Rstart
-  line_start_data_r(2) = Zstart
-  line_start_data_r(3) = Phistart
-  line_start_data_r(4) = dphi_line
-  line_start_data_r(5) = dmag
-  line_start_data_r(6) = period  
-  ! QQ -- Some of this stuff should probably be passed by module: dphi_line, dmag, period, nsteps line nhitline.
-
+  
   line_start_data_i(1) = nsteps_line
   line_start_data_i(2) = nhitline
   line_start_data_i(3) = iline
-  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi) 
-  Call MPI_SEND(line_start_data_r,6,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+
+  line_start_data_r(1) = Rstart
+  line_start_data_r(2) = Zstart
+  line_start_data_r(3) = Phistart  
+  Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
   ! Request signal that job is finished
   Call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
   req_arr(dest) = request
   is_working_arr(dest) = 1
-
+  
 Enddo
 
 !-----------------------------------------------------------
@@ -112,8 +110,9 @@ Enddo
 !-----------------------------------------------------------
 work_done = 0
 hitcount = 0
+
 Open(iu_int,file=fname_intpts,iostat=iocheck)
-Open(iu_hit,file=fname_hit,iostat=iocheck)   
+Open(iu_hit,file=fname_hit   ,iostat=iocheck)   
 Do While ( work_done .ne. 1 )
   Do dest = 1,nprocs - 1
 
@@ -127,21 +126,27 @@ Do While ( work_done .ne. 1 )
 
         ! Request results
         tag = dest
-        Call MPI_RECV(line_done_data_i,5,MPI_INTEGER                    ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
-        Call MPI_RECV(line_done_data_r,3+nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Call MPI_RECV(line_done_data_i ,5         ,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Call MPI_RECV(line_done_data_r ,3         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+
+        If (nhitline .gt. 0) Then
+           Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Endif
         ihit        = line_done_data_i(2)
         if ( ihit .ge. 1 ) Then 
           hitcount = hitcount + 1
           iout = line_done_data_i(2:5)
           pint = line_done_data_r(1:3)
           Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout
-          r_hitline   = line_done_data_r(3+1+0*nhitline:3+1*nhitline)
-          z_hitline   = line_done_data_r(3+1+1*nhitline:3+2*nhitline)
-          phi_hitline = line_done_data_r(3+1+2*nhitline:3+3*nhitline)
-          Write(iu_hit,*) nhitline
-          Write(iu_hit,*) r_hitline
-          Write(iu_hit,*) z_hitline
-          Write(iu_hit,*) phi_hitline
+          If (nhitline .gt. 0) Then
+             r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
+             z_hitline   = line_done_data_r2(1+1*nhitline:2*nhitline)
+             phi_hitline = line_done_data_r2(1+2*nhitline:3*nhitline)
+             Write(iu_hit,*) nhitline
+             Write(iu_hit,*) r_hitline
+             Write(iu_hit,*) z_hitline
+             Write(iu_hit,*) phi_hitline
+          Endif
         Endif
       Endif ! flag == 1
 
@@ -157,18 +162,15 @@ Do While ( work_done .ne. 1 )
         line_start_data_r(1) = Rstart
         line_start_data_r(2) = Zstart
         line_start_data_r(3) = Phistart
-        line_start_data_r(4) = dphi_line
-        line_start_data_r(5) = dmag
-        line_start_data_r(6) = period  
         line_start_data_i(1) = nsteps_line
         line_start_data_i(2) = nhitline
         line_start_data_i(3) = iline
-        Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi) 
-        Call MPI_SEND(line_start_data_r,6,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+        Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+        Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
         is_working_arr(dest) = 1
         
         ! Initiate request for completed job
-        call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
+        call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)       
         req_arr(dest) = request
       Else
         ! If there are no more jobs, turn this process 'off'
@@ -207,7 +209,7 @@ Write(iu_nhit,*) hitcount
 Close(iu_nhit)
 Deallocate(R0,Z0,Phi0)
 
-Endsubroutine diffuse_lines3
+End Subroutine diffuse_lines3
 !-----------------------------------------------------------------------------
 
 
@@ -234,7 +236,7 @@ Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
-Integer(int32) :: ifail, imin, ierr(1),ilg(1)
+Integer(int32) :: ifail, ierr(1),ilg(1)
 
 !- End of header -------------------------------------------------------------
 
@@ -284,17 +286,9 @@ Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1
 
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
-Real(real64) :: rtol, atol, dphimin
-Integer(int32) :: nmax_step, method, imin
-
-
 logical :: close_part_check = .false.
 
 !- End of header -------------------------------------------------------------
-
-!r_hitline = 0.d0
-!z_hitline = 0.d0
-!phi_hitline = 0.d0
 
 
 if (close_part_check) Then
@@ -570,9 +564,6 @@ Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1
 Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
-Real(real64) :: rtol, atol, dphimin
-Integer(int32) :: nmax_step, method, imin
-
 !- End of header -------------------------------------------------------------
 
 r_hitline = 0.d0
@@ -588,8 +579,6 @@ pint(:) = 0.
 iout(:) = -1
 iout(1) = ihit
 Do i=1,npts_line - 1
-!write(*,*) 'here:>>>>>>>>>>>',imin
-!Do i=imin,npts_line - 1
 !  Write(*,*) i
   ! Current point along line
   R1 = rout(i)

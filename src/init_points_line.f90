@@ -35,9 +35,6 @@ Real(real64) :: period, P1, rnum
 ! Local arrays
 Real(real64),Allocatable,Dimension(:) :: rsurf,zsurf,phisurf
 
-! Local parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
-
 !- End of header -------------------------------------------------------------
 
 ! Read surface file

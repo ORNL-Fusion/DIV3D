@@ -26,14 +26,7 @@ program div3d_follow_and_int
 ! Modules used:
 Use kind_mod
 Use parallel_mod
-Use io_unit_spec, Only: &
-iu_nl,    &  ! Run settings namelist file unit (run_settings.nml,input)
-iu_plist, &  ! Parts filename list file (input) 
-iu_parts, &  ! Parts data file (output)
-iu_nhit,  & 
-iu_surf,  &
-iu_hit,   &
-iu_int
+Use io_unit_spec, Only: iu_nl ! Run settings namelist file unit (run_settings.nml,input)
 Use read_parts_mod
 Use setup_bfield_module
 Use phys_const, Only : pi
@@ -50,12 +43,12 @@ Integer(int32) :: npts_start, nfp
 Integer(int32) :: iocheck
 Integer(int32) :: ntran_surf, ns_line_surf
 Integer(int32) :: ntran_diff, ns_line_diff
-Integer(int32) :: my_numl, ifl, ierr_follow, iline, dest, num_myjobs, source, tag
+Integer(int32) :: ierr_follow, dest, num_myjobs, source, tag
 
-Real(real64) :: Rstart_local, Zstart_local, Pstart_local, dphi_line_local, dmag_local, period_local
-Integer(int32) :: iline_local, nhitline_local, nsteps_line_local
+Real(real64) :: Rstart_local, Zstart_local, Pstart_local
+Integer(int32) :: iline_local, nsteps_line_local
 
-Character(len=300) :: fname_hit, fname_bfile, fname_ptri, fname_ptri_mid
+Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
 Character(len=300) :: fname_plist, fname_nhit
 
@@ -66,10 +59,11 @@ Logical :: verbose, trace_surface_opt
 Real(real64), Dimension(3) :: pint
 Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
 
-Real(real64), Dimension(6) :: line_start_data_r
+Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
 Integer(int32), Dimension(4) :: iout
-Real(real64), Dimension(:), Allocatable :: line_done_data_r
+Real(real64), Dimension(3) :: line_done_data_r
+Real(real64), Dimension(:), Allocatable :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 
 ! Namelists
@@ -115,6 +109,16 @@ dphi_line_surf = dphi_line_surf_deg * pi/180.d0
 dphi_line_diff = dphi_line_diff_deg * pi/180.d0
 ns_line_surf = Floor(ntran_surf*2.d0*pi/Abs(dphi_line_surf))
 ns_line_diff = Floor(ntran_diff*2.d0*pi/Abs(dphi_line_diff))
+
+Write(*,*) 'hit_length:',hit_length
+If (hit_length .le. 0.d0) Then
+   If (verbose) Write(6,'(/A)') 'Turning off hitline because hit_length <= 0'
+   nhitline = 0
+Else
+   nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))
+   If (verbose) Write(6,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
+Endif
+
 
 !----------------------------------------------------------
 ! 1. Initialize magnetic field
@@ -191,14 +195,10 @@ If (rank .eq. 0) Then
   !----------------------------------------------------------------------------------------
   ! 5. Follow fieldlines from init points and check for intersections 
   !----------------------------------------------------------------------------------------
-  nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))
-  Write(6,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
 
   Write(6,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
   write(6,*) 'Beginning MPI line diffusion'
-  Call diffuse_lines3(fname_launch,dmag,dphi_line_diff,ns_line_diff, &
-       fname_hit,period,fname_intpts,fname_nhit,nhitline, &
-       lsfi_tol)
+  Call diffuse_lines3(fname_launch,dmag,ns_line_diff,fname_hit,fname_intpts,fname_nhit,nhitline)
 
   Deallocate(ntri_parts)
   Deallocate(xtri,ytri,ztri,check_tri)
@@ -226,28 +226,22 @@ If (rank .gt. 0) Then
 
     ! Check for kill signal    
     if (line_start_data_i(1) .ne. -1 ) Then
-      ! QQ == diffuse_lines should really send a real array of zeros or something
-      ! Get rest of start data
-      Call MPI_RECV(line_start_data_r,6,MPI_DOUBLE_PRECISION,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
+      ! Get rest of start data
+      Call MPI_RECV(line_start_data_r,3,MPI_DOUBLE_PRECISION,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
       Rstart_local    = line_start_data_r(1)
       Zstart_local    = line_start_data_r(2)
       Pstart_local    = line_start_data_r(3)
-      dphi_line_local = line_start_data_r(4)
-      dmag_local      = line_start_data_r(5)
-      period_local    = line_start_data_r(6)
       nsteps_line_local = line_start_data_i(1)
-      nhitline_local    = line_start_data_i(2)
       iline_local       = line_start_data_i(3)
       
       ! Follow the line
-      nhitline = nhitline_local
       Allocate(r_hitline(nhitline))
       Allocate(z_hitline(nhitline))
       Allocate(phi_hitline(nhitline))      
       Call line_follow_and_int(Rstart_local,Zstart_local, &
-           Pstart_local,dphi_line_local,nsteps_line_local,&
-           dmag_local,period_local,pint,iout,r_hitline, &
+           Pstart_local,dphi_line_diff,nsteps_line_local,&
+           dmag,period,pint,iout,r_hitline, &
            z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol)      
       ierr_follow = 0
 
@@ -256,17 +250,24 @@ If (rank .gt. 0) Then
       ! first send handshake signal (this_job_done)
       Call MPI_SEND(1,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
-      Allocate(line_done_data_r(3+3*nhitline))
+
       line_done_data_i(1) = ierr_follow
       line_done_data_i(2:5) = iout
+      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+
       line_done_data_r(1:3) = pint
-      line_done_data_r(3+1+0*nhitline:3+1*nhitline) = r_hitline
-      line_done_data_r(3+1+1*nhitline:3+2*nhitline) = z_hitline
-      line_done_data_r(3+1+2*nhitline:3+3*nhitline) = phi_hitline
-      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER                    ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
-      Call MPI_SEND(line_done_data_r,3+nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+      Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+
+      If (nhitline .gt. 0) Then
+         Allocate(line_done_data_r2(3*nhitline))      
+         line_done_data_r2(1+0*nhitline:1*nhitline) = r_hitline
+         line_done_data_r2(1+1*nhitline:2*nhitline) = z_hitline
+         line_done_data_r2(1+2*nhitline:3*nhitline) = phi_hitline
+         Call MPI_SEND(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+         Deallocate(line_done_data_r2)
+      Endif
       Deallocate(r_hitline,z_hitline,phi_hitline)
-      Deallocate(line_done_data_r)
+      
       num_myjobs = num_myjobs + 1
     Endif ! kill signal check
 
