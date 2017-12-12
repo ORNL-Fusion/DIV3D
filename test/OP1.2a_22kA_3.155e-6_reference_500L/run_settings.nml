@@ -1,0 +1,41 @@
+&bfield_nml
+rmp_type = 'bgrid'
+bgrid_fname = '/home/jjl/BGRID/W7X/Bgrid_vac_22kA_mimic_90x82x65'
+/
+
+
+&run_settings
+
+fname_plist    = 'parts.list'
+fname_ves      = '/home/jjl/DIV3D_runs/runs/W7X/geo_files/vessel.part'
+fname_surf     = 'surface_line.out'
+fname_launch   = 'launch_pts.out'
+fname_parts    = 'allparts.out'
+fname_hit      = 'hitline.out'
+fname_intpts   = 'int_pts.out'
+fname_nhit     = 'hitcount.out'
+fname_ptri     = 'part_triangles.out'
+fname_ptri_mid = 'part_triangle_mids.out'
+
+nfp = 5
+
+Rstart   = 5.694d0 
+Zstart   = 0.d0
+Phistart = 0.d0
+dphi_line_surf_deg = 0.1d0
+ntran_surf = 20
+
+npts_start = 500
+dmag = 3.155d-5
+dphi_line_diff_deg = 0.5d0
+ntran_diff = 1000
+
+trace_surface_opt=.true.
+myseed = 110115
+
+hit_length = 1.0d0
+
+lsfi_tol = 1.d-12
+
+working_master = .false.
+/
