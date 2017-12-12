@@ -15,23 +15,23 @@ Module read_parts_mod
 Use kind_mod
 
 Implicit None
-Integer(iknd),Allocatable,Dimension(:) :: nt_parts,np_parts
-Integer(iknd), Allocatable, Dimension(:) :: pol_dirs, tor_dirs, part_type
+Integer(int32),Allocatable,Dimension(:) :: nt_parts,np_parts
+Integer(int32), Allocatable, Dimension(:) :: pol_dirs, tor_dirs, part_type
 Character(len=300),Allocatable,Dimension(:) :: part_names
-Real(rknd),Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
-Real(rknd), Allocatable, Dimension(:) :: Pmaxs, Pmins
-Real(rknd), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
-Real(rknd), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
+Real(real64),Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
+Real(real64), Allocatable, Dimension(:) :: Pmaxs, Pmins
+Real(real64), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
+Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
 
-Integer(iknd) :: ntor_ves, npol_ves, msym_ves, msym
-Integer(iknd) :: nparts
-Integer(iknd) :: nt_max, np_max
+Integer(int32) :: ntor_ves, npol_ves, msym_ves, msym
+Integer(int32) :: nparts
+Integer(int32) :: nt_max, np_max
 
-Integer(iknd) :: ntri_max, ic_near
-Real(rknd),Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
-Integer(iknd),Allocatable,Dimension(:,:) :: check_tri
-Integer(iknd),Allocatable,Dimension(:) :: ntri_parts
-Real(rknd), allocatable :: near_part(:), near_tri(:)
+Integer(int32) :: ntri_max, ic_near
+Real(real64),Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
+Integer(int32),Allocatable,Dimension(:,:) :: check_tri
+Integer(int32),Allocatable,Dimension(:) :: ntri_parts
+Real(real64), allocatable :: near_part(:), near_tri(:)
 !- End of header -------------------------------------------------------------
 
 Contains
@@ -45,11 +45,11 @@ Use io_unit_spec, Only : iu_ptri, iu_ptmid
 Implicit None
 
 Character(len=300), Intent(in) :: fname_ptri,fname_ptri_mid
-Real(rknd) :: R1,Z1,P1,Pt1(3)
-Real(rknd) :: R2,Z2,P2,Pt2(3)
-Real(rknd) :: R3,Z3,P3,Pt3(3)
-Real(rknd) :: R4,Z4,P4,Pt4(3), dmids(3)
-Integer(iknd) :: ipart, jpol, itor, itri, npol, ntor
+Real(real64) :: R1,Z1,P1,Pt1(3)
+Real(real64) :: R2,Z2,P2,Pt2(3)
+Real(real64) :: R3,Z3,P3,Pt3(3)
+Real(real64) :: R4,Z4,P4,Pt4(3), dmids(3)
+Integer(int32) :: ipart, jpol, itor, itri, npol, ntor
 !- End of header -------------------------------------------------------------
 
 !first have to get max number of triangles for allocation
@@ -57,7 +57,7 @@ Allocate(ntri_parts(nparts))
 Do ipart=1,nparts
   ntor = nt_parts(ipart)
   npol = np_parts(ipart)
-  ntri_parts(ipart) = (ntor-1)*(npol-1)*2_iknd
+  ntri_parts(ipart) = (ntor-1)*(npol-1)*2_int32
 Enddo
 ntri_max = Maxval(ntri_parts)
 
@@ -70,13 +70,13 @@ Allocate(zmid(nparts,ntri_max))
 Allocate(dmid(nparts,ntri_max))
 Allocate(check_tri(nparts,ntri_max))
 
-xmid(:,:) = 0._rknd
-ymid(:,:) = 0._rknd
-zmid(:,:) = 0._rknd
-xtri(:,:,:) = 0._rknd
-ytri(:,:,:) = 0._rknd
-ztri(:,:,:) = 0._rknd
-check_tri(:,:) = 0_iknd
+xmid(:,:) = 0._real64
+ymid(:,:) = 0._real64
+zmid(:,:) = 0._real64
+xtri(:,:,:) = 0._real64
+ytri(:,:,:) = 0._real64
+ztri(:,:,:) = 0._real64
+check_tri(:,:) = 0_int32
 
 Open(iu_ptri,file=fname_ptri)
 Write(iu_ptri,*) nparts
@@ -88,7 +88,7 @@ Do ipart=1,nparts
   write(iu_ptmid,*) ipart,ntri_parts(ipart)
   ntor = nt_parts(ipart)
   npol = np_parts(ipart)
-  itri = 1_iknd
+  itri = 1_int32
   Do itor=1,ntor-1
     Do jpol=1,npol-1
 
@@ -120,9 +120,9 @@ Do ipart=1,nparts
       write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
       write(iu_ptri,*) xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)
       ! Define triangle midpoint
-      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._rknd
-      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._rknd
-      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._rknd
+      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._real64
+      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._real64
+      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._real64
       dmids(1) = sqrt( (xtri(ipart,itri,1) - xmid(ipart,itri))**2 + &
            (ytri(ipart,itri,1) - ymid(ipart,itri))**2 + (ztri(ipart,itri,1) - zmid(ipart,itri))**2 )
       dmids(2) = sqrt( (xtri(ipart,itri,2) - xmid(ipart,itri))**2 + &
@@ -133,7 +133,7 @@ Do ipart=1,nparts
       write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
 
       ! 2nd triangle
-      itri = itri+1_iknd
+      itri = itri+1_int32
       xtri(ipart,itri,1:3) = [Pt4(1),Pt2(1),Pt3(1)]
       ytri(ipart,itri,1:3) = [Pt4(2),Pt2(2),Pt3(2)]
       ztri(ipart,itri,1:3) = [Pt4(3),Pt2(3),Pt3(3)]
@@ -143,9 +143,9 @@ Do ipart=1,nparts
       write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
       write(iu_ptri,*) xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)
       ! Define triangle midpoint
-      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._rknd
-      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._rknd
-      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._rknd
+      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._real64
+      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._real64
+      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._real64
       dmids(1) = sqrt( (xtri(ipart,itri,1) - xmid(ipart,itri))**2 + &
            (ytri(ipart,itri,1) - ymid(ipart,itri))**2 + (ztri(ipart,itri,1) - zmid(ipart,itri))**2 )
       dmids(2) = sqrt( (xtri(ipart,itri,2) - xmid(ipart,itri))**2 + &
@@ -155,7 +155,7 @@ Do ipart=1,nparts
       dmid(ipart,itri) = maxval(dmids,1)
       write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
 
-      itri = itri+1_iknd
+      itri = itri+1_int32
 
     Enddo
   Enddo
@@ -177,16 +177,16 @@ Use io_unit_spec, Only : iu_thispart
 Implicit none
 ! Dummy variables
 Character(len=100), Intent(in) :: fname
-Integer(iknd), Intent(in) :: ntor, npol
+Integer(int32), Intent(in) :: ntor, npol
 Character(len=100), Intent(out) :: label
-Integer(iknd),Intent(out) :: msym  
-Real(rknd),Dimension(ntor,npol), Intent(out) :: &
+Integer(int32),Intent(out) :: msym  
+Real(real64),Dimension(ntor,npol), Intent(out) :: &
   Rpart, Zpart, Phipart
-Integer(iknd) :: itor, ipol, ntor_dum, npol_dum
+Integer(int32) :: itor, ipol, ntor_dum, npol_dum
 ! Local variables
-Real(rknd) :: rshift, zshift, Phitmp
+Real(real64) :: rshift, zshift, Phitmp
 ! Local parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
+Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname)
@@ -204,9 +204,9 @@ Enddo
 close(iu_thispart)
 
 ! Convert to meters and radians
-Rpart = (Rpart+rshift)*0.01_rknd
-Zpart = (Zpart+zshift)*0.01_rknd
-Phipart = Phipart*pi/180._rknd
+Rpart = (Rpart+rshift)*0.01_real64
+Zpart = (Zpart+zshift)*0.01_real64
+Phipart = Phipart*pi/180._real64
 
 Endsubroutine load_w7_part
 !-----------------------------------------------------------------------------
@@ -226,16 +226,16 @@ Use io_unit_spec, Only : iu_thispart
 Implicit none
 ! Dummy variables
 Character(len=100), Intent(in) :: fname
-Integer(iknd), Intent(in) :: ntor,npol
+Integer(int32), Intent(in) :: ntor,npol
 Character(len=100), Intent(out) :: label
-Integer(iknd),Intent(out) :: msym
-Real(rknd),Dimension(ntor,npol), Intent(out) :: &
+Integer(int32),Intent(out) :: msym
+Real(real64),Dimension(ntor,npol), Intent(out) :: &
   Rpart, Zpart, Phipart
-Integer(iknd) :: itor, ipol, ntor_dum, npol_dum
+Integer(int32) :: itor, ipol, ntor_dum, npol_dum
 ! Local variables
-Real(rknd) :: rshift, zshift
+Real(real64) :: rshift, zshift
 ! Local parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
+Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname)
@@ -251,9 +251,9 @@ Enddo
 close(iu_thispart)
 
 ! Convert to meters and radians
-Rpart = (Rpart+rshift)*0.01_rknd
-Zpart = (Zpart+zshift)*0.01_rknd
-Phipart = Phipart*pi/180._rknd
+Rpart = (Rpart+rshift)*0.01_real64
+Zpart = (Zpart+zshift)*0.01_real64
+Phipart = Phipart*pi/180._real64
 
 Endsubroutine load_2d_jpart
 !-----------------------------------------------------------------------------
@@ -271,9 +271,9 @@ Use kind_mod
 Use io_unit_spec, Only : iu_thispart
 Implicit none
 Character(len=100), Intent(in) :: fname
-Integer(iknd), Intent(out) :: ntor,npol
-Integer(iknd) :: nfp
-Real(rknd) :: rshift, zshift
+Integer(int32), Intent(out) :: ntor,npol
+Integer(int32) :: nfp
+Real(real64) :: rshift, zshift
 Character(len=100) :: label
 !- End of header -------------------------------------------------------------
 Open(iu_thispart,file=fname)
@@ -294,13 +294,13 @@ Endsubroutine
 Subroutine close_2pt_part(Rin,Zin,ntor,npol,dir,step,Rout,Zout)
 Use kind_mod
 Implicit none
-Integer(iknd), Intent(in) :: ntor, npol, dir
-Real(rknd), Intent(in) :: step
-Real(rknd), Dimension(ntor,npol), Intent(in) :: Rin,Zin
-Real(rknd), Dimension(ntor,npol+1), Intent(out) :: Rout, Zout
-Integer(iknd) :: i
-Real(rknd) :: R1,Z1,R2,Z2,dL,Rmid,Zmid
-Real(rknd), Dimension(2) ::  V1,unit_out
+Integer(int32), Intent(in) :: ntor, npol, dir
+Real(real64), Intent(in) :: step
+Real(real64), Dimension(ntor,npol), Intent(in) :: Rin,Zin
+Real(real64), Dimension(ntor,npol+1), Intent(out) :: Rout, Zout
+Integer(int32) :: i
+Real(real64) :: R1,Z1,R2,Z2,dL,Rmid,Zmid
+Real(real64), Dimension(2) ::  V1,unit_out
 !- End of header -------------------------------------------------------------
 
 Rout(1:ntor,1:npol) = Rin
@@ -318,15 +318,15 @@ Do i=1,ntor
   V1(2) = Z2-Z1
   V1 = V1/dL
 
-  Rmid = R1 + V1(1)*dL/2._rknd
-  Zmid = Z1 + V1(2)*dL/2._rknd
+  Rmid = R1 + V1(1)*dL/2._real64
+  Zmid = Z1 + V1(2)*dL/2._real64
 
   unit_out(1) = -V1(2)
   unit_out(2) =  V1(1)
   unit_out = unit_out/Dsqrt( V1(1)*V1(1) + V1(2)*V1(2) )
 
-  Rout(i,npol+1) = Rmid + real(dir,rknd)*unit_out(1)*step
-  Zout(i,npol+1) = Zmid + real(dir,rknd)*unit_out(2)*step
+  Rout(i,npol+1) = Rmid + real(dir,real64)*unit_out(1)*step
+  Zout(i,npol+1) = Zmid + real(dir,real64)*unit_out(2)*step
 !  Rout(i,npol+1) = Rmid 
 !  Zout(i,npol+1) = Zmid 
 
@@ -397,14 +397,14 @@ iu_parts
 Implicit none
 Character(len=300), Intent(in) ::  fname_plist, fname_parts, fname_ves
 Logical, Intent(in) :: verbose
-Real(rknd),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
-Integer(iknd) :: i, j
-Integer(iknd) :: ipart
-Integer(iknd) :: ntor, npol
+Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
+Integer(int32) :: i, j
+Integer(int32) :: ipart
+Integer(int32) :: ntor, npol
 Character(len=300) :: part_name
 Character(len=300) :: label
 ! Local Parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
+Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 !- End of header -------------------------------------------------------------
 
 ! Read parts list file and query each part for dimensions
@@ -459,9 +459,9 @@ Do ipart = 1,nparts
   Do i=1,ntor
     Do j=1,npol
       Do While (Ppart(i,j) .lt. 0.d0) 
-        Ppart(i,j) = Ppart(i,j) + 2._rknd*pi/Real(msym,rknd)
+        Ppart(i,j) = Ppart(i,j) + 2._real64*pi/Real(msym,real64)
       Enddo
-      Ppart(i,j) = Mod(Ppart(i,j),2._rknd*pi/Real(msym,rknd))
+      Ppart(i,j) = Mod(Ppart(i,j),2._real64*pi/Real(msym,real64))
     Enddo
   Enddo
   Pparts(ipart,1:ntor,1:npol) = Ppart

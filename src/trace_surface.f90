@@ -35,21 +35,21 @@ Use parallel_mod
 Implicit none
 
 ! Input/output
-Real(rknd), Intent(in) :: Rstart, Zstart, Phistart
-Real(rknd), Intent(in) :: dphi_line, Period
-Integer(iknd), Intent(in) :: nsteps_line
+Real(real64), Intent(in) :: Rstart, Zstart, Phistart
+Real(real64), Intent(in) :: dphi_line, Period
+Integer(int32), Intent(in) :: nsteps_line
 Character(len=100), Intent(in) :: fname_surf
 
 ! Local scalars
-Integer(iknd) :: ifail, ii, ip_step, nip0, ierr
-Real(rknd) :: adp
+Integer(int32) :: ifail, ii, ip_step, nip0, ierr
+Real(real64) :: adp
 
 ! Local arrays
-Real(rknd), Dimension(nsteps_line+1) :: &
+Real(real64), Dimension(nsteps_line+1) :: &
   rsurf,zsurf,phisurf
 
 ! Local parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
+Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 
 !- End of header -------------------------------------------------------------
 
@@ -59,10 +59,10 @@ Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
 adp = Abs(dphi_line)
 nip0 = floor( nsteps_line*adp/period) + 1
 ip_step = Nint(period/adp)
-If (Real(period/adp,rknd) - Real(ip_step,rknd) .gt. 1.d-12 ) Then
+If (Real(period/adp,real64) - Real(ip_step,real64) .gt. 1.d-12 ) Then
   Write(6,*) 'Choose dphi_line such that ',period*180.d0/pi,' degrees is divisible'
   Write(*,*) 'Dphi_line (deg):',dphi_line*180.d0/pi
-  Write(6,*) 'Should be equal:',Real(period/adp,rknd),ip_step,period/adp
+  Write(6,*) 'Should be equal:',Real(period/adp,real64),ip_step,period/adp
   Write(6,*) 'Periodicity, (ip_step,nip0) = ', ip_step, nip0
   Stop
 Else

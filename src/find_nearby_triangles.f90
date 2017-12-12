@@ -4,11 +4,11 @@ Use kind_mod
 Use read_parts_mod
 Use math_routines_mod, Only: line_seg_facet_int
 Implicit None
-Real(rknd),Intent(in) :: rr,pp,zz,dL, period
-Real(rknd) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
-Integer(iknd) :: ipart, itri, icount, itmp
-Real(rknd), allocatable :: near_part_tmp(:), near_tri_tmp(:)
-Integer(iknd) :: ii
+Real(real64),Intent(in) :: rr,pp,zz,dL, period
+Real(real64) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
+Integer(int32) :: ipart, itri, icount, itmp
+Real(real64), allocatable :: near_part_tmp(:), near_tri_tmp(:)
+Integer(int32) :: ii
 ! test
 
 itmp = sum(ntri_parts(1:nparts))

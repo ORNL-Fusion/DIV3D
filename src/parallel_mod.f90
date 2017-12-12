@@ -12,17 +12,17 @@ Module parallel_mod
 ! Author(s): J.D. Lore 12/14/2011 - xxx 
 !
 ! Modules used:
-Use kind_mod                ! Import rknd, iknd specifications       
+Use kind_mod
 
 Implicit None
 
 Include 'mpif.h'
-Integer(iknd) :: nprocs, ierr_mpi, rank, ret_code, request
-Integer(iknd) :: status(MPI_STATUS_SIZE)
+Integer(int32) :: nprocs, ierr_mpi, rank, ret_code, request
+Integer(int32) :: status(MPI_STATUS_SIZE)
 Logical :: working_master
 
 ! QQ -- these are not needed after diffuse_lines2 deprecated
-Integer(iknd) :: nprocs_working, tag1 
+Integer(int32) :: nprocs_working, tag1 
 
 Contains
 

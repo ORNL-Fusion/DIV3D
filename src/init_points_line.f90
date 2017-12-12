@@ -25,18 +25,18 @@ Implicit none
 
 ! Input/output
 Character(len=100),Intent(in) :: fname_surf, fname_launch
-Integer(iknd), Intent(in) :: numl
+Integer(int32), Intent(in) :: numl
 
 ! Local scalars
-Integer(iknd) :: ii, rand_ind
-Integer(iknd) :: npts_line,nip0, ip_step
-Real(rknd) :: period, P1, rnum
+Integer(int32) :: ii, rand_ind
+Integer(int32) :: npts_line,nip0, ip_step
+Real(real64) :: period, P1, rnum
 
 ! Local arrays
-Real(rknd),Allocatable,Dimension(:) :: rsurf,zsurf,phisurf
+Real(real64),Allocatable,Dimension(:) :: rsurf,zsurf,phisurf
 
 ! Local parameters
-Real(rknd), Parameter :: pi = 3.141592653589793238462643383279502_rknd
+Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 
 !- End of header -------------------------------------------------------------
 

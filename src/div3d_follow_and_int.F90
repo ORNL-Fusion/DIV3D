@@ -40,17 +40,17 @@ Use phys_const, Only : pi
 Implicit none
 
 ! Local scalars
-Real(rknd) :: Rstart, Zstart, Phistart
-Real(rknd) :: dmag, period, lsfi_tol
-Real(rknd) :: dphi_line_surf, dphi_line_diff
-Real(rknd) :: dphi_line_surf_deg, dphi_line_diff_deg, hit_length
+Real(real64) :: Rstart, Zstart, Phistart
+Real(real64) :: dmag, period, lsfi_tol
+Real(real64) :: dphi_line_surf, dphi_line_diff
+Real(real64) :: dphi_line_surf_deg, dphi_line_diff_deg, hit_length
 
-Integer(iknd) :: myseed, nhitline
-Integer(iknd) :: npts_start, nfp
-Integer(iknd) :: iocheck
-Integer(iknd) :: ntran_surf, ns_line_surf
-Integer(iknd) :: ntran_diff, ns_line_diff
-Integer(iknd) :: my_numl, ifl, ierr_follow, iline, dest, num_myjobs, source, tag
+Integer(int32) :: myseed, nhitline
+Integer(int32) :: npts_start, nfp
+Integer(int32) :: iocheck
+Integer(int32) :: ntran_surf, ns_line_surf
+Integer(int32) :: ntran_diff, ns_line_diff
+Integer(int32) :: my_numl, ifl, ierr_follow, iline, dest, num_myjobs, source, tag
 
 Character(len=300) :: fname_hit, fname_bfile, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
@@ -60,14 +60,14 @@ Logical :: verbose, trace_surface_opt
 
 ! Local arrays
 
-Real(rknd), Dimension(3) :: pint
-Real(rknd), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
+Real(real64), Dimension(3) :: pint
+Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
 
-Real(rknd), Dimension(6) :: line_start_data_r
-Integer(iknd), Dimension(3) :: line_start_data_i
-Integer(iknd), Dimension(4) :: iout
-Real(rknd), Dimension(:), Allocatable :: line_done_data_r
-Integer(iknd), Dimension(5) :: line_done_data_i
+Real(real64), Dimension(6) :: line_start_data_r
+Integer(int32), Dimension(3) :: line_start_data_i
+Integer(int32), Dimension(4) :: iout
+Real(real64), Dimension(:), Allocatable :: line_done_data_r
+Integer(int32), Dimension(5) :: line_done_data_i
 
 ! Namelists
 Namelist / run_settings / fname_plist, fname_ves,  &
@@ -107,7 +107,7 @@ Close(iu_nl)
 If (verbose) Write(6,*) 'Initializing random number with base seed:',myseed
 Call init_random_seed(myseed*(rank+1))
 
-period = 2.d0*pi/Real(nfp,rknd)
+period = 2.d0*pi/Real(nfp,real64)
 dphi_line_surf = dphi_line_surf_deg * pi/180.d0
 dphi_line_diff = dphi_line_diff_deg * pi/180.d0
 ns_line_surf = Floor(ntran_surf*2.d0*pi/Abs(dphi_line_surf))

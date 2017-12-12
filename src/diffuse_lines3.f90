@@ -30,27 +30,27 @@ Implicit none
 
 ! Input/output
 Character(len=100),Intent(in) :: fname_launch, fname_hit, fname_intpts, fname_nhit
-Real(rknd), Intent(in) :: dmag, dphi_line, period,lsfi_tol
-Integer(iknd), Intent(in) :: nsteps_line, nhitline
+Real(real64), Intent(in) :: dmag, dphi_line, period,lsfi_tol
+Integer(int32), Intent(in) :: nsteps_line, nhitline
 
 ! Local scalars
-Integer(iknd) :: numl, iline, ii, hitcount, &
+Integer(int32) :: numl, iline, ii, hitcount, &
   ihit, iocheck, dest, source
-Real(rknd) :: Rstart, Zstart, Phistart
-Integer(iknd) :: ierr_follow
-Integer(iknd) :: tag, flag, work_done, work_done_count
+Real(real64) :: Rstart, Zstart, Phistart
+Integer(int32) :: ierr_follow
+Integer(int32) :: tag, flag, work_done, work_done_count
 
 ! Local arrays
-Real(rknd), Dimension(3) :: pint 
-Integer(iknd), Dimension(4) :: iout
-Real(rknd), Allocatable :: R0(:),Z0(:),Phi0(:)
-Real(rknd), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-Real(rknd), Dimension(6) :: line_start_data_r
-Integer(iknd), Dimension(3) :: line_start_data_i
-Real(rknd), Dimension(3 + 3*nhitline) :: line_done_data_r
-Integer(iknd), Dimension(5) :: line_done_data_i
+Real(real64), Dimension(3) :: pint 
+Integer(int32), Dimension(4) :: iout
+Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
+Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+Real(real64), Dimension(6) :: line_start_data_r
+Integer(int32), Dimension(3) :: line_start_data_i
+Real(real64), Dimension(3 + 3*nhitline) :: line_done_data_r
+Integer(int32), Dimension(5) :: line_done_data_i
 
-Integer(iknd), Dimension(:), Allocatable :: this_job_done, is_working_arr, req_arr
+Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr, req_arr
 
 !- End of header -------------------------------------------------------------
 
@@ -225,16 +225,16 @@ Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
 Use setup_bfield_module, Only : bfield
 Implicit None
 
-Real(rknd), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
-Integer(iknd), Intent(in) :: nsteps_line, linenum
-Integer(iknd), Intent(out), Dimension(4) :: iout
-Real(rknd), Dimension(3), Intent(out) :: pint
-Integer(iknd), Intent(in) :: nhitline
-Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
+Integer(int32), Intent(in) :: nsteps_line, linenum
+Integer(int32), Intent(out), Dimension(4) :: iout
+Real(real64), Dimension(3), Intent(out) :: pint
+Integer(int32), Intent(in) :: nhitline
+Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
 
-Real(rknd), Dimension(nsteps_line+1) :: rout,zout,phiout
-Integer(iknd) :: ifail, imin, ierr(1),ilg(1)
+Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
+Integer(int32) :: ifail, imin, ierr(1),ilg(1)
 
 !- End of header -------------------------------------------------------------
 
@@ -267,25 +267,25 @@ inside_vessel
 Use math_routines_mod, Only: line_seg_facet_int
 Implicit None
 
-Real(rknd), Intent(in) :: period, lsfi_tol
-Integer(iknd), Intent(in) :: linenum, nsteps_line,ifail
-Integer(iknd), Intent(out), Dimension(4) :: iout
-Real(rknd), Dimension(3), Intent(out) :: pint
-Real(rknd), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
+Real(real64), Intent(in) :: period, lsfi_tol
+Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
+Integer(int32), Intent(out), Dimension(4) :: iout
+Real(real64), Dimension(3), Intent(out) :: pint
+Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 
-Integer(iknd) :: iseg, nparts_tmp, ipart_ind, itri_ind
-Integer(iknd) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
-Integer(iknd), Dimension(1) :: ind_min, ind_max
-Real(rknd) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
-Real(rknd) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
-Real(Rknd), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(rknd) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
+Integer(int32) :: iseg, nparts_tmp, ipart_ind, itri_ind
+Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
+Integer(int32), Dimension(1) :: ind_min, ind_max
+Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
+Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
+Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
+Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
 
 
-Real(rknd), Dimension(3) :: Pt1, pt2, pa, pb, pc
+Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
-Real(rknd) :: rtol, atol, dphimin
-Integer(iknd) :: nmax_step, method, imin
+Real(real64) :: rtol, atol, dphimin
+Integer(int32) :: nmax_step, method, imin
 
 
 logical :: close_part_check = .false.
@@ -395,7 +395,7 @@ Do i=1,npts_line - 1
     R3 = sqrt(X3*X3+Y3*Y3)
     
     ! Define two new points 
-    P1 = 0._rknd
+    P1 = 0._real64
     X1 = R3*cos(P1)
     Y1 = R3*sin(P1)
     Z1 = Z3
@@ -552,26 +552,26 @@ inside_vessel
 Use math_routines_mod, Only: line_seg_facet_int
 Implicit None
 
-Real(rknd), Intent(in) :: period, lsfi_tol
-Integer(iknd), Intent(in) :: linenum, nsteps_line,ifail
-Integer(iknd), Intent(out), Dimension(4) :: iout
-Real(rknd), Dimension(3), Intent(out) :: pint
-Integer(iknd), Intent(in) :: nhitline
-Real(rknd), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+Real(real64), Intent(in) :: period, lsfi_tol
+Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
+Integer(int32), Intent(out), Dimension(4) :: iout
+Real(real64), Dimension(3), Intent(out) :: pint
+Integer(int32), Intent(in) :: nhitline
+Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 
-Integer(iknd) :: iseg
-Integer(iknd) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
-Integer(iknd), Dimension(1) :: ind_min, ind_max
-Real(rknd) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
-Real(rknd) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
-Real(Rknd), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(rknd) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
+Integer(int32) :: iseg
+Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
+Integer(int32), Dimension(1) :: ind_min, ind_max
+Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
+Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
+Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
+Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
 
-Real(rknd), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
-Real(rknd), Dimension(3) :: Pt1, pt2, pa, pb, pc
+Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
+Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
-Real(rknd) :: rtol, atol, dphimin
-Integer(iknd) :: nmax_step, method, imin
+Real(real64) :: rtol, atol, dphimin
+Integer(int32) :: nmax_step, method, imin
 
 !- End of header -------------------------------------------------------------
 
@@ -674,7 +674,7 @@ Do i=1,npts_line - 1
     R3 = sqrt(X3*X3+Y3*Y3)
     
     ! Define two new points 
-    P1 = 0._rknd
+    P1 = 0._real64
     X1 = R3*cos(P1)
     Y1 = R3*sin(P1)
     Z1 = Z3

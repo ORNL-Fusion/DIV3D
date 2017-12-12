@@ -1,9 +1,9 @@
 Subroutine init_random_seed(myseed)
   Use kind_mod
   Implicit none
-  Integer(iknd) :: i, n, clock
-  Integer(iknd),Intent(in) :: myseed
-  Integer(iknd), Dimension(:), Allocatable :: seed
+  Integer(int32) :: i, n, clock
+  Integer(int32),Intent(in) :: myseed
+  Integer(int32), Dimension(:), Allocatable :: seed
           
   CALL RANDOM_SEED(size = n)
   ALLOCATE(seed(n))

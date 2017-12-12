@@ -8,21 +8,21 @@ Result(inside)
 Use kind_mod
 Implicit None
 
-Real(rknd), Intent(in) :: Rin,Zin,Phiin
-Integer(iknd) :: inside
-Integer(iknd), Intent(in) :: ntor,npol
-Integer(iknd),Intent(in) :: msym
-Real(rknd), Dimension(ntor), Intent(in) :: &
+Real(real64), Intent(in) :: Rin,Zin,Phiin
+Integer(int32) :: inside
+Integer(int32), Intent(in) :: ntor,npol
+Integer(int32),Intent(in) :: msym
+Real(real64), Dimension(ntor), Intent(in) :: &
   Pves
-Real(rknd),Dimension(ntor,npol), Intent(in) :: &
+Real(real64),Dimension(ntor,npol), Intent(in) :: &
   Rves, Zves
 
-Real(rknd),parameter :: pi = 3.14159265358979323846_rknd  
+Real(real64),parameter :: pi = 3.14159265358979323846_real64  
 
-Real(rknd) :: R,Z,Phi
-Real(rknd) :: Rs(npol), Zs(npol)
+Real(real64) :: R,Z,Phi
+Real(real64) :: Rs(npol), Zs(npol)
 
-Integer(iknd) :: ind_near
+Integer(int32) :: ind_near
 !- End of header -------------------------------------------------------------
 
 
@@ -32,9 +32,9 @@ Z=Zin
 Phi=Phiin
 
 Do While (Phi .lt. 0.d0) 
-  Phi = Phi + 2._rknd*pi/Real(msym,rknd)
+  Phi = Phi + 2._real64*pi/Real(msym,real64)
 Enddo
-Phi = Mod(Phi,2._rknd*pi/Real(msym,rknd))
+Phi = Mod(Phi,2._real64*pi/Real(msym,real64))
 
 ind_near = Minloc(Dabs(Phi-Pves),1)
 !write(*,*) ind_near,phi*180.d0/pi,pves(ind_near)*180.d0/pi
@@ -73,17 +73,17 @@ Use kind_mod
 
 Implicit none
 
-Real(rknd), Intent(in) :: x,y
-Integer(iknd), Intent(in) :: npoly
-Real(rknd), Dimension(npoly), Intent(in) :: px,py
+Real(real64), Intent(in) :: x,y
+Integer(int32), Intent(in) :: npoly
+Real(real64), Dimension(npoly), Intent(in) :: px,py
 
-Integer(iknd) :: inside
+Integer(int32) :: inside
 
 ! Local variables
-Real(rknd), Dimension(npoly+1) :: tmp_px, tmp_py
-Real(rknd), Dimension(npoly) :: theta,dp,cp
+Real(real64), Dimension(npoly+1) :: tmp_px, tmp_py
+Real(real64), Dimension(npoly) :: theta,dp,cp
 
-Real(rknd),parameter :: pi = 3.14159265358979323846_rknd  
+Real(real64),parameter :: pi = 3.14159265358979323846_real64  
 
 !- End of header -------------------------------------------------------------
 
