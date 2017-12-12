@@ -52,6 +52,9 @@ Integer(int32) :: ntran_surf, ns_line_surf
 Integer(int32) :: ntran_diff, ns_line_diff
 Integer(int32) :: my_numl, ifl, ierr_follow, iline, dest, num_myjobs, source, tag
 
+Real(real64) :: Rstart_local, Zstart_local, Pstart_local, dphi_line_local, dmag_local, period_local
+Integer(int32) :: iline_local, nhitline_local, nsteps_line_local
+
 Character(len=300) :: fname_hit, fname_bfile, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
 Character(len=300) :: fname_plist, fname_nhit
@@ -74,7 +77,7 @@ Namelist / run_settings / fname_plist, fname_ves,  &
   fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, nfp, &
   Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
   npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
-  fname_nhit, hit_length, lsfi_tol, working_master, trace_surface_opt, &
+  fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
   fname_ptri, fname_ptri_mid
 
 !- End of header -------------------------------------------------------------
@@ -157,22 +160,16 @@ Call make_triangles(fname_ptri,fname_ptri_mid)
 
 !----------------------------------------------------------------
 ! Master node traces initial surface and defines starting points
-! Master then calls diffuse_lines3 and distributes field
-!  lines to be followed
+! Master then calls diffuse_lines3 and distributes field lines
+! to be followed
 !----------------------------------------------------------------
 If (rank .eq. 0) Then
-
 
   Write(6,'(A,I0,A)') ' Master node (rank ',rank,') is initializing run'
   Write(6,'(A,I0,A)') ' Total number of processes: ',nprocs
 
   If (npts_start .lt. nprocs) Then
     Write(*,*) 'For now nprocs must be less than npts_start!!!'
-  Endif
-
-  If ((nprocs .lt. 2) .AND. (working_master .eqv. .false.)) Then
-    Write(6,*) ' Must use at least two processors if working_master is false!!!'
-    Stop
   Endif
 
   !----------------------------------------------------------
@@ -233,15 +230,25 @@ If (rank .gt. 0) Then
       ! Get rest of start data
       Call MPI_RECV(line_start_data_r,6,MPI_DOUBLE_PRECISION,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
+      Rstart_local    = line_start_data_r(1)
+      Zstart_local    = line_start_data_r(2)
+      Pstart_local    = line_start_data_r(3)
+      dphi_line_local = line_start_data_r(4)
+      dmag_local      = line_start_data_r(5)
+      period_local    = line_start_data_r(6)
+      nsteps_line_local = line_start_data_i(1)
+      nhitline_local    = line_start_data_i(2)
+      iline_local       = line_start_data_i(3)
+      
       ! Follow the line
-      nhitline = line_start_data_i(2)
+      nhitline = nhitline_local
       Allocate(r_hitline(nhitline))
       Allocate(z_hitline(nhitline))
       Allocate(phi_hitline(nhitline))      
-      Call line_follow_and_int(line_start_data_r(1),line_start_data_r(2), &
-           line_start_data_r(3),line_start_data_r(4),line_start_data_i(1),&
-           line_start_data_r(5),line_start_data_r(6),pint,iout,r_hitline, &
-           z_hitline,phi_hitline,nhitline,line_start_data_i(3),lsfi_tol)      
+      Call line_follow_and_int(Rstart_local,Zstart_local, &
+           Pstart_local,dphi_line_local,nsteps_line_local,&
+           dmag_local,period_local,pint,iout,r_hitline, &
+           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol)      
       ierr_follow = 0
 
       ! Compile results and send data back to master

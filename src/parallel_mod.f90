@@ -19,10 +19,6 @@ Implicit None
 Include 'mpif.h'
 Integer(int32) :: nprocs, ierr_mpi, rank, ret_code, request
 Integer(int32) :: status(MPI_STATUS_SIZE)
-Logical :: working_master
-
-! QQ -- these are not needed after diffuse_lines2 deprecated
-Integer(int32) :: nprocs_working, tag1 
 
 Contains
 
