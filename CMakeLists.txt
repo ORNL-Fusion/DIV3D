@@ -60,6 +60,9 @@ else ()
     message( "Not compiling with LIBBJDL library" )
 endif ()
 
+
+find_library(H5 NAMES hdf5 PATHS /usr/lib/x86_64-linux-gnu/hdf5/openmpi)
+
 # Set up directories and options
 set (SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -78,7 +81,7 @@ add_executable( div3d
   ${SRC_DIR}/find_nearby_triangles.f90
   )
 
-target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} z hdf5 stdc++ lapack)
+target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} ${H5} z stdc++ lapack)
 
 # Installation
 set_target_properties( div3d PROPERTIES OUTPUT_NAME "div3d.exe")
