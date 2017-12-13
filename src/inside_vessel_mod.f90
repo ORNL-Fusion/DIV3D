@@ -80,12 +80,6 @@ Integer(int32) :: inside
 ! Local variables
 Real(real64), Dimension(npoly+1) :: tmp_px, tmp_py
 Real(real64), Dimension(npoly) :: theta,dp,cp
-
-<<<<<<< Updated upstream
-Real(real64),parameter :: pi = 3.14159265358979323846_real64  
-
-=======
->>>>>>> Stashed changes
 !- End of header -------------------------------------------------------------
 
 ! Close polygon

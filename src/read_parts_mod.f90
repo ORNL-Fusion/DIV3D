@@ -186,7 +186,7 @@ Real(real64),Dimension(ntor,npol), Intent(out) :: &
   Rpart, Zpart, Phipart
 Integer(int32) :: itor, ipol, ntor_dum, npol_dum
 ! Local variables
-Real(rknd) :: rshift, zshift, Phitmp
+Real(real64) :: rshift, zshift, Phitmp
 
 !- End of header -------------------------------------------------------------
 
@@ -378,11 +378,6 @@ Integer(int32) :: ipart
 Integer(int32) :: ntor, npol
 Character(len=300) :: part_name
 Character(len=300) :: label
-<<<<<<< Updated upstream
-! Local Parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
-=======
->>>>>>> Stashed changes
 !- End of header -------------------------------------------------------------
 
 ! Read parts list file and query each part for dimensions
@@ -414,11 +409,11 @@ Allocate(Zparts(nparts,nt_max,np_max))
 Allocate(Pparts(nparts,nt_max,np_max))
 Allocate(Pmins(nparts),Pmaxs(nparts))
 
-Rparts = 0._rknd
-Zparts = 0._rknd
-Pparts = 0._rknd
-Pmins  = 0._rknd
-Pmaxs  = 0._rknd
+Rparts = 0._real64
+Zparts = 0._real64
+Pparts = 0._real64
+Pmins  = 0._real64
+Pmaxs  = 0._real64
 
 ! Part coordinates are written to file
 Open(iu_parts,file=fname_parts)
