@@ -47,7 +47,11 @@ then
 elif [ "$MACHINE_ID" == "fusion3" ]
 then
     # fusion3
-    #
+    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
+    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..        
+    # swim
+elif [ "$MACHINE_ID" == "swim.ornl.gov" ]
+then
     LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
     cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..    
 else

@@ -6,6 +6,7 @@ Function inside_vessel(Rin,Zin,Phiin,Rves,Zves,Pves,ntor,npol,msym) &
 Result(inside)
 
 Use kind_mod
+Use phys_const, Only : pi
 Implicit None
 
 Real(real64), Intent(in) :: Rin,Zin,Phiin
@@ -17,11 +18,8 @@ Real(real64), Dimension(ntor), Intent(in) :: &
 Real(real64),Dimension(ntor,npol), Intent(in) :: &
   Rves, Zves
 
-Real(real64),parameter :: pi = 3.14159265358979323846_real64  
-
 Real(real64) :: R,Z,Phi
 Real(real64) :: Rs(npol), Zs(npol)
-
 Integer(int32) :: ind_near
 !- End of header -------------------------------------------------------------
 
@@ -70,7 +68,7 @@ Result(inside)
 !
 
 Use kind_mod
-
+Use phys_const, Only : pi
 Implicit none
 
 Real(real64), Intent(in) :: x,y
@@ -83,8 +81,11 @@ Integer(int32) :: inside
 Real(real64), Dimension(npoly+1) :: tmp_px, tmp_py
 Real(real64), Dimension(npoly) :: theta,dp,cp
 
+<<<<<<< Updated upstream
 Real(real64),parameter :: pi = 3.14159265358979323846_real64  
 
+=======
+>>>>>>> Stashed changes
 !- End of header -------------------------------------------------------------
 
 ! Close polygon

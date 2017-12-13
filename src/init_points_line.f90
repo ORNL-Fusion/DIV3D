@@ -21,6 +21,7 @@ Subroutine init_points_line(fname_surf,numl,fname_launch)
 Use kind_mod
 Use io_unit_spec, Only: &
 iu_launch, iu_surf
+Use phys_const, Only : pi
 Implicit none
 
 ! Input/output

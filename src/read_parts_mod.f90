@@ -18,7 +18,8 @@ Implicit None
 Integer(int32),Allocatable,Dimension(:) :: nt_parts,np_parts
 Integer(int32), Allocatable, Dimension(:) :: pol_dirs, tor_dirs, part_type
 Character(len=300),Allocatable,Dimension(:) :: part_names
-Real(real64),Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
+
+Real(real64), Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
 Real(real64), Allocatable, Dimension(:) :: Pmaxs, Pmins
 Real(real64), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
 Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
@@ -28,10 +29,10 @@ Integer(int32) :: nparts
 Integer(int32) :: nt_max, np_max
 
 Integer(int32) :: ntri_max, ic_near
-Real(real64),Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
-Integer(int32),Allocatable,Dimension(:,:) :: check_tri
-Integer(int32),Allocatable,Dimension(:) :: ntri_parts
-Real(real64), allocatable :: near_part(:), near_tri(:)
+Real(real64), Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
+Integer(int32), Allocatable,Dimension(:,:) :: check_tri
+Integer(int32), Allocatable,Dimension(:) :: ntri_parts
+Real(real64), Allocatable :: near_part(:), near_tri(:)
 !- End of header -------------------------------------------------------------
 
 Contains
@@ -174,6 +175,7 @@ End Subroutine make_triangles
 Subroutine load_w7_part(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart)
 Use kind_mod
 Use io_unit_spec, Only : iu_thispart
+Use phys_const, Only : pi
 Implicit none
 ! Dummy variables
 Character(len=100), Intent(in) :: fname
@@ -184,9 +186,8 @@ Real(real64),Dimension(ntor,npol), Intent(out) :: &
   Rpart, Zpart, Phipart
 Integer(int32) :: itor, ipol, ntor_dum, npol_dum
 ! Local variables
-Real(real64) :: rshift, zshift, Phitmp
-! Local parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
+Real(rknd) :: rshift, zshift, Phitmp
+
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname)
@@ -223,6 +224,7 @@ Endsubroutine load_w7_part
 Subroutine load_2d_jpart(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart)
 Use kind_mod
 Use io_unit_spec, Only : iu_thispart
+Use phys_const, Only : pi
 Implicit none
 ! Dummy variables
 Character(len=100), Intent(in) :: fname
@@ -234,8 +236,6 @@ Real(real64),Dimension(ntor,npol), Intent(out) :: &
 Integer(int32) :: itor, ipol, ntor_dum, npol_dum
 ! Local variables
 Real(real64) :: rshift, zshift
-! Local parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname)
@@ -312,7 +312,7 @@ Do i=1,ntor
 
   R2 = Rin(i,npol)
   Z2 = Zin(i,npol)
-  dL = Dsqrt( (R1-R2)*(R1-R2) + (Z1-Z2)*(Z1-Z2) )
+  dL = Sqrt( (R1-R2)*(R1-R2) + (Z1-Z2)*(Z1-Z2) )
   
   V1(1) = R2-R1
   V1(2) = Z2-Z1
@@ -323,7 +323,7 @@ Do i=1,ntor
 
   unit_out(1) = -V1(2)
   unit_out(2) =  V1(1)
-  unit_out = unit_out/Dsqrt( V1(1)*V1(1) + V1(2)*V1(2) )
+  unit_out = unit_out/Sqrt( V1(1)*V1(1) + V1(2)*V1(2) )
 
   Rout(i,npol+1) = Rmid + real(dir,real64)*unit_out(1)*step
   Zout(i,npol+1) = Zmid + real(dir,real64)*unit_out(2)*step
@@ -336,33 +336,7 @@ Do i=1,ntor
 !  Write(*,*) '------'
 
 Enddo
-Endsubroutine close_2pt_part
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-
-
-
-
-!-----------------------------------------------------------------------------
-!+ Reads '3d' .jpart files
-!-----------------------------------------------------------------------------
-Subroutine read_3d_part()
-!
-! Description: 
-!
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     12/07/2011  
-! Author(s): J.D. Lore - 12/07/2011 - xxx
-!
-! Modules used:
-Use kind_mod
-
-Implicit none
-!- End of header -------------------------------------------------------------
-End Subroutine read_3d_part
+End Subroutine close_2pt_part
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
@@ -394,6 +368,7 @@ Use kind_mod
 Use io_unit_spec, Only: &
 iu_plist, &    ! Parts filename list file (input) 
 iu_parts
+Use phys_const, Only : pi
 Implicit none
 Character(len=300), Intent(in) ::  fname_plist, fname_parts, fname_ves
 Logical, Intent(in) :: verbose
@@ -403,8 +378,11 @@ Integer(int32) :: ipart
 Integer(int32) :: ntor, npol
 Character(len=300) :: part_name
 Character(len=300) :: label
+<<<<<<< Updated upstream
 ! Local Parameters
 Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
+=======
+>>>>>>> Stashed changes
 !- End of header -------------------------------------------------------------
 
 ! Read parts list file and query each part for dimensions
@@ -435,6 +413,12 @@ Allocate(Rparts(nparts,nt_max,np_max))
 Allocate(Zparts(nparts,nt_max,np_max))
 Allocate(Pparts(nparts,nt_max,np_max))
 Allocate(Pmins(nparts),Pmaxs(nparts))
+
+Rparts = 0._rknd
+Zparts = 0._rknd
+Pparts = 0._rknd
+Pmins  = 0._rknd
+Pmaxs  = 0._rknd
 
 ! Part coordinates are written to file
 Open(iu_parts,file=fname_parts)

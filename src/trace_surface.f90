@@ -32,6 +32,7 @@ Use io_unit_spec, Only : iu_surf
 Use fieldline_follow_mod, Only : follow_fieldlines_rzphi
 Use setup_bfield_module, Only : bfield
 Use parallel_mod
+Use phys_const, Only : pi
 Implicit none
 
 ! Input/output
@@ -47,9 +48,6 @@ Real(real64) :: adp
 ! Local arrays
 Real(real64), Dimension(nsteps_line+1) :: &
   rsurf,zsurf,phisurf
-
-! Local parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 
 !- End of header -------------------------------------------------------------
 
