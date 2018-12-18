@@ -117,7 +117,7 @@ Subroutine line_seg_facet_int(pa,pb,pc,p1,p2,ithit,p,tol)
 
 ! Modules used:
 Use kind_mod
-
+Use phys_const, Only : pi
 Implicit none
 
 ! Input/output
@@ -129,10 +129,9 @@ real(real64), Intent(In) :: tol
 
 !local variables and arrays
 Real(real64), Dimension(3) :: n, pa1, pa2, pa3
-Real(real64) :: d, denom, mu, total, a1, a2, a3
+Real(real64) :: d, denom, mu, total, a1, a2, a3, n2
 
-! Local Parameters
-Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
+
 !- End of header -------------------------------------------------------------
 
 
@@ -142,7 +141,11 @@ Real(real64), Parameter :: pi = 3.141592653589793238462643383279502_real64
 n(1) = (pb(2) - pa(2))*(pc(3) - pa(3)) - (pb(3) - pa(3))*(pc(2) - pa(2))
 n(2) = (pb(3) - pa(3))*(pc(1) - pa(1)) - (pb(1) - pa(1))*(pc(3) - pa(3))
 n(3) = (pb(1) - pa(1))*(pc(2) - pa(2)) - (pb(2) - pa(2))*(pc(1) - pa(1))
-n=n/Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
+
+n2=Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
+n2 = 1._real64/n2
+n=n*n2
+!n=n/Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
 
 ! Calculate plane component D
 d = - n(1)*pa(1) - n(2)*pa(2) - n(3)*pa(3)

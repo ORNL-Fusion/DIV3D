@@ -456,7 +456,6 @@ Do ipart = 1,nparts
       Write(iu_parts,*) Rparts(ipart,i,j),Zparts(ipart,i,j),Pparts(ipart,i,j)
     Enddo
   Enddo
-
 Enddo
 
 Deallocate(part_names,part_type)
