@@ -39,28 +39,19 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message("\n\n-----------> WARNING: No build type specified!!  No compiler flags will be set!\n\n")
 endif ()
 
-# libbjdl setup
-if (${HAVE_BJDL} MATCHES 1)
-  message( "Compiling with LIBBJDL library" )
-  # libbjdl location (top directory that includes "lib" and "include")
-#  set  (LIBBJDL_DIR /home/jjl/util-library/fortran/bfield_library_jdl )
-  set ( LIBBJDL_LIB_PATH ${LIBBJDL_DIR}/lib ) 
-  set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
-  message ("Using libbjdl files from: " ${LIBBJDL_DIR})
-  find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
+# handle library from util-library
+set ( LIBBJDL_LIB_PATH ${LIBBJDL_DIR}/lib ) 
+set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
+message ("Using libbjdl files from: " ${LIBBJDL_DIR})
+find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
 #  include_directories (${LIBBJDL_INC_PATH})
-  if (BJDL_F MATCHES NOTFOUND)
+if (BJDL_F MATCHES NOTFOUND)
     message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
-  endif ()
-  find_library( FIO NAMES fusionio PATHS "/home/jjl/m3dc1/install/lib" NO_DEFAULT_PATH)
-  find_library( M3D NAMES m3dc1 PATHS /home/jjl/m3dc1/install/lib NO_DEFAULT_PATH)
-  include_directories(${LIBBJDL_INC_PATH})
-  #  include_directories(${FIO_INSTALL_DIR/inc})
-  add_definitions(-DHAVE_BJDL)
-else ()
-    message( "Not compiling with LIBBJDL library" )
-endif ()
-
+ endif ()
+find_library( FIO NAMES fusionio PATHS "/home/jjl/m3dc1/install/lib" NO_DEFAULT_PATH)
+find_library( M3D NAMES m3dc1 PATHS /home/jjl/m3dc1/install/lib NO_DEFAULT_PATH)
+include_directories(${LIBBJDL_INC_PATH})
+add_definitions(-DHAVE_BJDL)
 
 find_library(H5 NAMES hdf5 PATHS /usr/lib/x86_64-linux-gnu/hdf5/openmpi)
 
@@ -82,7 +73,8 @@ add_executable( div3d
   ${SRC_DIR}/find_nearby_triangles.f90
   )
 
-target_link_libraries (div3d ${BJDL_F} ${FIO} ${M3D} ${H5} z stdc++ lapack)
+target_link_libraries (div3d ${BJDL_F} ${H5} z stdc++ lapack)
+
 
 # Installation
 set_target_properties( div3d PROPERTIES OUTPUT_NAME "div3d.exe")

@@ -5,8 +5,7 @@
 #
 
 BUILD_TYPE=Release
-VERBOSE_BUILD=0
-HAVE_BJDL=1
+VERBOSE_BUILD=1
 
 MACHINE_ID=`uname -n`
 
@@ -32,28 +31,9 @@ fi
 rm -rf CMakeFiles CMakeCache.txt
 
 echo 
-if [ "$MACHINE_ID" == "megabucky" ]
-then
-   # megabucky 
-   # module gcc should be loaded
-   # cmake by default will take old gcc from /usr/bin so define manually
-    cmake -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DHAVE_BJDL=$HAVE_BJDL ..
-elif [ "$MACHINE_ID" == "fusion2.ornl.gov" ]
-then
-    # fusion2
-    #
+if [ "$MACHINE_ID" == "ultrabucky" ] || [ "$MACHINE_ID" == "fusion3" ]; then
     LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
-    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..
-elif [ "$MACHINE_ID" == "fusion3" ]
-then
-    # fusion3
-    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
-    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..        
-    # swim
-elif [ "$MACHINE_ID" == "swim.ornl.gov" ]
-then
-    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
-    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DHAVE_BJDL=$HAVE_BJDL -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..    
+    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..
 else
     echo $MACHINE_ID is not supported by this script.
     echo Please add your machine.
