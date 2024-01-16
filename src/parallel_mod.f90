@@ -12,13 +12,12 @@ Module parallel_mod
 ! Author(s): J.D. Lore 12/14/2011 - xxx 
 !
 ! Modules used:
-Use kind_mod
+Use mpi
 
 Implicit None
 
-Include 'mpif.h'
-Integer(int32) :: nprocs, ierr_mpi, rank, ret_code, request
-Integer(int32) :: status(MPI_STATUS_SIZE)
+Integer :: nprocs, ierr_mpi, rank, ret_code, request
+Integer :: status(MPI_STATUS_SIZE)
 
 Contains
 

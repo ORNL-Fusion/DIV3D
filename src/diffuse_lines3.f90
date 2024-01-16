@@ -21,10 +21,8 @@ fname_intpts,fname_nhit,nhitline)
 ! Modules used:
 Use kind_mod
 Use parallel_mod
-Use inside_vessel_mod, Only: &
-inside_vessel
-Use io_unit_spec, Only: &
-iu_hit, iu_launch, iu_nhit, iu_int
+Use inside_vessel_mod, Only: inside_vessel
+Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
 Use read_parts_mod
 Implicit none
 
@@ -34,11 +32,12 @@ Real(real64), Intent(in) :: dmag
 Integer(int32), Intent(in) :: nsteps_line, nhitline
 
 ! Local scalars
-Integer(int32) :: numl, iline, ii, hitcount, &
-  ihit, iocheck, dest
+Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck
 Real(real64) :: Rstart, Zstart, Phistart
 
-Integer(int32) :: tag, flag, work_done, work_done_count
+Integer(int32) :: work_done, work_done_count
+Integer :: tag, dest
+Logical :: flag
 
 ! Local arrays
 Real(real64), Dimension(3) :: pint 
@@ -51,7 +50,8 @@ Real(real64), Dimension(3) :: line_done_data_r
 Real(real64), Dimension(3*nhitline) :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 
-Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr, req_arr
+Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr
+Integer, Dimension(:), Allocatable :: req_arr
 
 !- End of header -------------------------------------------------------------
 
@@ -91,7 +91,7 @@ Do dest = 1,nprocs - 1
   line_start_data_i(1) = nsteps_line
   line_start_data_i(2) = nhitline
   line_start_data_i(3) = iline
-  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
   line_start_data_r(1) = Rstart
   line_start_data_r(2) = Zstart
@@ -119,8 +119,8 @@ Do While ( work_done .ne. 1 )
     ! If we are still waiting on a job from this process, check if it is finished
     If (is_working_arr(dest) == 1) Then
       request = req_arr(dest)
-      Call MPI_TEST(request,flag,status,ierr_mpi) 
-      If (flag == 1) Then
+      Call MPI_TEST(request,flag,status,ierr_mpi)
+      If (flag) Then
         is_working_arr(dest) = 0
         work_done_count = work_done_count + 1
 
@@ -148,7 +148,7 @@ Do While ( work_done .ne. 1 )
              Write(iu_hit,*) phi_hitline
           Endif
         Endif
-      Endif ! flag == 1
+      Endif ! flag true
 
     ! If the process is not working, send a new job (if there are still jobs to do)           
     Elseif (is_working_arr(dest) == 0 ) Then        

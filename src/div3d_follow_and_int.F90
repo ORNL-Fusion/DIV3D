@@ -43,8 +43,8 @@ Integer(int32) :: npts_start, nfp
 Integer(int32) :: iocheck
 Integer(int32) :: ntran_surf, ns_line_surf
 Integer(int32) :: ntran_diff, ns_line_diff
-Integer(int32) :: ierr_follow, dest, num_myjobs, source, tag
-
+Integer(int32) :: ierr_follow, num_myjobs
+Integer :: dest, source, tag
 Real(real64) :: Rstart_local, Zstart_local, Pstart_local
 Integer(int32) :: iline_local, nsteps_line_local
 
@@ -65,7 +65,7 @@ Integer(int32), Dimension(4) :: iout
 Real(real64), Dimension(3) :: line_done_data_r
 Real(real64), Dimension(:), Allocatable :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
-
+Integer :: buffer
 ! Namelists
 Namelist / run_settings / fname_plist, fname_ves,  &
   fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, nfp, &
@@ -83,7 +83,7 @@ Namelist / run_settings / fname_plist, fname_ves,  &
 ! --Init random number generator
 ! --basic conversions
 !----------------------------------------------------------
-Call init_mpi()
+Call init_mpi
 verbose = .false.
 If (rank .eq. 0) verbose = .true. 
 If (verbose) Write(6,'(/A)') '-------------------------------------------------------------------------'
@@ -222,7 +222,7 @@ If (rank .gt. 0) Then
     source = 0
     dest = 0
     tag = rank
-    Call MPI_RECV(line_start_data_i,3,MPI_INTEGER         ,source,tag,MPI_COMM_WORLD,status,ierr_mpi)   
+    Call MPI_RECV(line_start_data_i,3,MPI_INTEGER,source,tag,MPI_COMM_WORLD,status,ierr_mpi)   
 
     ! Check for kill signal    
     if (line_start_data_i(1) .ne. -1 ) Then
@@ -248,22 +248,23 @@ If (rank .gt. 0) Then
       ! Compile results and send data back to master
 
       ! first send handshake signal (this_job_done)
-      Call MPI_SEND(1,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+      buffer = 1
+      Call MPI_SEND(buffer,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
 
       line_done_data_i(1) = ierr_follow
       line_done_data_i(2:5) = iout
-      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       line_done_data_r(1:3) = pint
-      Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+      Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       If (nhitline .gt. 0) Then
          Allocate(line_done_data_r2(3*nhitline))      
          line_done_data_r2(1+0*nhitline:1*nhitline) = r_hitline
          line_done_data_r2(1+1*nhitline:2*nhitline) = z_hitline
          line_done_data_r2(1+2*nhitline:3*nhitline) = phi_hitline
-         Call MPI_SEND(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+         Call MPI_SEND(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
          Deallocate(line_done_data_r2)
       Endif
       Deallocate(r_hitline,z_hitline,phi_hitline)
@@ -280,7 +281,7 @@ Endif ! rank > 0
 
 
 ! Finialize MPI
-Call fin_mpi()
+Call fin_mpi
 
 end program div3d_follow_and_int
 
