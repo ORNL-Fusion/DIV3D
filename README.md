@@ -15,4 +15,3 @@ Comparison to experimental data is given in:
 
 [3] J.D. Lore, et al., "Measurement and modeling of magnetic configurations to mimic overload scenarios in the W7-X stellarator", Nuclear Fusion 59 (2019), 066041. DOI: 10.1088/1741-4326/ab18d1
 
-This product includes software developed by the University of California, San Diego and its contributor.
