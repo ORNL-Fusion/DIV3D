@@ -20,6 +20,9 @@ enable_language (Fortran)
 # 2) cmake -DCMAKE_BUILD_TYPE=Debug ..
 # 
 
+# XDR options
+set (USE_FXDR 0)
+
 # Compiler flags
 if (CMAKE_COMPILER_IS_GNUCC)
     # gfortran
@@ -48,8 +51,6 @@ find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
 if (BJDL_F MATCHES NOTFOUND)
     message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
  endif ()
-find_library( FIO NAMES fusionio PATHS "/home/jjl/m3dc1/install/lib" NO_DEFAULT_PATH)
-find_library( M3D NAMES m3dc1 PATHS /home/jjl/m3dc1/install/lib NO_DEFAULT_PATH)
 include_directories(${LIBBJDL_INC_PATH})
 add_definitions(-DHAVE_BJDL)
 
@@ -57,6 +58,11 @@ find_library(H5 NAMES hdf5 PATHS /usr/lib/x86_64-linux-gnu/hdf5/openmpi)
 
 # Set up directories and options
 set (SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if (USE_FXDR MATCHES 1)
+  message ("Using FXDR")
+  add_definitions (-DHAVE_FXDR)
+endif ()
 
 add_executable( div3d
   ${SRC_DIR}/inside_vessel_mod.f90

@@ -128,8 +128,10 @@ if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is ',rmp_type
 Select Case (rmp_type)
   Case ('g3d')
     Call setup_bfield_g3d
+#ifdef HAVE_FXDR 
   Case ('xdr')
     Call setup_bfield_xdr
+#endif 
   Case ('vmec_coils')
     Call setup_bfield_vmec_coils
   Case ('vmec_coils_to_fil')
@@ -143,7 +145,9 @@ Select Case (rmp_type)
       Write(*,*) '''g3d'''
       Write(*,*) '''vmec_coils'''
       Write(*,*) '''vmec_coils_to_fil'''
+#ifdef HAVE_FXDR 
       Write(*,*) '''xdr'''
+#endif
       Write(*,*) '''bgrid'''            
     Endif
     Stop      
