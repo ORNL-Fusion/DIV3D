@@ -1,6 +1,6 @@
 # DIV3D
-DIV3D field line followning and intersection code.
-2010 - 2024
+DIV3D field line followning and intersection code.  
+2010 - 2024  
 Jeremy D. Lore
 
 This code was developed to assess divertor and baffle loads and design a new high heat flux component, the "scraper element" for the W7-X stellarator [3].
@@ -15,3 +15,8 @@ Comparison to experimental data is given in:
 
 [3] J.D. Lore, et al., "Measurement and modeling of magnetic configurations to mimic overload scenarios in the W7-X stellarator", Nuclear Fusion 59 (2019), 066041. DOI: 10.1088/1741-4326/ab18d1
 
+To build: 
+1) First build libbjdl from this repository: https://github.com/ORNL-Fusion/util-library/tree/master/fortran/bfield_library_jdl.  See build/setup_cmake.sh
+2) Add MACHINE_ID to build/setup_cmake.sh. Set correct location of LIBBDIR and fortran mpi compiler.
+3) from ./build run setup_cmake.sh
+4) If hdf5 (or lapack) is not detected by cmake check default path (/usr/lib/x86_64-linux-gnu/hdf5/openmpi)  
