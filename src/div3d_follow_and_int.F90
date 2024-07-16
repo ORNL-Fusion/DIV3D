@@ -126,8 +126,6 @@ Endif
 ! Setup rmp field
 if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is ',rmp_type
 Select Case (rmp_type)
-  Case ('g3d')
-    Call setup_bfield_g3d
 #ifdef HAVE_FXDR 
   Case ('xdr')
     Call setup_bfield_xdr
@@ -142,7 +140,6 @@ Select Case (rmp_type)
     If (rank == 0) Then
       Write(*,*) 'Unknown rmp_type in div3d!'
       Write(*,*) 'Current options are:'
-      Write(*,*) '''g3d'''
       Write(*,*) '''vmec_coils'''
       Write(*,*) '''vmec_coils_to_fil'''
 #ifdef HAVE_FXDR 

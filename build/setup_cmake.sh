@@ -32,11 +32,9 @@ rm -rf CMakeFiles CMakeCache.txt
 
 echo 
 if [ "$MACHINE_ID" == "ultrabucky" ] || [ "$MACHINE_ID" == "fusion3" ]; then
-    LIBBDIR=/home/jjl/util-library/fortran/bfield_library_jdl
-    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..
+    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE ..
 elif [ "$MACHINE_ID" == "THEALTANG23" ]; then
-    LIBBDIR=/home/lucythea/git/util-library/fortran/bfield_library_jdl
-    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE -DLIBBJDL_DIR:String=$LIBBDIR ..
+    cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE ..
 else
     echo $MACHINE_ID is not supported by this script.
     echo Please add your machine.
