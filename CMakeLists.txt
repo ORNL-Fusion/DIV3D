@@ -43,18 +43,6 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message("\n\n-----------> WARNING: No build type specified!!  No compiler flags will be set!\n\n")
 endif ()
 
-# handle library from util-library
-#set ( LIBBJDL_LIB_PATH ${LIBBJDL_DIR}/lib ) 
-#set ( LIBBJDL_INC_PATH ${LIBBJDL_DIR}/include )
-#message ("Using libbjdl files from: " ${LIBBJDL_DIR})
-#find_library( BJDL_F NAMES bjdl PATHS ${LIBBJDL_LIB_PATH} NO_DEFAULT_PATH)
-##  include_directories (${LIBBJDL_INC_PATH})
-#if (BJDL_F MATCHES NOTFOUND)
-#    message( "\n\nERROR: -----------------> Could not find libbjdl! -- Is it installed?\n\n")
-# endif ()
-#include_directories(${LIBBJDL_INC_PATH})
-#add_definitions(-DHAVE_BJDL)
-
 find_library(H5 NAMES hdf5 PATHS /usr/lib/x86_64-linux-gnu/hdf5/openmpi)
 
 # Set up directories and options
@@ -111,9 +99,7 @@ add_executable( div3d
   ${EXTRA_FILES}  
   )
 
-#target_link_libraries (div3d ${BJDL_F} ${H5} z stdc++ lapack)
 target_link_libraries (div3d ${H5} z stdc++ lapack)
-
 
 # Installation
 set_target_properties( div3d PROPERTIES OUTPUT_NAME "div3d.exe")
