@@ -512,7 +512,16 @@ If ( ihit .eq. 0 ) Then
 
     inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
     If (inside_it .eq. 0 ) Then
-      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,R,Z,P]=',i,R1,Z1,P1
+      Do While (P1 .lt. 0.d0)
+         P1 = P1 + period
+      Enddo
+      P1 = Mod(P1,period)
+      X1 = R1*cos(P1)
+      Y1 = R1*sin(P1)
+      pint(1) = X1
+      pint(2) = Y1
+      pint(3) = Z1
+      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,P]=',i,pint
       ihit = 2
       iout(1) = ihit
       iout(2) = -2
@@ -802,7 +811,16 @@ If ( ihit .eq. 0 ) Then
 
     inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
     If (inside_it .eq. 0 ) Then
-      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,R,Z,P]=',i,R1,Z1,P1
+      Do While (P1 .lt. 0.d0)
+         P1 = P1 + period
+      Enddo
+      P1 = Mod(P1,period)
+      X1 = R1*cos(P1)
+      Y1 = R1*sin(P1)
+      pint(1) = X1
+      pint(2) = Y1
+      pint(3) = Z1
+      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,P]=',i,pint
       ihit = 2
       iout(1) = ihit
       iout(2) = -2

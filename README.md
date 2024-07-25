@@ -50,4 +50,4 @@ i       -> Index along field line
 
 ### Screen output
 Regular "part" hit: [i,ipart,P] -> P is the intersection point in X,Y,Z (m)
-Vessel hit:         [i,R,Z,P]   -> R,Z,P are the hit coordinates in (m,rad)
+Vessel hit:         [i,P]       -> P is the intersection point in X,Y,Z (m)
