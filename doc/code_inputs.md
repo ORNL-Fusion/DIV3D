@@ -1,15 +1,15 @@
-Input: Run Settings
+## Input: Run Settings
 
 Examples in DIV3D/test/…/run_settings.nml
 
-Section: bfield_nml
+### Section: bfield_nml
 
 - rmp_type = specifies format of magnetic field info
 - bgrid_fname = bgrid path + file name (if rmp_type=bgrid)
 - vmec_coils_file = path + file name of VMEC coils file
 - vmec_extcur_set = external current scaling
 
-Section: run_settings
+### Section: run_settings
 
 - fname_plist = parts.list file name
 - fname_ves = vessel.part file name + path
@@ -36,7 +36,7 @@ Section: run_settings
 
 ---
 
-Input: Magnetic Field Grid
+## Input: Magnetic Field Grid
 
 Magnetic field options:
 
@@ -47,7 +47,7 @@ Magnetic field options:
 
 ---
 
-Input: Parts List
+## Input: Parts List
 
 Examples in DIV3D/test/…/parts.list
 
