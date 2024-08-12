@@ -47,7 +47,12 @@ i       -> Index along field line
 6) hitcount.out     (fname_nhit)
 7) part_triangles.out (fname_ptri)
 8) part_triangle_mids.out (fname_ptri_mid)
+9) launch_pts.out (fname_launch)
+
+Row by row information of points where fieldlines are initiated. 
+number of points
+R,Z,Phi (m, radians)
 
 ### Screen output
-Regular "part" hit: [i,ipart,P] -> P is the intersection point in X,Y,Z (m)
+Regular "part" hit: [i,ipart,P] -> P is the intersection point in X,Y,Z (m)  
 Vessel hit:         [i,P]       -> P is the intersection point in X,Y,Z (m)
