@@ -826,6 +826,20 @@ If ( ihit .eq. 0 ) Then
       iout(2) = -2
       iout(3) = -2
       iout(4) = i
+      if ( (i - nhitline+1) .lt. 1 ) Then
+         r_hitline = 0.d0
+         z_hitline = 0.d0
+         phi_hitline = 0.d0
+         r_hitline(1:i) = rout(1:i)
+         z_hitline(1:i) = zout(1:i)
+         phi_hitline(1:i) = phiout(1:i)
+      Else
+         r_hitline = rout(i-nhitline+1:i)
+         z_hitline = zout(i-nhitline+1:i)
+         phi_hitline = phiout(i-nhitline+1:i)
+      Endif
+
+
       Exit
     Endif
   Enddo
