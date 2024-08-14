@@ -26,8 +26,8 @@ To build:
 ### Input files 
 ### 1) run_settings.nml
 #### This file contains namelists for the magnetic field description (bfield_nml namelist) and DIV3D run settings (run_settings namelist)
-* [bfield namelist](https://github.com/ORNL-Fusion/DIV3D/README.md#bfield-namelist-description)  
-* [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D/README.md#run_settings-namelist-description)  
+* [bfield namelist](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-description)  
+* [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-description)
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
@@ -35,7 +35,7 @@ To build:
 #### This file contains the description of the vessel
 
 ### Output files  
-#### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/README.md#run_settings-namelist-description) namelist
+#### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-description) namelist
 ### 1) surface_line.out  
 #### This file contains 
 ### 2) allparts.out  
