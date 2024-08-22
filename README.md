@@ -19,7 +19,23 @@ Comparison to experimental data is given in:
 To build: 
 1) Add MACHINE_ID to build/setup_cmake.sh. Set correct location of fortran mpi compiler.
 2) from ./build run setup_cmake.sh
-3) If hdf5 (or lapack) is not detected by cmake check default path (/usr/lib/x86_64-linux-gnu/hdf5/openmpi)  
+   * If hdf5 (or lapack) is not detected by cmake check default path (/usr/lib/x86_64-linux-gnu/hdf5/openmpi)  
+
+## Running the code
+Call the executable with mpirun or equivalent. At least two processes are required. The controller process distributes the work and 
+loops over the worker processes which follow field lines and check for intersections.
+```
+mpirun -np 5 /path/to/div3d.exe
+```
+
+## Code Description and Logic
+run_settings and bfield_nml namelists are read from run_settings.nml
+1) Magnetic field is initialized
+2) Intersection components are read from part files and triangular facets are defined.
+3) Controller node traces a field line from the input point. Assumed to be a closed flux surface.
+4) Points are initialized randomly along the field line defining the closed surface.
+5) Worker processes follow fieldlines with diffusion from start points, then check for intersections.
+    * If no part intersection is found then intersections with the vessel are checked.
 
 ## I/O Description
 
@@ -31,6 +47,48 @@ To build:
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
+Example:
+```
+2
+"/path/to/component.part"
+"/path/to/component.jpart"
+```
+The format of the part is specified by the file extension. 
+* .part files have the following format:
+```
+Label 
+ntor npol nfp rshift zshift
+Do itor = 1,ntor
+  phi(itor)
+  Do ipol = 1,npol
+     R(itor,ipol), Z(itor,ipol)
+```
+The .part files are defined as a fixed number of poloidal points (npol) at a number of toroidal planes (ntor). 
+Parts are structured in the sense that the poloidal resolution is fixed, this is used to define the triangular facets.
+All parts are shifted to the first field period. Parts should be defined fully within a field period
+to avoid issues where the remapped part can overlap the domain. Stellarator symmetry is NOT assumed, so even
+up/down symmetric parts should be included across the domain [0,2*pi/nfp].
+Units are cm, degrees. Internal to the code these are converted to meters, radians.
+Label : Descripitive part label. Character(len=100)
+ntor  : Number of toroidal planes.  Integer
+npol  : Number of poloidal points.  Integer
+nfp   : Field period symmetry of the component. Integer
+Rshift, Zshift : The part can be uniformly shifted from the given (R,Z) points using these inputs. Real, [cm].
+phi   : Toroidal coordinate of each slice. Real, [deg].
+R,Z   : Radial and vertical coordinate of each point. Real, [cm].
+
+* .jpart files have the following format:
+```
+Label 
+ntor npol nfp rshift zshift
+Do itor = 1,ntor
+  Do ipol = 1,npol
+     R(itor,ipol), Z(itor,ipol), phi(itor,ipol)
+```
+The .jpart files are very similar to the .part format, with the generalization that the toroidal coordinate of
+each point is also defined. This is useful for components that are not aligned with toroidal planes. Other than 
+the 2D array nature of phi, all other variables have the same meaning and units.
+
 ### 3) vessel part  
 #### This file contains the description of the vessel
 
