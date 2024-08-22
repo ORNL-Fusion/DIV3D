@@ -45,8 +45,35 @@ run_settings and bfield_nml namelists are read from run_settings.nml
 ### Input files 
 ### 1) run_settings.nml
 #### This file contains namelists for the magnetic field description (bfield_nml namelist) and DIV3D run settings (run_settings namelist)
-* [bfield namelist](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-description)  
-* [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-description)
+* [bfield namelist](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-example)  
+    * rmp_type = specifies format of magnetic field info
+    * bgrid_fname = bgrid path + file name (if rmp_type=bgrid)
+    * vmec_coils_file = path + file name of VMEC coils file (if rmp_type=vmec_coils)
+    * vmec_extcur_set = external current scaling(if rmp_type=vmec_coils)
+
+* [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-example)
+    * fname_plist = parts.list file name
+    * fname_ves = vessel.part file name + path
+    * fname_surf = surface line output file name
+    * fname_launch = launch points output file name
+    * fname_parts = all parts output file name
+    * fname_hit = fieldline trace prior to strikepoint output file name
+    * fname_intpts = intersection points output file name
+    * fname_nhit = number of hits output file name
+    * fname_ptri = part triangular groups output file name
+    * fname_ptri_mid = triangular mid-points output file name
+    * nfp = number of field periods
+    * Rstart, Zstart, Phistart = location of LCFS trace start point
+    * dphi_line_surf_deg = degree of accuracy, per integration step for LCFS surface field line tracing without diffusion
+    * ntran_surf = number of toroidal transits (make smaller to make surf_line.out file size smaller)
+    * npts_start = number of points randomly distributed along the surface line
+    * dmag = diffusion coefficient in m2 / m
+    * dphi_line_diff_deg = degree of accuracy, per integration step for field line tracing with diffusion
+    * ntran_diff = max number of toroidal transits
+    * trace_surface_opt = whether to trace out surface, false means read in existing surface file
+    * myseed = random number generator seed?
+    * hit_length = length of end of fieldline recorded
+    * lsfi_tol = tolerance of adjacent facets aligning
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
@@ -70,7 +97,7 @@ The .part files are defined as a fixed number of poloidal points (npol) at a num
 Parts are structured in the sense that the poloidal resolution is fixed, this is used to define the triangular facets.
 All parts are shifted to the first field period. Parts should be defined fully within a field period
 to avoid issues where the remapped part can overlap the domain. Stellarator symmetry is NOT assumed, so even
-up/down symmetric parts should be included across the domain [0,2*pi/nfp].
+up/down symmetric parts should be included across the domain [0,2\*pi/nfp].
 Units are cm, degrees. Internal to the code these are converted to meters, radians.
 Label : Descripitive part label. Character(len=100)
 ntor  : Number of toroidal planes.  Integer
@@ -99,16 +126,24 @@ The vessel is not triangulated. Instead, after checking for intersection with th
 the field line is checked for an excursion from the vessel. This is done by finding the the first point that leaves the 
 vessel polygon at the nearest vessel slice of the local field line coordinate. 
 
+### 4) Magnetic Field Grid
+Magnetic field options:
+
+- vmec_coils – coils file from VMEC, may be slow
+- vmec_coils_to_fil – turns the VMEC coilset into a series of current filaments
+- Xdr – format used by W7X, basically just RZ cartesian slices with the RZ grid shifting with the axis toroidally
+- Bgrid – a RZ cartesian grid at some toroidal resolution (most general, fast)
+
 ### Output files  
-#### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-description) namelist
+#### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-example) namelist
 ### 1) surface_line.out  
-#### This file contains 
+#### This file contains one fieldline trace followed from (rstart, zstart, phistart) without diffusion to make a LCFS surface approximation.
 ### 2) allparts.out  
-#### This file contains 
+#### This file contains all the data from the parts-list parts reformatted
 ### 3) hitline.out  
-#### This file contains 
+#### This file contains locations of the last section of the fieldline at and before strikepoint (only if intersected with divertor)
 ### 4) int_pts.out  
-#### This file contains 
+#### This file contains the points of intersection between each fieldline and vessel / divertor surfaces
 ```
 Row by row information of points that hit "parts".
 
@@ -119,13 +154,13 @@ itri    -> Index of intersected triangle
 i       -> Index along field line  
 ```
 ### 6) hitcount.out     (fname_nhit)
-#### This file contains 
+#### This file contains the number of points that hit a divertor / vessel surface vs not hitting anything
 ### 7) part_triangles.out (fname_ptri)
-#### This file contains 
+#### This file contains part triangles defined by three (x,y,z) corner locations
 ### 8) part_triangle_mids.out (fname_ptri_mid)
-#### This file contains 
+#### This file contains the mid-points of the triangles from parts file
 ### 9) launch_pts.out (fname_launch)
-#### This file contains 
+#### This file contains the launch (starting) location points of the fieldlines that are traced
 ```
 Row by row information of points where fieldlines are initiated. 
 number of points
@@ -136,7 +171,7 @@ R,Z,Phi (m, radians)
 Regular "part" hit: [i,ipart,P] -> P is the intersection point in X,Y,Z (m)  
 Vessel hit:         [i,P]       -> P is the intersection point in X,Y,Z (m)
 
-### Bfield namelist description
+### Bfield namelist example
 ```&bfield_nml
 ! Several options are available, see bfield_module.F90
 ! Coils defined in filaments
@@ -148,7 +183,7 @@ bgrid_fname = 'path/to/bgrid'
 /
 ```
 
-### run_settings namelist description
+### run_settings namelist example
 ```
 fname_plist    = 'parts.list'
 fname_ves      = 'path/to/vessel.part'
