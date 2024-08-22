@@ -35,7 +35,10 @@ run_settings and bfield_nml namelists are read from run_settings.nml
 3) Controller node traces a field line from the input point. Assumed to be a closed flux surface.
 4) Points are initialized randomly along the field line defining the closed surface.
 5) Worker processes follow fieldlines with diffusion from start points, then check for intersections.
+    * Fieldlines are integrated in toroidal angle. To get a full representation, diffusion should be performed in both toroidal directions.
     * If no part intersection is found then intersections with the vessel are checked.
+    * Vessel intersections currently only consider nearest toroidal slice.
+    * The intersection data is output, including optionally segments of the local (diffused) field line.
 
 ## I/O Description
 
@@ -91,6 +94,10 @@ the 2D array nature of phi, all other variables have the same meaning and units.
 
 ### 3) vessel part  
 #### This file contains the description of the vessel
+The vessel is defined using the same format and units as the .part files above.
+The vessel is not triangulated. Instead, after checking for intersection with the components in the parts list, 
+the field line is checked for an excursion from the vessel. This is done by finding the the first point that leaves the 
+vessel polygon at the nearest vessel slice of the local field line coordinate. 
 
 ### Output files  
 #### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-description) namelist
