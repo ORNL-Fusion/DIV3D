@@ -41,14 +41,14 @@ Logical :: flag
 
 ! Local arrays
 Real(real64), Dimension(3) :: pint 
-Integer(int32), Dimension(4) :: iout
+Integer(int32), Dimension(5) :: iout
 Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
 Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
 Real(real64), Dimension(3) :: line_done_data_r
 Real(real64), Dimension(3*nhitline) :: line_done_data_r2
-Integer(int32), Dimension(5) :: line_done_data_i
+Integer(int32), Dimension(6) :: line_done_data_i
 
 Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr
 Integer, Dimension(:), Allocatable :: req_arr
@@ -126,7 +126,7 @@ Do While ( work_done .ne. 1 )
 
         ! Request results
         tag = dest
-        Call MPI_RECV(line_done_data_i ,5         ,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Call MPI_RECV(line_done_data_i ,6         ,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
         Call MPI_RECV(line_done_data_r ,3         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
         If (nhitline .gt. 0) Then
@@ -135,7 +135,7 @@ Do While ( work_done .ne. 1 )
         ihit        = line_done_data_i(2)
         if ( ihit .ge. 1 ) Then 
           hitcount = hitcount + 1
-          iout = line_done_data_i(2:5)
+          iout = line_done_data_i(2:6)
           pint = line_done_data_r(1:3)
           Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout
           If (nhitline .gt. 0) Then
@@ -229,7 +229,7 @@ Implicit None
 
 Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
 Integer(int32), Intent(in) :: nsteps_line, linenum
-Integer(int32), Intent(out), Dimension(4) :: iout
+Integer(int32), Intent(out), Dimension(5) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
@@ -271,7 +271,7 @@ Implicit None
 
 Real(real64), Intent(in) :: period, lsfi_tol
 Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
-Integer(int32), Intent(out), Dimension(4) :: iout
+Integer(int32), Intent(out), Dimension(5) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
 Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 
@@ -281,7 +281,7 @@ Integer(int32), Dimension(1) :: ind_min, ind_max
 Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
 Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
 Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
+Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a, totL
 
 
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
@@ -304,6 +304,7 @@ ihit = 0
 pint(:) = 0.
 iout(:) = -1
 iout(1) = ihit
+totL = 0.0
 Do i=1,npts_line - 1
 
   ! Current point along line
@@ -485,6 +486,22 @@ Do i=1,npts_line - 1
             iout(2) = ipart
             iout(3) = itri
             iout(4) = i
+
+            ! intersect point
+            R2 = pint(1)
+            Z2 = pint(2)
+            P2 = pint(3)
+          
+            ! Convert to Cartesian coordinates
+            Do While (P2 .lt. 0.d0)
+              P2 = P2 + period
+            Enddo
+            P2 = Mod(P2,period)
+            X2 = R2*cos(P2)
+            Y2 = R2*sin(P2)
+
+            totL = totL + SQRT((X1-X2)**2 + (Y1-Y2)**2 + (Z1-Z2)**2)
+            iout(5) = totL
             Exit ! stop looking for triangle intersections
           Endif
           
@@ -498,6 +515,8 @@ Do i=1,npts_line - 1
   Enddo ! seg index (twofer)
 
   If (ihit .eq. 1 ) Exit  ! Quit fieldline if it hit a part
+
+  totL = totL + SQRT((X1-X2)**2 + (Y1-Y2)**2 + (Z1-Z2)**2) ! Append to the fieldline trace length
 Enddo ! points along line (i)
 
 
@@ -510,14 +529,16 @@ If ( ihit .eq. 0 ) Then
     Z1 = zout(i)
     P1 = phiout(i)
 
+    ! Convert to Cartesian coordinates
+    Do While (P1 .lt. 0.d0)
+      P1 = P1 + period
+    Enddo
+    P1 = Mod(P1,period)
+    X1 = R1*cos(P1)
+    Y1 = R1*sin(P1)
+
     inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
     If (inside_it .eq. 0 ) Then
-      Do While (P1 .lt. 0.d0)
-         P1 = P1 + period
-      Enddo
-      P1 = Mod(P1,period)
-      X1 = R1*cos(P1)
-      Y1 = R1*sin(P1)
       pint(1) = X1
       pint(2) = Y1
       pint(3) = Z1
@@ -527,8 +548,24 @@ If ( ihit .eq. 0 ) Then
       iout(2) = -2
       iout(3) = -2
       iout(4) = i
+      iout(5) = totL
       Exit
+    Else
+      ! next point
+      R2 = rout(i+1)
+      Z2 = zout(i+1)
+      P2 = phiout(i+1)
+    
+      Do While (P2 .lt. 0.d0)
+        P2 = P2 + period
+      Enddo
+      P2 = Mod(P2,period)
+      X2 = R2*cos(P2)
+      Y2 = R2*sin(P2)
+
+      totL = totL + SQRT((X1-X2)**2 + (Y1-Y2)**2 + (Z1-Z2)**2)
     Endif
+
   Enddo
 Endif
 Endif
@@ -557,7 +594,7 @@ Implicit None
 
 Real(real64), Intent(in) :: period, lsfi_tol
 Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
-Integer(int32), Intent(out), Dimension(4) :: iout
+Integer(int32), Intent(out), Dimension(5) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
@@ -565,10 +602,10 @@ Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Integer(int32) :: iseg
 Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
 Integer(int32), Dimension(1) :: ind_min, ind_max
-Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
+Real(real64) :: R1,Z1,P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
 Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
 Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
+Real(real64) :: R2,Z2,P2, X1,Y1, X2,Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a, totL
 
 Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
@@ -587,6 +624,7 @@ ihit = 0
 pint(:) = 0.
 iout(:) = -1
 iout(1) = ihit
+totL = 0.0
 Do i=1,npts_line - 1
 !  Write(*,*) i
   ! Current point along line
@@ -598,8 +636,15 @@ Do i=1,npts_line - 1
   R2 = rout(i+1)
   Z2 = zout(i+1)
   P2 = phiout(i+1)
+
+  ! Append step length to connection length
+  X2 = R2*cos(P2) ! Convert to Cartesian coordinates
+  Y2 = R2*sin(P2)
+  X1 = R1*cos(P1) ! Convert to Cartesian coordinates
+  Y1 = R1*sin(P1)
+  totL = totL + SQRT((X2-X1)**2 + (Y2-Y1)**2 + (Z2-Z1)**2)
   
-  ! Convert to Cartesian coordinates
+  ! Check for lines that cross symmetry (field period) plane
   dphi1 = P2-P1
 
   Do While (P1 .lt. 0.d0)
@@ -617,8 +662,7 @@ Do i=1,npts_line - 1
   Y2 = R2*sin(P2)
 
   dphi2 = P2-P1
-
-  ! Check for lines that cross symmetry (field period) plane
+  
   twofer = 0
   If ( abs(dphi1-dphi2) .gt. 1.d-12) Then 
     twofer = 1
@@ -764,9 +808,9 @@ Do i=1,npts_line - 1
             iout(2) = ipart
             iout(3) = itri
             iout(4) = i
+            iout(5) = totL
+
             if ( (i - nhitline+1) .lt. 1 ) Then
-              !Write(6,*) 'Write something to handle this', i, nhitline
-              !Stop
               Write(*,*) 'Truncating hitline'
               r_hitline = 0.d0
               z_hitline = 0.d0
@@ -808,11 +852,11 @@ If ( ihit .eq. 0 ) Then
     R1 = rout(i)
     Z1 = zout(i)
     P1 = phiout(i)
-
+  
     inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
     If (inside_it .eq. 0 ) Then
       Do While (P1 .lt. 0.d0)
-         P1 = P1 + period
+        P1 = P1 + period
       Enddo
       P1 = Mod(P1,period)
       X1 = R1*cos(P1)
@@ -826,6 +870,8 @@ If ( ihit .eq. 0 ) Then
       iout(2) = -2
       iout(3) = -2
       iout(4) = i
+      iout(5) = totL
+    
       if ( (i - nhitline+1) .lt. 1 ) Then
          r_hitline = 0.d0
          z_hitline = 0.d0
@@ -838,9 +884,21 @@ If ( ihit .eq. 0 ) Then
          z_hitline = zout(i-nhitline+1:i)
          phi_hitline = phiout(i-nhitline+1:i)
       Endif
-
-
       Exit
+    Else
+      ! Append step length to connection length
+      R1 = rout(i)
+      Z1 = zout(i)
+      P1 = phiout(i)
+      R2 = rout(i+1)
+      Z2 = zout(i+1)
+      P2 = phiout(i+1)
+
+      X2 = R2*cos(P2) ! Convert to Cartesian coordinates
+      Y2 = R2*sin(P2)
+      X1 = R1*cos(P1) ! Convert to Cartesian coordinates
+      Y1 = R1*sin(P1)
+      totL = totL + SQRT((X2-X1)**2 + (Y2-Y1)**2 + (Z2-Z1)**2)
     Endif
   Enddo
 Endif

@@ -61,10 +61,10 @@ Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
 
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
-Integer(int32), Dimension(4) :: iout
+Integer(int32), Dimension(5) :: iout
 Real(real64), Dimension(3) :: line_done_data_r
 Real(real64), Dimension(:), Allocatable :: line_done_data_r2
-Integer(int32), Dimension(5) :: line_done_data_i
+Integer(int32), Dimension(6) :: line_done_data_i
 Integer :: buffer
 ! Namelists
 Namelist / run_settings / fname_plist, fname_ves,  &
@@ -254,8 +254,8 @@ If (rank .gt. 0) Then
 
 
       line_done_data_i(1) = ierr_follow
-      line_done_data_i(2:5) = iout
-      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+      line_done_data_i(2:6) = iout
+      Call MPI_SEND(line_done_data_i,6,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       line_done_data_r(1:3) = pint
       Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
