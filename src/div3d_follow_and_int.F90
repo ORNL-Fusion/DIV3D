@@ -24,12 +24,14 @@ program div3d_follow_and_int
 !  - Need to add exiting routine to deallocate and finalize mpi
 !
 ! Modules used:
-Use kind_mod
+Use kind_mod, Only : real64, int32
 Use parallel_mod
 Use io_unit_spec, Only: iu_nl ! Run settings namelist file unit (run_settings.nml,input)
 Use read_parts_mod
 Use setup_bfield_module
 Use phys_const, Only : pi
+Use diffusion, Only : diffuse_lines3, line_follow_and_int
+Use init_random, Only : init_random_seed
 Implicit none
 
 ! Local scalars
@@ -126,6 +128,8 @@ Endif
 ! Setup rmp field
 if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is ',rmp_type
 Select Case (rmp_type)
+  Case ('g')
+    Call setup_bfield_g3d
 #ifdef HAVE_FXDR 
   Case ('xdr')
     Call setup_bfield_xdr
@@ -140,6 +144,7 @@ Select Case (rmp_type)
     If (rank == 0) Then
       Write(*,*) 'Unknown rmp_type in div3d!'
       Write(*,*) 'Current options are:'
+      Write(*,*) '''g'''      
       Write(*,*) '''vmec_coils'''
       Write(*,*) '''vmec_coils_to_fil'''
 #ifdef HAVE_FXDR 

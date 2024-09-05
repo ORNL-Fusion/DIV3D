@@ -576,13 +576,6 @@ Use bfield, Only : calc_B_rzphi_general
 Use phys_const, Only : pi
 Implicit None
 
-
-Real(real64), Parameter :: diff_mag = 0.4d0
-Real(real64), Parameter :: nfac_diff = 3.d0
-!Real(real64), Parameter :: sigtheta = 20.d0
-Real(real64), Parameter :: sigtheta = 20.d0*3.1415d0/180.d0
-Real(real64)  :: theta, phi_factor, pol_factor
-
 Type(bfield_type), Intent(In) :: bfield
 Real(real64), Intent(In), Dimension(n) :: y0
 Integer(int32), Intent(In) :: n, nsteps
@@ -590,13 +583,12 @@ Real(real64), Intent(In) :: x0, dx, dmag
 Real(real64), Intent(Out), Dimension(n,nsteps+1) :: yout
 Real(real64), Intent(Out), Dimension(nsteps+1) :: xout
 Integer(int32), Intent(Out) :: ierr, i_last_good
-Logical, parameter :: verbose = .false.
 Integer(int32) :: i, ierr_odefun, ierr_rk4core
 Real(real64), Dimension(n) :: y, dydx, ytmp
 Real(real64) :: x, RZ(2), perpdir1(3), perpdir2(3), alpha, dca, dsa, delta_x, dL
-Real(real64) :: bval(1,3), phi_tmp(1), bval_screened(1,3), bval_tmp(1,3), phi, rnum
-Integer(int32) :: ierr_b, ierr_rmp
-Real(real64) :: Bz, Br, Bphi, Br_rmp, Bphi_rmp, Bz_rmp
+Real(real64) :: bval(1,3), phi_tmp(1), phi, rnum
+Integer(int32) :: ierr_b
+Real(real64) :: Bz, Br, Bphi
 
 Interface
   Subroutine odefun(bfield,n,x,y,dydx,ierr)
@@ -679,25 +671,12 @@ Do i=1,nsteps
   dca = Cos(alpha)
   dsa = Sin(alpha)
   
-!  phi_factor = 1 + diff_mag*cos(nfac_diff*x)
-
-!  theta = atan2(ytmp(1)-bfield%g%rmaxis,ytmp(2)-bfield%g%zmaxis)*180.d0/3.14159d0
-!  pol_factor = (1/(2.506628274631*sigtheta))*exp(-theta**2/(2*sigtheta**2))*250.d0
-
-!  theta = atan2(ytmp(2)-bfield%g%zmaxis,ytmp(1)-bfield%g%rmaxis)
-!  pol_factor = (1/(2.506628274631*sigtheta))*exp(-theta**2/(2*sigtheta**2))
-
-  
-!  delta_x = Sqrt(dmag*dL*phi_factor*pol_factor)
   delta_x = Sqrt(dmag*dL)
   
   
   ytmp(1)   = ytmp(1)   + delta_x*(dca*perpdir1(1) + dsa*perpdir2(1))
   x         = x         + delta_x*(dca*perpdir1(2) + dsa*perpdir2(2))
   ytmp(2)   = ytmp(2)   + delta_x*(dca*perpdir1(3) + dsa*perpdir2(3))
-
-!  write(*,*) delta_x
-
 
   yout(:,i+1) = ytmp
   xout(i+1) = x

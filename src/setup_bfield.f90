@@ -1,6 +1,6 @@
 Module setup_bfield_module
   Use kind_mod, Only: int32, real64
-  Use bfield, Only : bfield_type, coil_type
+  Use bfield, Only : bfield_type, coil_type, g_type
   
   Implicit None
 
@@ -9,6 +9,7 @@ Module setup_bfield_module
 !  Public :: bfield_nml
   
   Type(bfield_type) :: bfield
+  Type(g_type) :: g  
   Type(coil_type) :: coil
   
   Integer(int32), Parameter :: max_extcur              = 100
@@ -19,7 +20,8 @@ Module setup_bfield_module
        vmec_extcur_set(max_extcur)            = 0.d0
   
   Character(Len=300) :: &
-       rmp_type                         = 'none', &       
+       rmp_type                         = 'none', &
+       gfile_name                       = 'none', &       
        vmec_coils_file                  = 'none', &
        xdr_fname                        = 'none', &
        bgrid_fname                      = 'none'
@@ -29,7 +31,8 @@ Module setup_bfield_module
        xdr_verbose = .true.
   
   Namelist / bfield_nml / &
-       rmp_type, &       
+       rmp_type, &
+       gfile_name, &       
        vmec_coils_file, vmec_extcur_set, &
        xdr_fname, xdr_check, xdr_verbose, &
        bgrid_fname
@@ -39,6 +42,19 @@ Module setup_bfield_module
 !  Private
 
 Contains
+  ! *********************************************
+  ! *************** GFILE ONLY ******************
+  ! *********************************************
+  Subroutine setup_bfield_g3d
+    Use g3d_module, Only : readg_g3d
+    Implicit None
+    If (setup_bfield_verbose) Write(*,'(a)') '-----> BFIELD METHOD IS G3D'
+    bfield%method      = 0
+    bfield%method_2d   = 0
+    bfield%method_pert = -1
+    Call readg_g3d(gfile_name,g)
+    bfield%g = g
+  End Subroutine setup_bfield_g3d
 
   ! *********************************************
   ! *************** VMEC COILS ******************

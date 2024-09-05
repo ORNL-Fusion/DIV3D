@@ -1,10 +1,12 @@
 Module bfield_typedef
   Use kind_mod, Only : int32, real64
+  Use g_typedef, Only : g_type  
   Use coil_typedef, Only : coil_type
   Implicit None
   Private
   Type, Public :: bfield_type
     Integer(int32) :: method = -1
+    Type(g_type) :: g
     Type(coil_type) :: coil
     Integer(int32) :: method_2d = -1    ! Method corresponding to AS fields
     Integer(int32) :: method_pert = -1  ! Method corresponding to pert only
@@ -17,6 +19,7 @@ End Module bfield_typedef
 !   Appropriate loading must be done before calls to any fieldline following routine 
 !
 !    bfield%method == 
+!                     0 -- gfile field only
 !                     6 -- Just coils
 !                    14 -- VMEC coils file with extcur
 !                    15 -- xdr file
@@ -26,16 +29,18 @@ End Module bfield_typedef
 
 Module bfield
   Use bfield_typedef, Only : bfield_type
-  Use coil_typedef, Only : coil_type  
+  Use coil_typedef, Only : coil_type
+  Use g3d_module, Only : g_type
   Implicit None
   Private
-  Public :: bfield_type, coil_type
+  Public :: bfield_type, coil_type, g_type
   Public :: calc_B_rzphi_general
 
 Contains
 
   Subroutine calc_B_rzphi_general(bfield,r,z,phi,n,br,bz,bphi,ierr_out)
     Use kind_mod, Only: real64, int32
+    Use g3d_module, Only : bfield_geq_bicub    
     Use biotsavart_module, Only : bfield_bs_cyl
     Use VMEC_routines_mod, Only : bfield_vmec_coils
 #ifdef HAVE_FXDR    
@@ -60,6 +65,11 @@ Contains
     btmp = 0._real64
     
     Select Case (bfield%method)
+    Case (0)
+      Call bfield_geq_bicub(bfield%g,r,z,n,btmp,ierr)
+      br   = btmp(:,1)
+      bz   = btmp(:,2)
+      bphi = btmp(:,3)       
     Case (6) ! just coils
       Call bfield_bs_cyl(r,phi,z,n,bfield%coil,br,bphi,bz)
     Case (14) ! VMEC coils

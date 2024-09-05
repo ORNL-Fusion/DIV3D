@@ -1,3 +1,8 @@
+Module diffusion
+  Implicit None
+  Public :: diffuse_lines3, line_follow_and_int
+
+Contains
 !-----------------------------------------------------------------------------
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
@@ -410,8 +415,7 @@ Do i=1,npts_line - 1
     x_end   = X2
     y_end   = Y2
     z_end   = Z2
-  endif
-  if (twofer .eq. 1) Then
+  else 
     if ( iseg .eq. 1) Then
         p_start = P1
         x_start = X1
@@ -847,3 +851,5 @@ Endif
 
 
 End subroutine check_line_for_intersections
+
+End Module diffusion
