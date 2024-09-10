@@ -264,7 +264,7 @@ If (rank .gt. 0) Then
 
       line_done_data_r(1:3) = pint
       line_done_data_r(4) = totL
-      Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+      Call MPI_SEND(line_done_data_r,4,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       If (nhitline .gt. 0) Then
          Allocate(line_done_data_r2(3*nhitline))      
