@@ -11,17 +11,12 @@ Subroutine init_points_line(fname_surf,numl,fname_launch)
 ! Outputs:
 !   none
 !
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/26/2011   JDL
 ! Author(s): J.D. Lore - 07/26/2011 - xxx
 
 ! Modules used:
 Use kind_mod
 Use io_unit_spec, Only: &
 iu_launch, iu_surf
-Use phys_const, Only : pi
 Implicit none
 
 ! Input/output
@@ -57,7 +52,6 @@ Write(iu_launch,*) numl
 
 Do ii = 1,numl
   ! Choose an integer between 1 and npts_line
-!  rand_ind = Nint(npts_line*rand())
   Call Random_number(rnum)
   rand_ind = Nint(npts_line*rnum)
   P1 = phisurf(rand_ind)

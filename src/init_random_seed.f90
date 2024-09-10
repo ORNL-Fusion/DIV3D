@@ -1,3 +1,8 @@
+Module init_random
+  Implicit None
+
+Contains
+  
 Subroutine init_random_seed(myseed)
   Use kind_mod
   Implicit none
@@ -21,3 +26,5 @@ Subroutine init_random_seed(myseed)
           
   Deallocate(seed)
 End Subroutine init_random_seed
+
+End Module init_random

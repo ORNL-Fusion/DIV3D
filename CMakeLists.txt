@@ -74,11 +74,13 @@ add_executable( div3d
   ${SRC_DIR}/bgrid_routines_mod.f90
   ${SRC_DIR}/biotsavart_module.f90  
   ${SRC_DIR}/bfield_module.f90
+  ${SRC_DIR}/bspline90_22.f90  
   ${SRC_DIR}/coil_typedef.f90
   ${SRC_DIR}/diffuse_lines3.f90  
   ${SRC_DIR}/div3d_follow_and_int.F90  
   ${SRC_DIR}/fieldline_follow_mod.F90
-  ${SRC_DIR}/find_nearby_triangles.f90  
+  ${SRC_DIR}/find_nearby_triangles.f90
+  ${SRC_DIR}/g3d_module.f90    
   ${SRC_DIR}/init_points_line.f90
   ${SRC_DIR}/init_random_seed.f90  
   ${SRC_DIR}/inside_vessel_mod.f90

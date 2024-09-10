@@ -4,11 +4,6 @@
 Module read_parts_mod
 ! Description: 
 !
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/14/2011  
-!  1.1     12/14/2011  Combined with load parts JDL
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
 
@@ -349,17 +344,9 @@ Subroutine read_parts(fname_plist,fname_parts,fname_ves,verbose)
 !
 ! Description: 
 !
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/14/2011  
-!  1.1     02/14/2012  Updated to allow for general 2d parts and removed part directions
-!
 !  Notes:
 !    part_type == 0 indicates 'w7' type. (R,Z) points at toroidal angles
 !    part_type == 1 indicates '2d.jpart' type. (R,Z,phi) points
-!  
-!
 !
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
@@ -387,7 +374,6 @@ Allocate(nt_parts(nparts),np_parts(nparts))
 Allocate(part_names(nparts),part_type(nparts))
 Do ipart = 1,nparts
   Read(iu_plist,*) part_name
-!  WRite(6,*) 'fix this!'
   If ( Verify('.2d.jpart',part_name(10:len(part_name))) .EQ. 0 ) Then
     part_type(ipart) = 1
   Else

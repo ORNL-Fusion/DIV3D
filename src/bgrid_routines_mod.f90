@@ -25,8 +25,7 @@ Subroutine read_bgrid_field_file(fname_base)
   Use phys_const, Only: pi
 Implicit None
 Character(len=*), Intent(In) :: fname_base
-Integer(int32) :: iocheck, nphi,ind,nr,nz,field_size, i, j, k
-Character(len=256) :: sjunk
+Integer(int32) :: iocheck, nphi,nr,nz, i, j, k
 Character(len=1000) :: fname
 Real(real64), Allocatable :: data(:,:,:)
 Real(real64) :: R_min, R_max, Z_min, Z_max
