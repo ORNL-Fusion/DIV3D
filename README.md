@@ -50,6 +50,7 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * bgrid_fname = bgrid path + file name (if rmp_type=bgrid)
     * vmec_coils_file = path + file name of VMEC coils file (if rmp_type=vmec_coils)
     * vmec_extcur_set = external current scaling(if rmp_type=vmec_coils)
+    * gfile_name = path + file name of equdsk file (if rmp_type=g)
 
 * [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-example)
     * fname_plist = parts.list file name
@@ -194,6 +195,7 @@ rmp_type = 'bgrid'
 bgrid_fname = 'path/to/bgrid'
 ! VMEC coils with extcur
 ! xdr grid format
+! gfile example
 /
 ```
 
