@@ -3,22 +3,11 @@
 !  and diffused until they intersect components
 !-----------------------------------------------------------------------------
 program div3d_follow_and_int
-!
-! Description: 
-!
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/14/2011  
-!  1.1     12/07/2011  -- Added 3D part reading and triangle intersection. JDL
-!  1.2     12/14/2011  -- Added MPI. JDL
-!  1.3     02/15/2012  -- Updated to allow reading of parts not defined in toroidal planes.
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
 !
 ! To do:
 !  - Add default namelist variables or check for missing
-!  - Vessel intersection file not wiped if no intersections?
 !  - Vessel intersection is just nearest phi cut
 !  - Check allocation/deallocation
 !  - Need to add exiting routine to deallocate and finalize mpi
@@ -54,17 +43,18 @@ Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
 Character(len=300) :: fname_plist, fname_nhit
 
-Logical :: verbose, trace_surface_opt
+Logical :: verbose, trace_surface_opt, calc_lc
 
 ! Local arrays
 
 Real(real64), Dimension(3) :: pint
+Real(real64) :: totL
 Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
 
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
 Integer(int32), Dimension(4) :: iout
-Real(real64), Dimension(3) :: line_done_data_r
+Real(real64), Dimension(4) :: line_done_data_r
 Real(real64), Dimension(:), Allocatable :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 Integer :: buffer
@@ -74,7 +64,7 @@ Namelist / run_settings / fname_plist, fname_ves,  &
   Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
   npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
   fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
-  fname_ptri, fname_ptri_mid
+  fname_ptri, fname_ptri_mid, calc_lc
 
 !- End of header -------------------------------------------------------------
 
@@ -89,6 +79,9 @@ Call init_mpi
 verbose = .false.
 If (rank .eq. 0) verbose = .true. 
 If (verbose) Write(6,'(/A)') '-------------------------------------------------------------------------'
+
+! Defaults
+calc_lc = .true.
 
 ! Read the run settings namelist file
 setup_bfield_verbose = verbose
@@ -121,6 +114,13 @@ Else
    If (verbose) Write(6,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
 Endif
 
+If (verbose) Then
+   If (calc_lc) Then
+      Write(6,*) 'Computing one-directional connection length'
+   Else
+      Write(6,*) 'Not computing one-directional connection length'   
+   Endif
+Endif
 
 !----------------------------------------------------------
 ! 1. Initialize magnetic field
@@ -248,7 +248,7 @@ If (rank .gt. 0) Then
       Call line_follow_and_int(Rstart_local,Zstart_local, &
            Pstart_local,dphi_line_diff,nsteps_line_local,&
            dmag,period,pint,iout,r_hitline, &
-           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol)      
+           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol,totL,calc_lc)      
       ierr_follow = 0
 
       ! Compile results and send data back to master
@@ -263,6 +263,7 @@ If (rank .gt. 0) Then
       Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       line_done_data_r(1:3) = pint
+      line_done_data_r(4) = totL
       Call MPI_SEND(line_done_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       If (nhitline .gt. 0) Then

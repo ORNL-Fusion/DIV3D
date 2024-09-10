@@ -71,9 +71,10 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * dphi_line_diff_deg = degree of accuracy, per integration step for field line tracing with diffusion
     * ntran_diff = max number of toroidal transits
     * trace_surface_opt = whether to trace out surface, false means read in existing surface file
-    * myseed = random number generator seed?
-    * hit_length = length of end of fieldline recorded
-    * lsfi_tol = tolerance of adjacent facets aligning
+    * myseed = random number generator seed
+    * hit_length = length of end of fieldline recorded. This is an estimate computed as floor(hit_length/Rstart/abs(dphi_line_diff))
+    * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge
+    * calc_lc = logical variable controlling whether connection length is computed
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
@@ -141,17 +142,30 @@ Magnetic field options:
 ### 2) allparts.out  
 #### This file contains all the data from the parts-list parts reformatted
 ### 3) hitline.out  
-#### This file contains locations of the last section of the fieldline at and before strikepoint (only if intersected with divertor)
+#### This file contains locations of the last section of the fieldline at and before strikepoint
+```
+Line-by-line information about diffused fieldlines that intersect the parts and vessel.
+Controlled by input hit_length, if negative this file is not written to. If set to a positive value
+then approximately the last hit_length distance along the field line is output.
+
+Format:
+For each line:
+npts (int)
+r(npts)   (m)
+z(npts)   (m)
+phi(npts) (radians)
+```
 ### 4) int_pts.out  
 #### This file contains the points of intersection between each fieldline and vessel / divertor surfaces
 ```
 Row by row information of points that hit "parts".
 
-R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i  
+R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc
 R,Z,Phi -> Int point in mapped periodic section  
 ihit    -> (1) hit a "part", (2) hit the vessel, (0) no intersection.  
 itri    -> Index of intersected triangle  
-i       -> Index along field line  
+i       -> Index along field line
+LC      -> one-directional distance along diffused fieldline from start point to intersection point
 ```
 ### 6) hitcount.out     (fname_nhit)
 #### This file contains the number of points that hit a divertor / vessel surface vs not hitting anything

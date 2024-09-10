@@ -45,13 +45,14 @@ Integer :: tag, dest
 Logical :: flag
 
 ! Local arrays
-Real(real64), Dimension(3) :: pint 
+Real(real64), Dimension(3) :: pint
+Real(real64) :: totL
 Integer(int32), Dimension(4) :: iout
 Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
 Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
-Real(real64), Dimension(3) :: line_done_data_r
+Real(real64), Dimension(4) :: line_done_data_r
 Real(real64), Dimension(3*nhitline) :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 
@@ -132,7 +133,7 @@ Do While ( work_done .ne. 1 )
         ! Request results
         tag = dest
         Call MPI_RECV(line_done_data_i ,5         ,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
-        Call MPI_RECV(line_done_data_r ,3         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Call MPI_RECV(line_done_data_r ,4         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
         If (nhitline .gt. 0) Then
            Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
@@ -142,7 +143,8 @@ Do While ( work_done .ne. 1 )
           hitcount = hitcount + 1
           iout = line_done_data_i(2:5)
           pint = line_done_data_r(1:3)
-          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout
+          totL = line_done_data_r(4)
+          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL
           If (nhitline .gt. 0) Then
              r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
              z_hitline   = line_done_data_r2(1+1*nhitline:2*nhitline)
@@ -223,7 +225,7 @@ End Subroutine diffuse_lines3
 !+ 
 !-----------------------------------------------------------------------------
 Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol)
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,totL,calc_lc)
 
 Use kind_mod
 Use read_parts_mod
@@ -236,8 +238,10 @@ Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, l
 Integer(int32), Intent(in) :: nsteps_line, linenum
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
+Real(real64), Intent(out) :: totL
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+Logical, Intent(in) :: calc_lc
 
 
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
@@ -251,7 +255,8 @@ Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1
 ifail = ilg(1)
 
 Call check_line_for_intersections(period,pint,iout, &
-     r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
+     r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
+     lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc)
 
 
 End Subroutine line_follow_and_int
@@ -262,21 +267,23 @@ End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
 
 Subroutine check_line_for_intersections(period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail)
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc)
 
-Use kind_mod
+Use kind_mod, Only : real64, int32
 Use read_parts_mod
-Use inside_vessel_mod, Only: &
-inside_vessel
-Use math_routines_mod, Only: line_seg_facet_int
+Use inside_vessel_mod, Only : inside_vessel
+Use math_routines_mod, Only : line_seg_facet_int
 Implicit None
 
 Real(real64), Intent(in) :: period, lsfi_tol
 Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
+Real(real64), Intent(out) :: totL
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
+Logical, Intent(In) :: calc_lc
 
 Integer(int32) :: iseg
 Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
@@ -286,7 +293,7 @@ Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
 Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
 Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
 
-Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
+
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
 
 !- End of header -------------------------------------------------------------
@@ -303,6 +310,7 @@ ihit = 0
 pint(:) = 0.
 iout(:) = -1
 iout(1) = ihit
+totL = 0._real64
 Do i=1,npts_line - 1
 !  Write(*,*) i
   ! Current point along line
@@ -314,10 +322,15 @@ Do i=1,npts_line - 1
   R2 = rout(i+1)
   Z2 = zout(i+1)
   P2 = phiout(i+1)
-  
-  ! Convert to Cartesian coordinates
+
   dphi1 = P2-P1
 
+  ! Distance
+  If (calc_lc) Then
+     totL = totL + sqrt(R1*R1 + R2*R2 - 2._real64*R1*R2*cos(dphi1) + Z1*Z1 + Z2*Z2 - 2._real64*Z1*Z2)
+  Endif
+
+  ! Convert to Cartesian coordinates  
   Do While (P1 .lt. 0.d0)
     P1 = P1 + period
   Enddo
@@ -475,11 +488,13 @@ Do i=1,npts_line - 1
 
           If (ihit_tmp .eq. 1) Then
             ihit = 1
-            Write(6,'(A,I0,A,I0,A,I0,3(F8.3))') ' Line ',linenum,' hit! [i,ipart,P] ',i,' ',ipart,pint(1),pint(2),pint(3)
+            Write(6,'(A,I0,A,I0,A,I0,4(F8.3))') ' Line ',linenum,' hit! [i,ipart,P,Lc] ',&
+                 i,' ',ipart,pint(1),pint(2),pint(3),totL
             iout(1) = ihit
             iout(2) = ipart
             iout(3) = itri
             iout(4) = i
+!            write(*,*) 'totL',totL
             if ( (i - nhitline+1) .lt. 1 ) Then
               !Write(6,*) 'Write something to handle this', i, nhitline
               !Stop
@@ -519,12 +534,26 @@ Enddo ! points along line (i)
 
 If ( ihit .eq. 0 ) Then
   Write(6,'(A,I0,A)') ' No part intersections found for line ',linenum,', checking for vessel intersection'
+  totL = 0._real64
+  
   Do i=1,npts_line
     ! Current point along line
     R1 = rout(i)
     Z1 = zout(i)
     P1 = phiout(i)
 
+    If (calc_lc) Then
+      ! next point
+      R2 = rout(i+1)
+      Z2 = zout(i+1)
+      P2 = phiout(i+1)
+
+      dphi1 = P2-P1
+
+      ! Distance
+      totL = totL + sqrt(R1*R1 + R2*R2 - 2._real64*R1*R2*cos(dphi1) + Z1*Z1 + Z2*Z2 - 2._real64*Z1*Z2)
+    Endif
+    
     inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
     If (inside_it .eq. 0 ) Then
       Do While (P1 .lt. 0.d0)
@@ -536,12 +565,13 @@ If ( ihit .eq. 0 ) Then
       pint(1) = X1
       pint(2) = Y1
       pint(3) = Z1
-      Write(6,'(A,I0,A,I0,3(F8.3))') ' Line ',linenum,' did hit the vessel at [i,P]=',i,pint
+      Write(6,'(A,I0,A,I0,4(F8.3))') ' Line ',linenum,' did hit the vessel at [i,P,Lc]=',i,pint,totL
       ihit = 2
       iout(1) = ihit
       iout(2) = -2
       iout(3) = -2
       iout(4) = i
+!      write(*,*) 'totL',totL      
       if ( (i - nhitline+1) .lt. 1 ) Then
          r_hitline = 0.d0
          z_hitline = 0.d0
