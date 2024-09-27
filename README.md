@@ -72,12 +72,13 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * dmag = diffusion coefficient in m^2 / m
     * dphi_line_diff_deg = step size in field line tracing (degrees), used for field line tracing with diffusion
     * ntran_diff = number of toroidal transits to trace each field line with diffusion
-    * trace_surface_opt = whether to trace out surface, false means read in existing surface file (from previous run)
+    * trace_surface_opt = whether to trace out surface, false means skip tracing surface and read in launch_points (from previous run)
  
     * myseed = random number generator seed
     * hit_length = length of end of fieldline recorded. This is an estimate computed as floor(hit_length/Rstart/abs(dphi_line_diff))
     * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge
     * calc_lc = logical variable controlling whether connection length is computed
+    * calc_theta = logical variable controlling whether angle between field line and plane of facet is calculated. 
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
@@ -176,12 +177,13 @@ phi(npts) (radians)
 ```
 Row by row information of points that hit "parts".
 
-R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc
+R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | theta
 R,Z,Phi -> Int point in mapped periodic section  
 ihit    -> (1) hit a "part", (2) hit the vessel, (0) no intersection.  
 itri    -> Index of intersected triangle  
 i       -> Index along field line
-LC      -> one-directional distance along diffused fieldline from start point to intersection point
+Lc      -> one-directional distance along diffused fieldline from start point to intersection point
+theta   -> signed angle (radians) between field line and plane of facet.
 ```
 ### 6) hitcount.out     (fname_nhit)
 #### This file contains the number of points that hit a divertor / vessel surface vs not hitting anything
@@ -191,6 +193,7 @@ LC      -> one-directional distance along diffused fieldline from start point to
 #### This file contains the mid-points of the triangles from parts file
 ### 9) launch_pts.out (fname_launch)
 #### This file contains the launch (starting) location points of the fieldlines that are traced
+All launch points are defined in the first field period (positive phi).
 ```
 Row by row information of points where fieldlines are initiated. 
 number of points

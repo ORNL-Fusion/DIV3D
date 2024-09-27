@@ -57,27 +57,27 @@ Real(real64), Dimension(nsteps_line+1) :: &
 adp = Abs(dphi_line)
 nip0 = floor( nsteps_line*adp/period) + 1
 ip_step = Nint(period/adp)
-If (Real(period/adp,real64) - Real(ip_step,real64) .gt. 1.d-12 ) Then
-  Write(6,*) 'Choose dphi_line such that ',period*180.d0/pi,' degrees is divisible'
+If (abs(Real(period/adp,real64) - Real(ip_step,real64)) .gt. 1.d-12 ) Then
+  Write(*,*) 'Choose dphi_line such that ',period*180.d0/pi,' degrees is divisible'
   Write(*,*) 'Dphi_line (deg):',dphi_line*180.d0/pi
-  Write(6,*) 'Should be equal:',Real(period/adp,real64),ip_step,period/adp
-  Write(6,*) 'Periodicity, (ip_step,nip0) = ', ip_step, nip0
+  Write(*,*) 'Should be equal:',Real(period/adp,real64),ip_step,period/adp
+  Write(*,*) 'Periodicity, (ip_step,nip0) = ', ip_step, nip0
   Stop
 Else
-  Write(6,*) 'Periodicity ok. (ip_step,nip0) = ', ip_step, nip0
+  Write(*,*) 'Periodicity ok. (ip_step,nip0) = ', ip_step, nip0
 Endif
 
 ! Trace out surface
 !Write(6,*) 'Following fieldline from [R,Z,phi] = ',Rstart,Zstart,phistart*180./pi
 Call follow_fieldlines_rzphi(bfield,Rstart,Zstart,Phistart,dphi_line,nsteps_line,rsurf,zsurf,phisurf,ierr,ifail)
 If (ierr .ne. 0 ) Then
-  Write(6,*) 'fieldline following error',ierr
+  Write(*,*) 'fieldline following error',ierr
   Call flush()
   Stop
 Endif
 
 ! Write line data
-Write(6,*) 'Writing surface data to ',Trim(Adjustl(fname_surf))
+Write(*,*) 'Writing surface data to ',Trim(Adjustl(fname_surf))
 Open(iu_surf,file=fname_surf)
 Write(iu_surf,*) period, nip0, ip_step
 Write(iu_surf,*) nsteps_line + 1

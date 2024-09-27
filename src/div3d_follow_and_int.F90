@@ -19,7 +19,7 @@ Use io_unit_spec, Only: iu_nl ! Run settings namelist file unit (run_settings.nm
 Use read_parts_mod
 Use setup_bfield_module
 Use phys_const, Only : pi
-Use diffusion, Only : diffuse_lines3, line_follow_and_int
+Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
 Use init_random, Only : init_random_seed
 Implicit none
 
@@ -34,37 +34,20 @@ Integer(int32) :: npts_start, nfp
 Integer(int32) :: iocheck
 Integer(int32) :: ntran_surf, ns_line_surf
 Integer(int32) :: ntran_diff, ns_line_diff
-Integer(int32) :: ierr_follow, num_myjobs
-Integer :: dest, source, tag
-Real(real64) :: Rstart_local, Zstart_local, Pstart_local
-Integer(int32) :: iline_local, nsteps_line_local
 
 Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
 Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
 Character(len=300) :: fname_plist, fname_nhit
 
-Logical :: verbose, trace_surface_opt, calc_lc
+Logical :: verbose, trace_surface_opt, calc_lc, calc_theta
 
-! Local arrays
-
-Real(real64), Dimension(3) :: pint
-Real(real64) :: totL
-Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
-
-Real(real64), Dimension(3) :: line_start_data_r
-Integer(int32), Dimension(3) :: line_start_data_i
-Integer(int32), Dimension(4) :: iout
-Real(real64), Dimension(4) :: line_done_data_r
-Real(real64), Dimension(:), Allocatable :: line_done_data_r2
-Integer(int32), Dimension(5) :: line_done_data_i
-Integer :: buffer
 ! Namelists
 Namelist / run_settings / fname_plist, fname_ves,  &
   fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, nfp, &
   Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
   npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
   fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
-  fname_ptri, fname_ptri_mid, calc_lc
+  fname_ptri, fname_ptri_mid, calc_lc, calc_theta
 
 !- End of header -------------------------------------------------------------
 
@@ -82,6 +65,7 @@ If (verbose) Write(6,'(/A)') '--------------------------------------------------
 
 ! Defaults
 calc_lc = .true.
+calc_theta = .false.
 
 ! Read the run settings namelist file
 setup_bfield_verbose = verbose
@@ -116,9 +100,9 @@ Endif
 
 If (verbose) Then
    If (calc_lc) Then
-      Write(6,*) 'Computing one-directional connection length'
+      Write(*,*) 'Computing one-directional connection length'
    Else
-      Write(6,*) 'Not computing one-directional connection length'   
+      Write(*,*) 'Not computing one-directional connection length'   
    Endif
 Endif
 
@@ -175,116 +159,45 @@ Call make_triangles(fname_ptri,fname_ptri_mid)
 !----------------------------------------------------------------
 If (rank .eq. 0) Then
 
-  Write(6,'(A,I0,A)') ' Master node (rank ',rank,') is initializing run'
-  Write(6,'(A,I0,A)') ' Total number of processes: ',nprocs
+  Write(*,'(A,I0,A)') ' Master node (rank ',rank,') is initializing run'
+  Write(*,'(A,I0,A)') ' Total number of processes: ',nprocs
 
   If (npts_start .lt. nprocs) Then
-    Write(*,*) 'For now nprocs must be less than npts_start!!!'
+    Write(*,*) 'nprocs must be less than npts_start!!!'
+    Stop "Cannot handle this" 
   Endif
 
   !----------------------------------------------------------
   ! 3. Trace out a surface (no diffusion)
   !----------------------------------------------------------
   If (trace_surface_opt .eqv. .true.) Then
-    Write(6,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
+    Write(*,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
     If (.true.) Call trace_surface(Rstart,Zstart,Phistart,dphi_line_surf,ns_line_surf,period,fname_surf)
 
     !----------------------------------------------------------
     ! 4. Initialize points on surface to carry heat
     !----------------------------------------------------------
-    Write(6,*) 'Initializing points along initial surface line'
+    Write(*,*) 'Initializing points along initial surface line'
     If (.true.) Call init_points_line(fname_surf,npts_start,fname_launch)
   Else
-    Write(6,*) 'Skipping trace_surface, loading file.'
+    Write(*,*) 'Skipping trace_surface, loading file.'
   Endif
 
   !----------------------------------------------------------------------------------------
   ! 5. Follow fieldlines from init points and check for intersections 
   !----------------------------------------------------------------------------------------
 
-  Write(6,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-  write(6,*) 'Beginning MPI line diffusion'
+  Write(*,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+  write(*,*) 'Beginning MPI line diffusion'
   Call diffuse_lines3(fname_launch,dmag,ns_line_diff,fname_hit,fname_intpts,fname_nhit,nhitline)
 
-  Deallocate(ntri_parts)
-  Deallocate(xtri,ytri,ztri,check_tri)
-  Deallocate(xmid,ymid,zmid)
-  Deallocate(R_ves,Z_ves,P_ves)
-  Deallocate(dmid)
+Else
 
-Endif ! rank == 0
-
-!----------------------------------------------------------------
-! Additional nodes wait for lines and follow them
-!----------------------------------------------------------------
-If (rank .gt. 0) Then
-
-  num_myjobs = 0
-  line_start_data_i = 0
-!  Write(*,*) 'Process ',rank,' reporting as READY'
-  Do While (line_start_data_i(1) .ne. -1) 
-
-    ! Wait for line data
-    source = 0
-    dest = 0
-    tag = rank
-    Call MPI_RECV(line_start_data_i,3,MPI_INTEGER,source,tag,MPI_COMM_WORLD,status,ierr_mpi)   
-
-    ! Check for kill signal    
-    if (line_start_data_i(1) .ne. -1 ) Then
-
-      ! Get rest of start data
-      Call MPI_RECV(line_start_data_r,3,MPI_DOUBLE_PRECISION,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
-      Rstart_local    = line_start_data_r(1)
-      Zstart_local    = line_start_data_r(2)
-      Pstart_local    = line_start_data_r(3)
-      nsteps_line_local = line_start_data_i(1)
-      iline_local       = line_start_data_i(3)
-      
-      ! Follow the line
-      Allocate(r_hitline(nhitline))
-      Allocate(z_hitline(nhitline))
-      Allocate(phi_hitline(nhitline))      
-      Call line_follow_and_int(Rstart_local,Zstart_local, &
-           Pstart_local,dphi_line_diff,nsteps_line_local,&
-           dmag,period,pint,iout,r_hitline, &
-           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol,totL,calc_lc)      
-      ierr_follow = 0
-
-      ! Compile results and send data back to master
-
-      ! first send handshake signal (this_job_done)
-      buffer = 1
-      Call MPI_SEND(buffer,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
-
-
-      line_done_data_i(1) = ierr_follow
-      line_done_data_i(2:5) = iout
-      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
-
-      line_done_data_r(1:3) = pint
-      line_done_data_r(4) = totL
-      Call MPI_SEND(line_done_data_r,4,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
-
-      If (nhitline .gt. 0) Then
-         Allocate(line_done_data_r2(3*nhitline))      
-         line_done_data_r2(1+0*nhitline:1*nhitline) = r_hitline
-         line_done_data_r2(1+1*nhitline:2*nhitline) = z_hitline
-         line_done_data_r2(1+2*nhitline:3*nhitline) = phi_hitline
-         Call MPI_SEND(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
-         Deallocate(line_done_data_r2)
-      Endif
-      Deallocate(r_hitline,z_hitline,phi_hitline)
-      
-      num_myjobs = num_myjobs + 1
-    Endif ! kill signal check
-
-  EndDo ! while mywork ne -1
-
-  Write(*,*) 'Process ',rank,'received signal that all work is complete'
-  Write(*,*) 'Process ',rank,' completed ',num_myjobs,' jobs'
-
-Endif ! rank > 0
+ !----------------------------------------------------------------
+ ! Additional nodes wait for lines and follow them
+ !----------------------------------------------------------------
+ Call diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,period,calc_lc,calc_theta,lsfi_tol)
+Endif 
 
 
 ! Finialize MPI

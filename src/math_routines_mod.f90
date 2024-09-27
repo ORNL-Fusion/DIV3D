@@ -100,7 +100,7 @@ EndFunction rlinspace
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
-Subroutine line_seg_facet_int(pa,pb,pc,p1,p2,ithit,p,tol)
+Subroutine line_seg_facet_int(pa,pb,pc,p1,p2,ithit,p,tol,calc_theta,sin_theta)
 !
 ! Description: 
 !  Based on code from Paul Bourke
@@ -125,11 +125,15 @@ Real(real64), Dimension(3), Intent(In) :: pa,pb,pc,p1,p2
 Real(real64), Dimension(3), Intent(Out) :: p
 Integer(int32), Intent(Out) :: ithit
 real(real64), Intent(In) :: tol
+Real(real64), Intent(Out) :: sin_theta
+Logical, Intent(In) :: calc_theta
 
 
 !local variables and arrays
-Real(real64), Dimension(3) :: n, pa1, pa2, pa3
+Real(real64), Dimension(3) :: n, pa1, pa2, pa3, v
 Real(real64) :: d, denom, mu, total, a1, a2, a3, n2
+
+Real(real64) :: theta, mag_v, dot_nv
 
 
 !- End of header -------------------------------------------------------------
@@ -156,8 +160,10 @@ denom = n(1)*(p2(1) - p1(1)) + n(2)*(p2(2) - p1(2)) + n(3)*(p2(3) - p1(3))
 p(:) = 0._real64
 
 If (abs(denom) .lt. tol) Then
+   ! line is parallel to plane
     ithit = 0
-else    
+else
+    ! how far along line intersection occurs [0,1]
     mu = - (d + n(1) * p1(1) + n(2) * p1(2) + n(3) * p1(3)) / denom
     p(1) = p1(1) + mu * (p2(1) - p1(1))
     p(2) = p1(2) + mu * (p2(2) - p1(2))
@@ -194,6 +200,33 @@ else
     endif
 endif
 
+sin_theta = 0._real64
+If ((ithit .eq. 1_int32) .and. (calc_theta)) Then
+!   Write(*,*) 'computing angle between the line and the plane'
+
+   ! Below assumes |n| = 1, as done above
+   
+   ! Compute direction vector of the line
+   v(1) = p2(1) - p1(1)
+   v(2) = p2(2) - p1(2)
+   v(3) = p2(3) - p1(3)
+
+   ! Compute dot product between the normalized normal vector n and the direction vector v
+   dot_nv = n(1) * v(1) + n(2) * v(2) + n(3) * v(3)
+
+   ! Compute magnitudes of n and v
+   mag_v = Sqrt(v(1)*v(1) + v(2)*v(2) + v(3)*v(3))
+
+   ! Calculate sin of the angle between the line and the plane
+   sin_theta = dot_nv / (mag_v)
+
+   ! Ensure sin_theta is within valid range due to potential floating-point inaccuracies
+   sin_theta = max(-1.0_real64, min(1.0_real64, sin_theta))
+
+   ! Calculate the angle theta (in radians)
+   theta = asin(sin_theta)
+
+Endif
 
 
 End Subroutine line_seg_facet_int

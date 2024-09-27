@@ -1,8 +1,109 @@
 Module diffusion
   Implicit None
-  Public :: diffuse_lines3, line_follow_and_int
+  Public :: diffuse_lines3, line_follow_and_int, diffuse_lines3_worker
 
 Contains
+!-----------------------------------------------------------------------------
+!+ Worker node subroutine for following fieldlines and calculating intersections
+!  Counterpart to diffuse_lines3 
+!-----------------------------------------------------------------------------
+Subroutine diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,period,calc_lc,calc_theta,lsfi_tol)
+Use kind_mod, Only : real64, int32
+Use parallel_mod
+Implicit None 
+
+! I/O
+Integer(int32), Intent(in) :: nhitline
+Real(real64), Intent(in) :: dmag, period, lsfi_tol, dphi_line_diff
+Logical, Intent(in) :: calc_lc, calc_theta
+
+Real(real64), Dimension(3) :: line_start_data_r
+Integer(int32), Dimension(3) :: line_start_data_i
+Real(real64) :: Rstart_local, Zstart_local, Pstart_local
+Integer(int32) :: iline_local, nsteps_line_local
+Integer :: dest, source, tag
+Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
+Integer(int32) :: ierr_follow
+Integer(int32) :: num_myjobs
+Real(real64) :: totL, theta
+
+Real(real64), Dimension(5) :: line_done_data_r
+Real(real64), Dimension(:), Allocatable :: line_done_data_r2
+Integer(int32), Dimension(5) :: line_done_data_i
+Integer(int32), Dimension(4) :: iout
+Real(real64), Dimension(3) :: pint
+Integer :: buffer
+
+! Initialize status
+num_myjobs = 0
+line_start_data_i = 0
+
+!  Write(*,*) 'Process ',rank,' reporting as READY'
+Do While (line_start_data_i(1) .ne. -1) 
+
+   ! Wait for line data
+   source = 0
+   dest = 0
+   tag = rank
+   Call MPI_RECV(line_start_data_i,3,MPI_INTEGER,source,tag,MPI_COMM_WORLD,status,ierr_mpi)   
+
+   ! Check for kill signal    
+   if (line_start_data_i(1) .ne. -1 ) Then
+
+      ! Get rest of start data
+      Call MPI_RECV(line_start_data_r,3,MPI_DOUBLE_PRECISION,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
+      Rstart_local    = line_start_data_r(1)
+      Zstart_local    = line_start_data_r(2)
+      Pstart_local    = line_start_data_r(3)
+      nsteps_line_local = line_start_data_i(1)
+      iline_local       = line_start_data_i(3)
+      
+      ! Follow the line
+      Allocate(r_hitline(nhitline))
+      Allocate(z_hitline(nhitline))
+      Allocate(phi_hitline(nhitline))      
+      Call line_follow_and_int(Rstart_local,Zstart_local, &
+           Pstart_local,dphi_line_diff,nsteps_line_local,&
+           dmag,period,pint,iout,r_hitline, &
+           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol,totL, &
+           calc_lc,calc_theta,theta)
+      ierr_follow = 0
+
+      ! Compile results and send data back to master
+
+      ! first send handshake signal (this_job_done)
+      buffer = 1
+      Call MPI_SEND(buffer,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+
+
+      line_done_data_i(1) = ierr_follow
+      line_done_data_i(2:5) = iout
+      Call MPI_SEND(line_done_data_i,5,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+
+      line_done_data_r(1:3) = pint
+      line_done_data_r(4) = totL
+      line_done_data_r(5) = theta
+      Call MPI_SEND(line_done_data_r,5,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+
+      If (nhitline .gt. 0) Then
+         Allocate(line_done_data_r2(3*nhitline))      
+         line_done_data_r2(1+0*nhitline:1*nhitline) = r_hitline
+         line_done_data_r2(1+1*nhitline:2*nhitline) = z_hitline
+         line_done_data_r2(1+2*nhitline:3*nhitline) = phi_hitline
+         Call MPI_SEND(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+         Deallocate(line_done_data_r2)
+      Endif
+      Deallocate(r_hitline,z_hitline,phi_hitline)
+      
+      num_myjobs = num_myjobs + 1
+    Endif ! kill signal check
+
+  EndDo ! while mywork ne -1
+
+  Write(*,*) 'Process ',rank,'received signal that all work is complete'
+  Write(*,*) 'Process ',rank,' completed ',num_myjobs,' jobs'
+End Subroutine diffuse_lines3_worker
+  
 !-----------------------------------------------------------------------------
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
@@ -46,13 +147,13 @@ Logical :: flag
 
 ! Local arrays
 Real(real64), Dimension(3) :: pint
-Real(real64) :: totL
+Real(real64) :: totL, theta
 Integer(int32), Dimension(4) :: iout
 Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
 Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
-Real(real64), Dimension(4) :: line_done_data_r
+Real(real64), Dimension(5) :: line_done_data_r
 Real(real64), Dimension(3*nhitline) :: line_done_data_r2
 Integer(int32), Dimension(5) :: line_done_data_i
 
@@ -133,7 +234,7 @@ Do While ( work_done .ne. 1 )
         ! Request results
         tag = dest
         Call MPI_RECV(line_done_data_i ,5         ,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
-        Call MPI_RECV(line_done_data_r ,4         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+        Call MPI_RECV(line_done_data_r ,5         ,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
         If (nhitline .gt. 0) Then
            Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
@@ -144,7 +245,8 @@ Do While ( work_done .ne. 1 )
           iout = line_done_data_i(2:5)
           pint = line_done_data_r(1:3)
           totL = line_done_data_r(4)
-          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL
+          theta = line_done_data_r(5)
+          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL,theta
           If (nhitline .gt. 0) Then
              r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
              z_hitline   = line_done_data_r2(1+1*nhitline:2*nhitline)
@@ -225,11 +327,10 @@ End Subroutine diffuse_lines3
 !+ 
 !-----------------------------------------------------------------------------
 Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,totL,calc_lc)
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,totL,calc_lc,calc_theta,theta)
 
 Use kind_mod
 Use read_parts_mod
-Use math_routines_mod, Only: line_seg_facet_int
 Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
 Use setup_bfield_module, Only : bfield
 Implicit None
@@ -238,10 +339,10 @@ Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, l
 Integer(int32), Intent(in) :: nsteps_line, linenum
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
-Real(real64), Intent(out) :: totL
+Real(real64), Intent(out) :: totL, theta
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-Logical, Intent(in) :: calc_lc
+Logical, Intent(in) :: calc_lc, calc_theta
 
 
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
@@ -256,7 +357,7 @@ ifail = ilg(1)
 
 Call check_line_for_intersections(period,pint,iout, &
      r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
-     lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc)
+     lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
 
 
 End Subroutine line_follow_and_int
@@ -267,7 +368,8 @@ End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
 
 Subroutine check_line_for_intersections(period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc)
+     r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL, &
+     calc_lc,calc_theta,theta)
 
 Use kind_mod, Only : real64, int32
 Use read_parts_mod
@@ -279,11 +381,11 @@ Real(real64), Intent(in) :: period, lsfi_tol
 Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
-Real(real64), Intent(out) :: totL
+Real(real64), Intent(out) :: totL, theta
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
-Logical, Intent(In) :: calc_lc
+Logical, Intent(In) :: calc_lc, calc_theta
 
 Integer(int32) :: iseg
 Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
@@ -480,7 +582,7 @@ Do i=1,npts_line - 1
           pt1 = [x_start,y_start,z_start]
           pt2 = [x_end,y_end,z_end]
 
-          Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol)          
+          Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol,calc_theta,theta)
 
 !          If ( ihit .eq. 1 ) Then
 !            Write(6,*) 'Something is wrong'
