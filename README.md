@@ -54,7 +54,7 @@ run_settings and bfield_nml namelists are read from run_settings.nml
 
 * [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-example)
     * fname_plist = parts.list file name
-    * fname_ves = vessel.part file name + path
+    * fname_ves = vessel.part file name 
     * fname_surf = surface line output file name
     * fname_launch = launch points output file name
     * fname_parts = all parts output file name
@@ -63,15 +63,17 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * fname_nhit = number of hits output file name
     * fname_ptri = part triangular groups output file name
     * fname_ptri_mid = triangular mid-points output file name
+    
     * nfp = number of field periods
     * Rstart, Zstart, Phistart = location of LCFS trace start point
-    * dphi_line_surf_deg = degree of accuracy, per integration step for LCFS surface field line tracing without diffusion
-    * ntran_surf = number of toroidal transits (make smaller to make surf_line.out file size smaller)
-    * npts_start = number of points randomly distributed along the surface line
-    * dmag = diffusion coefficient in m2 / m
-    * dphi_line_diff_deg = degree of accuracy, per integration step for field line tracing with diffusion
-    * ntran_diff = max number of toroidal transits
-    * trace_surface_opt = whether to trace out surface, false means read in existing surface file
+    * dphi_line_surf_deg = step size in field line tracing (degrees), used for LCFS surface without diffusion
+    * ntran_surf = number of toroidal transits for LCFS field line tracing
+    * npts_start = number of points randomly distributed along the LCFS surface line
+    * dmag = diffusion coefficient in m^2 / m
+    * dphi_line_diff_deg = step size in field line tracing (degrees), used for field line tracing with diffusion
+    * ntran_diff = number of toroidal transits to trace each field line with diffusion
+    * trace_surface_opt = whether to trace out surface, false means read in existing surface file (from previous run)
+ 
     * myseed = random number generator seed
     * hit_length = length of end of fieldline recorded. This is an estimate computed as floor(hit_length/Rstart/abs(dphi_line_diff))
     * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge
@@ -140,6 +142,19 @@ Magnetic field options:
 #### The names of these files can be set in the [run_settings](https://github.com/ORNL-Fusion/DIV3D/tree/master?tab=readme-ov-file#bfield-namelist-example) namelist
 ### 1) surface_line.out  
 #### This file contains one fieldline trace followed from (rstart, zstart, phistart) without diffusion to make a LCFS surface approximation.
+```
+Row 1: period:toroidal angle of a field period (radians), nip0:number of points at each toroidal angle, ip_step:stride to stay at constant toroidal angle
+Row 2: nline: total number of points along field line
+Do i = 1:nline
+  R(i)  : meters
+  Z(i)  : meters
+  phi(i) :radians
+end
+
+A Poincare plot can be made from this data from an index I using stride ip_step
+e.g., R(1:ip_step:end),Z(1:ip_step,end)
+```
+
 ### 2) allparts.out  
 #### This file contains all the data from the parts-list parts reformatted
 ### 3) hitline.out  
