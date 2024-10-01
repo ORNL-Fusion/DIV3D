@@ -141,11 +141,11 @@ Real(real64) :: theta, mag_v, dot_nv
 
 !tol = 1.d-12
 
-! Calc unit vector normal to plane of Pa-c (gives plane components A-C)
+! Calc unit vector normal to plane of pa-pc (gives plane components A-C)
+! Cross product of AB and AC
 n(1) = (pb(2) - pa(2))*(pc(3) - pa(3)) - (pb(3) - pa(3))*(pc(2) - pa(2))
 n(2) = (pb(3) - pa(3))*(pc(1) - pa(1)) - (pb(1) - pa(1))*(pc(3) - pa(3))
 n(3) = (pb(1) - pa(1))*(pc(2) - pa(2)) - (pb(2) - pa(2))*(pc(1) - pa(1))
-
 n2=Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
 n2 = 1._real64/n2
 n=n*n2

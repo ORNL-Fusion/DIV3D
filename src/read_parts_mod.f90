@@ -130,9 +130,12 @@ Do ipart=1,nparts
 
       ! 2nd triangle
       itri = itri+1_int32
-      xtri(ipart,itri,1:3) = [Pt4(1),Pt2(1),Pt3(1)]
-      ytri(ipart,itri,1:3) = [Pt4(2),Pt2(2),Pt3(2)]
-      ztri(ipart,itri,1:3) = [Pt4(3),Pt2(3),Pt3(3)]
+!      xtri(ipart,itri,1:3) = [Pt4(1),Pt2(1),Pt3(1)]
+!      ytri(ipart,itri,1:3) = [Pt4(2),Pt2(2),Pt3(2)]
+!      ztri(ipart,itri,1:3) = [Pt4(3),Pt2(3),Pt3(3)]
+      xtri(ipart,itri,1:3) = [Pt4(1),Pt3(1),Pt2(1)]
+      ytri(ipart,itri,1:3) = [Pt4(2),Pt3(2),Pt2(2)]
+      ztri(ipart,itri,1:3) = [Pt4(3),Pt3(3),Pt2(3)]      
       check_tri(ipart,itri) = 1  !all 2d triangles are checked
       write(iu_ptri,*) itri
       write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
