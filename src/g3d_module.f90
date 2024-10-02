@@ -114,7 +114,7 @@ Contains
       If ( (ir .le. 2) .or. (ir .ge. g%mw - 1) ) Then
         If (myverbose) &
              Write(*,'(3(a,f12.3),a)') 'bfield_geq: Point off grid in R: R = ',R1(ii), &
-             '. [Rmin,Rmax] = [',g%r(1),',',g%r(g%mw),']'
+             '. [Rmin,Rmax] = [',g%r(3),',',g%r(g%mw)-1,']'
         ierr = 1
         Bout = 0.d0
         return
@@ -122,7 +122,7 @@ Contains
       If ( (iz .le. 1) .or. (iz .ge. g%mh - 1) ) Then
         If (myverbose) &
              Write(*,'(3(a,f12.3),a)') 'bfield_geq: Point off grid in Z: Z = ',Z1(ii), &
-             '. [Zmin,Zmax] = [',g%z(1),',',g%z(g%mh),']'
+             '. [Zmin,Zmax] = [',g%z(3),',',g%z(g%mh)-1,']'
         ierr = 1
         Bout = 0.d0
         return

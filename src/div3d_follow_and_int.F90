@@ -12,43 +12,14 @@ program div3d_follow_and_int
 !  - Need to add exiting routine to deallocate and finalize mpi
 !
 ! Modules used:
-Use kind_mod, Only : real64, int32
-Use parallel_mod
-Use io_unit_spec, Only: iu_nl 
+Use run_settings_namelist
+Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
 Use read_parts_mod
 Use setup_bfield_module
-Use phys_const, Only : pi
 Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
-Use init_random, Only : init_random_seed
 Implicit none
 
-! Local scalars
-Real(real64) :: Rstart, Zstart, Phistart
-Real(real64) :: dmag, period, lsfi_tol
-Real(real64) :: dphi_line_surf, dphi_line_diff
-Real(real64) :: dphi_line_surf_deg, dphi_line_diff_deg, hit_length
-
-Integer(int32) :: myseed, nhitline
-Integer(int32) :: npts_start, nfp
-Integer(int32) :: iocheck
-Integer(int32) :: ntran_surf, ns_line_surf
-Integer(int32) :: ntran_diff, ns_line_diff
-
-Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
-Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
-Character(len=300) :: fname_plist, fname_nhit
-
-Logical :: verbose, trace_surface_opt, calc_lc, calc_theta
-
-! Namelists
-Namelist / run_settings / fname_plist, fname_ves,  &
-  fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, nfp, &
-  Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
-  npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
-  fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
-  fname_ptri, fname_ptri_mid, calc_lc, calc_theta
-
-!- End of header -------------------------------------------------------------
+Logical :: verbose
 
 !----------------------------------------------------------
 ! 0. Setup
@@ -60,50 +31,12 @@ Namelist / run_settings / fname_plist, fname_ves,  &
 Call init_mpi
 verbose = .false.
 If (rank .eq. 0) verbose = .true. 
-If (verbose) Write(6,'(/A)') '-------------------------------------------------------------------------'
-
-! Defaults
-calc_lc = .true.
-calc_theta = .false.
-
-! Read the run settings namelist file
+If (verbose) Write(*,'(/A)') '-------------------------------------------------------------------------'
 setup_bfield_verbose = verbose
-If (verbose) Write(*,*) 'Reading run settings from run_settings.nml'
-Open(iu_nl,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
-If ( iocheck .ne. 0 ) Then
-  Write(6,*) 'Error opening namelist file'
-  Stop 'Exiting: I/O Error in div3d_follow_and_int.f90'
-Endif
-Read(iu_nl,nml=run_settings)
-Rewind(iu_nl)
-Read(iu_nl,nml=bfield_nml)
-Close(iu_nl)
 
-If (verbose) Write(*,*) 'Initializing random number with base seed:',myseed
-Call init_random_seed(myseed*(rank+1))
+! Read namelists
+Call read_run_settings_namelist(verbose)
 
-period = 2.d0*pi/Real(nfp,real64)
-dphi_line_surf = dphi_line_surf_deg * pi/180.d0
-dphi_line_diff = dphi_line_diff_deg * pi/180.d0
-ns_line_surf = Floor(ntran_surf*2.d0*pi/Abs(dphi_line_surf))
-ns_line_diff = Floor(ntran_diff*2.d0*pi/Abs(dphi_line_diff))
-
-If (verbose) Write(*,'(/A,G0.3)') 'hit_length: ',hit_length
-If (hit_length .le. 0.d0) Then
-   If (verbose) Write(*,'(/A)') 'Turning off hitline because hit_length <= 0'
-   nhitline = 0
-Else
-   nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))
-   If (verbose) Write(*,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
-Endif
-
-If (verbose) Then
-   If (calc_lc) Then
-      Write(*,*) 'Computing one-directional connection length'
-   Else
-      Write(*,*) 'Not computing one-directional connection length'   
-   Endif
-Endif
 
 !----------------------------------------------------------
 ! 1. Initialize magnetic field

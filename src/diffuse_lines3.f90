@@ -62,6 +62,7 @@ Do While (line_start_data_i(1) .ne. -1)
       Allocate(r_hitline(nhitline))
       Allocate(z_hitline(nhitline))
       Allocate(phi_hitline(nhitline))      
+
       Call line_follow_and_int(Rstart_local,Zstart_local, &
            Pstart_local,dphi_line_diff,nsteps_line_local,&
            dmag,period,pint,iout,r_hitline, &
@@ -590,7 +591,7 @@ Do i=1,npts_line - 1
 
           If (ihit_tmp .eq. 1) Then
             ihit = 1
-            Write(6,'(A,I0,A,I0,A,I0,4(F8.3))') ' Line ',linenum,' hit! [i,ipart,P,Lc] ',&
+            Write(*,'(A,I0,A,I0,A,I0,1X,4(G0.3,1X))') ' Line ',linenum,' hit! [i,ipart,P,Lc] ',&
                  i,' ',ipart,pint(1),pint(2),pint(3),totL
             iout(1) = ihit
             iout(2) = ipart
