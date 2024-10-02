@@ -45,14 +45,17 @@ End Subroutine init_mpi
 !-----------------------------------------------------------------------------
 !+ Finalizses mpi computing
 !-----------------------------------------------------------------------------
-Subroutine fin_mpi
-
+Subroutine fin_mpi(iserror)
 Implicit None
+Logical, Intent(In) :: iserror  
 
-Call MPI_FINALIZE(ierr_mpi)
+If (iserror) Then
+   Write(*,*) "Exiting due to error on rank: ", rank
+   Call MPI_ABORT(MPI_COMM_WORLD,1,ierr_mpi)
+Else
+   Call MPI_FINALIZE(ierr_mpi)
+Endif
 
 End Subroutine fin_mpi
-
-
 
 End Module parallel_mod

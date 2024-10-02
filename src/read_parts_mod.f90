@@ -220,7 +220,8 @@ Endsubroutine load_w7_part
 !+ Reads 2d jpart file 
 !-----------------------------------------------------------------------------
 Subroutine load_2d_jpart(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart)
-Use kind_mod
+Use kind_mod, Only : int32, real64
+Use parallel_mod, Only : fin_mpi 
 Use io_unit_spec, Only : iu_thispart
 Use phys_const, Only : pi
 Implicit none
@@ -231,12 +232,16 @@ Character(len=100), Intent(out) :: label
 Integer(int32),Intent(out) :: msym
 Real(real64),Dimension(ntor,npol), Intent(out) :: &
   Rpart, Zpart, Phipart
-Integer(int32) :: itor, ipol, ntor_dum, npol_dum
+Integer(int32) :: itor, ipol, ntor_dum, npol_dum, iostat
 ! Local variables
 Real(real64) :: rshift, zshift
 !- End of header -------------------------------------------------------------
 
-open(iu_thispart,file=fname)
+open(iu_thispart,file=fname,status='old',iostat=iostat)
+If (iostat /= 0) Then
+   Write(*,*) "Error: Unable to open file: ",trim(fname)
+   Call fin_mpi(.true.) ! True means this is an exit-on-error
+Endif
 Read(iu_thispart,*) label
 Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
 
@@ -265,16 +270,21 @@ Endsubroutine load_2d_jpart
 !+ Get dimensions from part file
 !-----------------------------------------------------------------------------
 Subroutine query_part(fname,ntor,npol)
-Use kind_mod
+Use kind_mod, Only : int32, real64
+Use parallel_mod, Only : fin_mpi
 Use io_unit_spec, Only : iu_thispart
 Implicit none
 Character(len=100), Intent(in) :: fname
 Integer(int32), Intent(out) :: ntor,npol
-Integer(int32) :: nfp
+Integer(int32) :: nfp, iostat
 Real(real64) :: rshift, zshift
 Character(len=100) :: label
 !- End of header -------------------------------------------------------------
-Open(iu_thispart,file=fname)
+Open(iu_thispart,file=fname,status='old',iostat=iostat)
+If (iostat /= 0) Then
+   Write(*,*) "Error: Unable to open file: ",trim(fname)
+   Call fin_mpi(.true.) ! True means this is an exit-on-error
+Endif
 Read(iu_thispart,*) label
 Read(iu_thispart,*) ntor, npol, nfp, rshift, zshift
 Close(iu_thispart)

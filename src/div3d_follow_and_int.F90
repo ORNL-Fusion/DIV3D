@@ -9,13 +9,12 @@ program div3d_follow_and_int
 ! To do:
 !  - Add default namelist variables or check for missing
 !  - Vessel intersection is just nearest phi cut
-!  - Check allocation/deallocation
 !  - Need to add exiting routine to deallocate and finalize mpi
 !
 ! Modules used:
 Use kind_mod, Only : real64, int32
 Use parallel_mod
-Use io_unit_spec, Only: iu_nl ! Run settings namelist file unit (run_settings.nml,input)
+Use io_unit_spec, Only: iu_nl 
 Use read_parts_mod
 Use setup_bfield_module
 Use phys_const, Only : pi
@@ -69,7 +68,7 @@ calc_theta = .false.
 
 ! Read the run settings namelist file
 setup_bfield_verbose = verbose
-If (verbose) Write(6,*) 'Reading run settings from run_settings.nml'
+If (verbose) Write(*,*) 'Reading run settings from run_settings.nml'
 Open(iu_nl,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
 If ( iocheck .ne. 0 ) Then
   Write(6,*) 'Error opening namelist file'
@@ -80,7 +79,7 @@ Rewind(iu_nl)
 Read(iu_nl,nml=bfield_nml)
 Close(iu_nl)
 
-If (verbose) Write(6,*) 'Initializing random number with base seed:',myseed
+If (verbose) Write(*,*) 'Initializing random number with base seed:',myseed
 Call init_random_seed(myseed*(rank+1))
 
 period = 2.d0*pi/Real(nfp,real64)
@@ -89,13 +88,13 @@ dphi_line_diff = dphi_line_diff_deg * pi/180.d0
 ns_line_surf = Floor(ntran_surf*2.d0*pi/Abs(dphi_line_surf))
 ns_line_diff = Floor(ntran_diff*2.d0*pi/Abs(dphi_line_diff))
 
-Write(*,*) 'hit_length:',hit_length
+If (verbose) Write(*,'(/A,G0.3)') 'hit_length: ',hit_length
 If (hit_length .le. 0.d0) Then
-   If (verbose) Write(6,'(/A)') 'Turning off hitline because hit_length <= 0'
+   If (verbose) Write(*,'(/A)') 'Turning off hitline because hit_length <= 0'
    nhitline = 0
 Else
    nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))
-   If (verbose) Write(6,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
+   If (verbose) Write(*,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
 Endif
 
 If (verbose) Then
@@ -145,11 +144,11 @@ End Select
 !  -- read part files
 !  -- make trianges from parts
 !----------------------------------------------------------------
-If (verbose) Write(6,'(A)') ' Reading parts list and part files:'
+If (verbose) Write(*,'(A)') ' Reading parts list and part files:'
 Call read_parts(fname_plist,fname_parts,fname_ves,verbose)
   
 ! Make triangles from 2d parts
-If (verbose) Write(6,'(/A/)') ' Generating 2d part triangles'
+If (verbose) Write(*,'(/A/)') ' Generating 2d part triangles'
 Call make_triangles(fname_ptri,fname_ptri_mid)
 
 !----------------------------------------------------------------
@@ -201,7 +200,7 @@ Endif
 
 
 ! Finialize MPI
-Call fin_mpi
+Call fin_mpi(.false.) ! False means this is a non-error exit
 
 end program div3d_follow_and_int
 
