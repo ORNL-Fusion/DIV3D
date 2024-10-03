@@ -89,7 +89,8 @@ add_executable( div3d
   ${SRC_DIR}/math_routines_mod.f90
   ${SRC_DIR}/parallel_mod.f90  
   ${SRC_DIR}/phys_const.f90
-  ${SRC_DIR}/read_parts_mod.f90  
+  ${SRC_DIR}/read_parts_mod.f90
+  ${SRC_DIR}/run_settings_namelist.f90
   ${SRC_DIR}/trace_surface.f90
   ${SRC_DIR}/setup_bfield.f90
   ${SRC_DIR}/VMEC_routines_mod.f90  

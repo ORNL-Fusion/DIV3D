@@ -1,3 +1,6 @@
+! --Read namelist
+! --Init random number generator
+! --basic conversions
 Module run_settings_namelist
   Use kind_mod, Only : real64, int32
   Implicit None
@@ -76,9 +79,9 @@ Contains
     If (verbose) Write(*,*) 'Initializing random number with base seed:',myseed
     Call init_random_seed(myseed*(rank+1))
     
-    If (verbose) Write(*,'(/A,G0.3)') 'hit_length: ',hit_length
+    If (verbose) Write(*,'(A,G0.3)') ' hit_length: ',hit_length
     If (hit_length .le. 0.d0) Then
-       If (verbose) Write(*,'(/A)') 'Turning off hitline because hit_length <= 0'
+       If (verbose) Write(*,'(A)') ' Turning off hitline because hit_length <= 0'
        nhitline = 0
     Else
        nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))

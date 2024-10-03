@@ -192,7 +192,7 @@ Contains
 
     !- End of header -------------------------------------------------------------
 
-    Write(*,*) 'Reading gfile: ',filename
+    Write(*,*) 'Reading gfile: ',trim(filename)
 
     Open(UNIT=99,FILE=filename,STATUS="old",IOSTAT=iocheck)
     If ( iocheck /= 0 ) Then
