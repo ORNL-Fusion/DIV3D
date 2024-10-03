@@ -77,8 +77,9 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * myseed = random number generator seed
     * hit_length = length of end of fieldline recorded. This is an estimate computed as floor(hit_length/Rstart/abs(dphi_line_diff))
     * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge
-    * calc_lc = logical variable controlling whether connection length is computed
-    * calc_theta = logical variable controlling whether angle between field line and plane of facet is calculated. 
+    * calc_lc = logical variable controlling whether connection length is computed. (default true)
+    * calc_theta = logical variable controlling whether angle between field line and plane of facet is calculated. (default false)
+    * quiet_bfield = logical variable controlling whether warnings from bfield routines are printed to screen. (default true)
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
