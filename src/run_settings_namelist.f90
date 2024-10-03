@@ -41,6 +41,7 @@ Contains
     Use parallel_mod, Only : fin_mpi, rank
     Use setup_bfield_module, Only : bfield_nml
     Use init_random, Only : init_random_seed
+    Use bfield, Only : verbose_bfield
     Implicit None
     Logical, Intent(In) :: verbose
     
@@ -49,6 +50,8 @@ Contains
     calc_theta = .false.
     quiet_bfield = .true.
 
+    verbose_bfield = .not. quiet_bfield
+    
     If (verbose) Write(*,*) 'Reading run settings from run_settings.nml'
 
     Open(iu_nl,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)

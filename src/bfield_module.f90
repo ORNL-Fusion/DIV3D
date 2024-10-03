@@ -35,7 +35,7 @@ Module bfield
   Private
   Public :: bfield_type, coil_type, g_type
   Public :: calc_B_rzphi_general
-
+  Logical, Public, Save :: verbose_bfield = .true.
 Contains
 
   Subroutine calc_B_rzphi_general(bfield,r,z,phi,n,br,bz,bphi,ierr_out)
@@ -55,7 +55,7 @@ Contains
     Integer(int32), Intent(Out), Optional :: ierr_out
     Real(real64) :: btmp(n,3)
     Integer(int32) :: ierr
-
+    
     ierr = 0
     If (Present(ierr_out)) ierr_out = 0
 
@@ -66,7 +66,7 @@ Contains
     
     Select Case (bfield%method)
     Case (0)
-      Call bfield_geq_bicub(bfield%g,r,z,n,btmp,ierr)
+      Call bfield_geq_bicub(bfield%g,r,z,n,btmp,ierr,verbose_bfield)
       br   = btmp(:,1)
       bz   = btmp(:,2)
       bphi = btmp(:,3)       

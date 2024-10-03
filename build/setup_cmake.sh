@@ -40,7 +40,6 @@ else
     echo Please add your machine.
     echo
 fi
-echo bye
 
 if [ $VERBOSE_BUILD -eq 1 ]
 then

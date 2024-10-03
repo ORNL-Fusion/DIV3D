@@ -116,7 +116,7 @@ Contains
       bfield%method      = 16
       bfield%method_2d   = -1
       bfield%method_pert = -1
-    Call open_bgrid_fields(bgrid_fname)    
+    Call open_bgrid_fields(bgrid_fname,setup_bfield_verbose)
   End Subroutine setup_bfield_bgrid
 
   

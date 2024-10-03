@@ -68,14 +68,12 @@ Subroutine follow_fieldlines_rzphi_diffuse(bfield,rstart,zstart,phistart,Npts,dp
 ! Author(s): J.D Lore - 04/20/2011
 !
 ! Modules used:
-  Use kind_mod, Only: real64, int32
-  Implicit None
-  ! Input/output                      !See above for descriptions
-  Type(bfield_type), Intent(In) :: bfield
-  Integer(int32),Intent(in) :: Npts, nsteps
-  Real(real64),Intent(in),Dimension(Npts) :: rstart(Npts),zstart(Npts),phistart(Npts)
-  Real(real64),Intent(in) :: dphi, dmag
-  
+Use kind_mod, Only: real64, int32
+Implicit None
+Type(bfield_type), Intent(In) :: bfield
+Integer(int32),Intent(in) :: Npts, nsteps
+Real(real64),Intent(in),Dimension(Npts) :: rstart(Npts),zstart(Npts),phistart(Npts)
+Real(real64),Intent(in) :: dphi, dmag
 Real(real64),Intent(out),Dimension(Npts,nsteps+1) :: r,z,phi
 Integer(int32),Intent(out) :: ierr(Npts), i_last_good(Npts)
 ! Local variables
@@ -356,7 +354,6 @@ Integer(int32), Intent(In) :: n
 Integer(int32), Intent(Out) :: ierr
 Real(real64), Intent(In), Dimension(n) :: RZ
 Real(real64), Intent(Out), Dimension(n) :: df
-
 Integer(int32),Parameter :: Npts = 1
 Real(real64) :: bval(Npts,3)
 Integer(int32) :: ierr_b
@@ -640,7 +637,7 @@ Do i=1,nsteps
   bval = 0._real64
   ierr_b = 0
   phi_tmp(1) = phi
-  Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),phi_tmp,1,bval(1,1),bval(1,2),bval(1,3),ierr_b) 
+  Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),phi_tmp,1,bval(1,1),bval(1,2),bval(1,3),ierr_b)
   Br   = bval(1,1)
   Bz   = bval(1,2)
   Bphi = bval(1,3)
