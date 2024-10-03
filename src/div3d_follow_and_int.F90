@@ -14,22 +14,19 @@ program div3d_follow_and_int
 ! Modules used:
 Use run_settings_namelist
 Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
-Use read_parts_mod
+Use read_parts_mod, Only : read_parts, make_triangles
 Use setup_bfield_module
 Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
 Implicit none
 
-Logical :: verbose
+Logical :: verbose = .false.
 
 !----------------------------------------------------------
 ! 0. Setup
 ! --Initialize MPI
 ! --Read namelist
-! --Init random number generator
-! --basic conversions
 !----------------------------------------------------------
 Call init_mpi
-verbose = .false.
 If (rank .eq. 0) verbose = .true. 
 If (verbose) Write(*,'(/A)') '-------------------------------------------------------------------------'
 setup_bfield_verbose = verbose
@@ -37,12 +34,10 @@ setup_bfield_verbose = verbose
 ! Read namelists
 Call read_run_settings_namelist(verbose)
 
-
 !----------------------------------------------------------
 ! 1. Initialize magnetic field
 !----------------------------------------------------------
 ! Setup rmp field
-if (verbose .AND. rank .EQ. 0) write(*,*) 'Bfield method is ',rmp_type
 Select Case (rmp_type)
   Case ('g')
     Call setup_bfield_g3d
@@ -63,10 +58,10 @@ Select Case (rmp_type)
       Write(*,*) '''g'''      
       Write(*,*) '''vmec_coils'''
       Write(*,*) '''vmec_coils_to_fil'''
+      Write(*,*) '''bgrid'''
 #ifdef HAVE_FXDR 
       Write(*,*) '''xdr'''
 #endif
-      Write(*,*) '''bgrid'''            
     Endif
     Stop      
 End Select
