@@ -271,12 +271,12 @@ Endsubroutine load_2d_jpart
 !-----------------------------------------------------------------------------
 Subroutine query_part(fname,ntor,npol)
 Use kind_mod, Only : int32, real64
-Use parallel_mod, Only : fin_mpi
 Use io_unit_spec, Only : iu_thispart
+Use parallel_mod, Only : fin_mpi
 Implicit none
 Character(len=100), Intent(in) :: fname
 Integer(int32), Intent(out) :: ntor,npol
-Integer(int32) :: nfp, iostat
+Integer(int32) :: nfp_part, iostat
 Real(real64) :: rshift, zshift
 Character(len=100) :: label
 !- End of header -------------------------------------------------------------
@@ -286,7 +286,7 @@ If (iostat /= 0) Then
    Call fin_mpi(.true.) ! True means this is an exit-on-error
 Endif
 Read(iu_thispart,*) label
-Read(iu_thispart,*) ntor, npol, nfp, rshift, zshift
+Read(iu_thispart,*) ntor, npol, nfp_part, rshift, zshift
 Close(iu_thispart)
 Endsubroutine
 !-----------------------------------------------------------------------------
@@ -364,7 +364,7 @@ Subroutine read_parts(fname_plist,fname_parts,fname_ves,verbose)
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
 ! Modules used:
-Use kind_mod
+Use kind_mod, Only : int32, real64
 Use io_unit_spec, Only: &
 iu_plist, &    ! Parts filename list file (input) 
 iu_parts
@@ -373,6 +373,7 @@ Implicit none
 Character(len=300), Intent(in) ::  fname_plist, fname_parts, fname_ves
 Logical, Intent(in) :: verbose
 Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
+Real(real64) :: check_AS
 Integer(int32) :: i, j
 Integer(int32) :: ipart
 Integer(int32) :: ntor, npol
@@ -425,10 +426,22 @@ Do ipart = 1,nparts
   Allocate( Ppart(ntor,npol),Rpart(ntor,npol),Zpart(ntor,npol) )
 
   If (part_type(ipart) .EQ. 0) Then
-    Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+     Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+!xxx     Call check_if_part_is_AS(
   Else
-    Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+     Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+     ! Need to add AS part here! XXX
   Endif
+
+  check_AS = 0._real64
+  Do i=2,ntor
+     check_AS = Max(Maxval(Abs(Rpart(i,1:npol) - Rpart(1,1:npol))) &
+          + Maxval(Abs(Zpart(i,1:npol) - Zpart(1,1:npol))),check_AS)
+  Enddo
+  If (check_AS .lt. 1.e-8_real64) Then
+     If (verbose) Write(*,*) 'Part ',ipart, ' is AS?'
+  Endif
+       
 
   Rparts(ipart,1:ntor,1:npol) = Rpart
   Zparts(ipart,1:ntor,1:npol) = Zpart

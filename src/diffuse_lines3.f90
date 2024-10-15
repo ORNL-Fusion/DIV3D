@@ -351,15 +351,15 @@ Integer(int32) :: ifail, ierr(1),ilg(1)
 
 !- End of header -------------------------------------------------------------
 
-
+!write(*,*) 'a'
 Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
      dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
 ifail = ilg(1)
-
+!write(*,*) 'b'
 Call check_line_for_intersections(period,pint,iout, &
      r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
      lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
-
+!write(*,*) 'c'
 
 End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
@@ -376,6 +376,7 @@ Use kind_mod, Only : real64, int32
 Use read_parts_mod
 Use inside_vessel_mod, Only : inside_vessel
 Use math_routines_mod, Only : line_seg_facet_int
+Use parallel_mod, Only : fin_mpi
 Implicit None
 
 Real(real64), Intent(in) :: period, lsfi_tol
@@ -482,7 +483,7 @@ Do i=1,npts_line - 1
     pt2(2) = Ytmp(ind_max(1))
     pt2(3) = Ztmp(ind_max(1))
 
-    ! Define explicit form of plane at 2*pi/Nfp 
+    ! Define explicit form of plane at 2*pi/nfp (period)
     pa = [0.d0,0.d0,0.d0]
     pb = [0.d0,0.d0,1.d0]
     pc = [cos(period),sin(period),0.d0]
@@ -494,8 +495,8 @@ Do i=1,npts_line - 1
     ! Calculate the position on the line that intersects the plane
     denom = Aplane*(pt2(1) - pt1(1)) + Bplane*(pt2(2) - pt1(2))
     If (abs(denom) .lt. 1.d-15) Then
-      Write(6,*) 'Error: Line did not hit plane at 2*pi/Nfp'
-      Stop
+      Write(*,*) 'Error: Line did not hit plane at 2*pi/nfp (is parallel based on dot product)'
+      Call fin_mpi(.true.)
     Endif
     mu = - (Aplane*pt1(1) + Bplane*pt1(2)) / denom
     X3 = pt1(1) + mu * (pt2(1) - pt1(1))
