@@ -55,6 +55,7 @@ Module g3d_module
   Public :: g_type
   Public :: readg_g3d, close_gfile
   Public :: bfield_geq_bicub, get_psi_derivs_bicub
+  Public :: get_psiN_bicub
 Contains
   
   !-----------------------------------------------------------------------------
@@ -587,6 +588,88 @@ Contains
     Deallocate(g%fpol_bscoef)
   End Subroutine close_gfile
 
+  !-----------------------------------------------------------------------------
+  !+ returns psiN from gfile bfield at R,Z
+  !-----------------------------------------------------------------------------
+  Subroutine get_psiN_bicub(g,R1,Z1,Npts,psiNout,ierr)
+    Use kind_mod, Only: real64, int32
+    Use bspline
+    Implicit None
+
+    ! Input/output                      !See above for descriptions
+    Type(g_type), Intent(In) :: g
+    Integer(int32),Intent(in) :: Npts
+    Real(real64),Dimension(Npts),Intent(in)  :: R1,Z1
+    Real(real64),Dimension(Npts),Intent(out) :: psiNout
+    Integer(int32),Intent(out) :: ierr
+    ! Local variables
+    Real(real64),Dimension(Npts) :: psi
+    Integer(int32) :: ierr_tmp
+
+    ierr = 0
+    Call get_psi_bicub(g,R1,Z1,Npts,psi,ierr_tmp)
+    psiNout = (psi - g%ssimag)/(g%ssibry-g%ssimag)
+  End Subroutine get_psiN_bicub
+
+  !-----------------------------------------------------------------------------
+  !+ returns psi from gfile bfield at R,Z
+  !-----------------------------------------------------------------------------
+  Subroutine get_psi_bicub(g,R1,Z1,Npts,psiout,ierr)
+    Use kind_mod, Only: real64, int32
+    Use bspline
+    Implicit None
+
+    ! Input/output                      !See above for descriptions
+    Type(g_type), Intent(In) :: g
+    Integer(int32),Intent(in) :: Npts
+    Real(real64),Dimension(Npts),Intent(in)  :: R1,Z1
+    Real(real64),Dimension(Npts),Intent(out) :: psiout
+    Integer(int32),Intent(out) :: ierr
+
+    ! Local Scalars
+    Integer(int32) :: ir,iz,ii
+    Real(real64) :: dir,diz
+
+    !- End of header -------------------------------------------------------------
+
+    If (.not. Allocated(g%r) ) Then
+      Write(*,*) 'G VARIABLES NOT ALLOCATED, EXITING FROM get_psi_bicub!'
+      Stop
+    Endif
+
+    ierr = 0
+    Do ii = 1,Npts 
+
+      ! update for vec.
+      ir = Floor( (R1(ii)-g%r(1))/g%dr ) + 1
+      iz = Floor( (Z1(ii)-g%z(1))/g%dz ) + 1
+
+      ! Check for points off grid
+      If ( (ir .le. 2) .or. (ir .ge. g%mw - 1) ) Then
+        Write(*,'(3(a,f12.3),a)') 'psi_geq: Point off grid in R: R = ',R1(ii),&
+             '. [Rmin,Rmax] = [',g%r(1),',',g%r(g%mw),']'
+        ierr = 1
+        psiout(ii:Npts) = 0.d0
+        return
+      Endif
+      If ( (iz .le. 1) .or. (iz .ge. g%mh - 1) ) Then
+        Write(*,'(3(a,f12.3),a)') 'psi_geq: Point off grid in Z: Z = ',Z1(ii),&
+             '. [Zmin,Zmax] = [',g%z(1),',',g%z(g%mh),']'
+        ierr = 1
+        psiout(ii:Npts) = 0.d0
+        return
+      Endif
+
+      dir = (R1(ii) - g%r(ir))/g%dr
+      diz = (Z1(ii) - g%z(iz))/g%dz
+      psiout(ii) = g%ip_sign*psi_bi(g,iz + g%mh*(ir-1),dir,diz)
+
+
+    Enddo
+
+  End Subroutine get_psi_bicub
+  
+  
 End Module g3d_module
 
 

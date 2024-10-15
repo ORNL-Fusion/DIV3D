@@ -84,7 +84,8 @@ add_executable( div3d
   ${SRC_DIR}/init_points_line.f90
   ${SRC_DIR}/init_random_seed.f90  
   ${SRC_DIR}/inside_vessel_mod.f90
-  ${SRC_DIR}/io_unit_spec.f90  
+  ${SRC_DIR}/io_unit_spec.f90
+  ${SRC_DIR}/initialize_bfield_div3d.F90
   ${SRC_DIR}/kind_mod.f90
   ${SRC_DIR}/math_routines_mod.f90
   ${SRC_DIR}/parallel_mod.f90  

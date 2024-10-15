@@ -3,21 +3,20 @@ Module setup_bfield_module
   Use bfield, Only : bfield_type, coil_type, g_type
   
   Implicit None
-
-!  Private
-!  Public :: rmp_type
-!  Public :: bfield_nml
   
   Type(bfield_type) :: bfield
   Type(g_type) :: g  
   Type(coil_type) :: coil
   
-  Integer(int32), Parameter :: max_extcur              = 100
+  Integer(int32), Parameter :: max_extcur = 100
   Logical :: setup_bfield_verbose = .true. ! To be used by calling routines to supress output (particularly in MPI runs)
   ! ------------ BFIELD NAMELIST VARIABLES ----------------
   
   Real(real64) :: &
        vmec_extcur_set(max_extcur)            = 0.d0
+
+  Integer(int32) :: &
+       nfp_bfield = 0
   
   Character(Len=300) :: &
        rmp_type                         = 'none', &
@@ -35,7 +34,7 @@ Module setup_bfield_module
        gfile_name, &       
        vmec_coils_file, vmec_extcur_set, &
        xdr_fname, xdr_check, xdr_verbose, &
-       bgrid_fname
+       bgrid_fname, nfp_bfield
   
   ! ------------ BFIELD NAMELIST VARIABLES ----------------
   

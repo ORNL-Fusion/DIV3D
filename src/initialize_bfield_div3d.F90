@@ -1,0 +1,65 @@
+Module initialize_bfield_div3d
+  Implicit None
+Contains
+
+  Subroutine init_bfield(verbose)
+    Use setup_bfield_module
+    Use parallel_mod, Only : fin_mpi
+    Use run_settings_namelist, Only : Rstart, Zstart
+    Use g3d_module, Only : get_psiN_bicub
+    Use bgrid_module, Only : nsym
+    Use xdr_routines_mod, Only : nperio
+    Implicit None
+    Logical, Intent(In) :: verbose
+    Real(real64) :: psiN(1)
+    Integer(int32) :: ierr
+
+    setup_bfield_verbose = verbose
+    
+    Select Case (rmp_type)
+    Case ('g')
+       Call setup_bfield_g3d
+       Call get_psiN_bicub(bfield%g,(/Rstart/),(/Zstart/),1,psiN,ierr)
+       If (verbose) Write(*,*) "Psi_N of start point",psiN(1)
+       If (nfp_bfield .ne. 1) Then
+          Write(*,*) "Error: bfield method is g but nfp_bfield is not 1",nfp_bfield
+          Call fin_mpi(.true.)
+       Endif
+#ifdef HAVE_FXDR 
+    Case ('xdr')
+       Call setup_bfield_xdr
+       If (nfp_bfield .ne. nperio) Then
+          Write(*,*) "Error: nfp_bfield is not equal to nperio for xdr",nfp_bfield,nperio
+          Call fin_mpi(.true.)
+       Endif
+#endif 
+    Case ('vmec_coils')
+       Call setup_bfield_vmec_coils
+    Case ('vmec_coils_to_fil')
+       Call setup_bfield_vmec_coils_to_fil
+    Case ('bgrid')
+       Call setup_bfield_bgrid
+       If (nfp_bfield .ne. nsym) Then
+          Write(*,*) "Error: nfp_bfield is not equal to nsym for bgrid",nfp_bfield,nsym
+          Call fin_mpi(.true.)
+       Endif
+    Case Default
+       If (verbose) Then
+          Write(*,*) 'Unknown rmp_type in div3d!'
+          Write(*,*) 'Current options are:'
+          Write(*,*) '''g'''      
+          Write(*,*) '''vmec_coils'''
+          Write(*,*) '''vmec_coils_to_fil'''
+          Write(*,*) '''bgrid'''
+#ifdef HAVE_FXDR 
+          Write(*,*) '''xdr'''
+#endif
+       Endif
+       Call fin_mpi(.true.)
+    End Select
+
+    
+    
+  End Subroutine init_bfield
+
+End Module initialize_bfield_div3d

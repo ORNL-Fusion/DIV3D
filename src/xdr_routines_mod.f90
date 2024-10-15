@@ -24,6 +24,7 @@ Public :: readbgrid_xdr
 Public :: bint_xdr
 Public :: bint_xdr_n
 Public :: write_xdr_to_ascii
+Public :: nperio
 
 contains
 
