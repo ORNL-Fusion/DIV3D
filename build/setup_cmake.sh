@@ -31,7 +31,7 @@ fi
 rm -rf CMakeFiles CMakeCache.txt
 
 echo 
-if [ "$MACHINE_ID" == "ultrabucky" ] || [ "$MACHINE_ID" == "fusion3" ]; then
+if [ "$MACHINE_ID" == "ultrabucky" ] || [ "$MACHINE_ID" == "fusion3" ] || [ "$MACHINE_ID" == "mac145666" ]; then
     cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE ..
 elif [ "$MACHINE_ID" == "THEALTANG23" ]; then
     cmake -DCMAKE_Fortran_COMPILER=mpif90 -DCMAKE_BUILD_TYPE:String=$BUILD_TYPE ..
