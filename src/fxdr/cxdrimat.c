@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <rpc/rpc.h>
 #include "cfxdr.h"
 
@@ -42,7 +43,7 @@ extern XDR_element xdrfile[MAX_N_XDR_FILES];
 				}
 			}
 		ne = *nels;
-		if( ! xdr_array( xdrs, (char **)&i, &ne, *nels, sizeof(int), xdr_int )) {
+		if( ! xdr_array( xdrs, (char **)&i, &ne, *nels, sizeof(int), (xdrproc_t)xdr_int )) {
 			if( xdrfile[*ixdrid].return_on_error ) {
 				*retval = FXDRERR_WRITEERR;
 				return;
@@ -59,7 +60,7 @@ extern XDR_element xdrfile[MAX_N_XDR_FILES];
 		}
 	else
 		{
-		if( ! xdr_array( xdrs, (char **)&i, &actual_nels, *nels, sizeof(int), xdr_int )) {
+		  if( ! xdr_array( xdrs, (char **)&i, &actual_nels, *nels, sizeof(int), (xdrproc_t)xdr_int )) {
 			if( xdrfile[*ixdrid].return_on_error ) {
 				*retval = FXDRERR_READERR;
 				return;

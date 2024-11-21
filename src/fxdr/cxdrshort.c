@@ -1,6 +1,7 @@
 /* Write/Read a short */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <rpc/rpc.h>
 #include "cfxdr.h"
 

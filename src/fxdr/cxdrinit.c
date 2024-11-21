@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 #include <rpc/rpc.h>
+#include <stdlib.h>
 #include "cfxdr.h"
+
+int cxdrgetid();
 
 XDR_element	xdrfile[MAX_N_XDR_FILES] = {
 	NULL, 0, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 0, NULL,
@@ -129,7 +133,7 @@ XDR_element	xdrfile[MAX_N_XDR_FILES] = {
 			}
 		else
 			{
-			fprintf( stderr, "error: cxdrinit.c called with mode=%ld\n", *mode );
+			fprintf( stderr, "error: cxdrinit.c called with mode=%d\n", *mode );
 			exit( -1 );
 			}
 		}

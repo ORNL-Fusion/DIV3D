@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 project ( div3d )
 enable_language (Fortran)
 
@@ -25,7 +25,7 @@ enable_language (Fortran)
 set (USE_FXDR 1)
 
 # Compiler flags
-if (CMAKE_COMPILER_IS_GNUCC)
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     # gfortran
   Message ("Using gfortran flags")
   set (CMAKE_Fortran_FLAGS_RELEASE "-cpp -O3")
