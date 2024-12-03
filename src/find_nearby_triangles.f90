@@ -1,8 +1,8 @@
 Subroutine find_nearby_triangles_v2(rr,pp,zz,dL,period)
 
-Use kind_mod
+Use kind_mod, Only : real64, int32
 Use read_parts_mod
-Use math_routines_mod, Only: line_seg_facet_int
+Use math_routines_mod, Only: wrap_phi
 Implicit None
 Real(real64),Intent(in) :: rr,pp,zz,dL, period
 Real(real64) :: xm,ym,zm,R2,P2,Z2,X2,Y2,dd
@@ -16,10 +16,7 @@ allocate(near_tri_tmp(itmp))
 R2 = rr
 P2 = pp
 Z2 = zz
-Do While (pp .lt. 0.d0)
-  P2 = P2 + period
-Enddo
-P2 = mod(P2,period)
+Call wrap_phi(P2,period)
 X2 = R2*cos(P2)
 Y2 = R2*sin(P2)
 

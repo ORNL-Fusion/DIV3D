@@ -110,25 +110,11 @@ End Subroutine diffuse_lines3_worker
 !-----------------------------------------------------------------------------
 Subroutine diffuse_lines3(fname_launch,dmag,nsteps_line,fname_hit, &
 fname_intpts,fname_nhit,nhitline)
-!
-! Description: 
-!
-! Inputs: 
-!
-! Outputs:
-!   none
-!
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/15/2011   JDL
-!  1.1     09/28/2012   Switched to buffered calls for load balancing.
 ! Author(s): J.D. Lore - 07/15/2011 - xxx
 
 ! Modules used:
 Use kind_mod
 Use parallel_mod
-Use inside_vessel_mod, Only: inside_vessel
 Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
 Use read_parts_mod
 Implicit none
@@ -220,6 +206,7 @@ work_done = 0
 hitcount = 0
 
 Open(iu_int,file=fname_intpts,iostat=iocheck)
+Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
 Open(iu_hit,file=fname_hit   ,iostat=iocheck)   
 Do While ( work_done .ne. 1 )
   Do dest = 1,nprocs - 1
@@ -244,10 +231,10 @@ Do While ( work_done .ne. 1 )
         if ( ihit .ge. 1 ) Then 
           hitcount = hitcount + 1
           iout = line_done_data_i(2:5)
-          pint = line_done_data_r(1:3)
+          pint = line_done_data_r(1:3) ! X,Y,Z
           totL = line_done_data_r(4)
           theta = line_done_data_r(5)
-          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL,theta
+          Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL,theta !R,Z,phi,ihit,ipart,itri,i,totL,theta
           If (nhitline .gt. 0) Then
              r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
              z_hitline   = line_done_data_r2(1+1*nhitline:2*nhitline)
@@ -345,7 +332,6 @@ Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Logical, Intent(in) :: calc_lc, calc_theta
 
-
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
 Integer(int32) :: ifail, ierr(1),ilg(1)
 
@@ -356,9 +342,9 @@ Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1
      dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
 ifail = ilg(1)
 !write(*,*) 'b'
-Call check_line_for_intersections(period,pint,iout, &
+Call check_line_for_intersections(pint,iout, &
      r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
-     lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
+     nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
 !write(*,*) 'c'
 
 End Subroutine line_follow_and_int
@@ -368,18 +354,18 @@ End Subroutine line_follow_and_int
 !+ 
 !-----------------------------------------------------------------------------
 
-Subroutine check_line_for_intersections(period,pint,iout, &
-     r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,nsteps_line,rout,zout,phiout,ifail,totL, &
+Subroutine check_line_for_intersections(pint,iout, &
+     r_hitline,z_hitline,phi_hitline,nhitline,linenum,nsteps_line,rout,zout,phiout,ifail,totL, &
      calc_lc,calc_theta,theta)
 
 Use kind_mod, Only : real64, int32
 Use read_parts_mod
-Use inside_vessel_mod, Only : inside_vessel
-Use math_routines_mod, Only : line_seg_facet_int
+Use inside_vessel_mod, Only : inside_vessel, find_vessel_intersection
+Use math_routines_mod, Only : line_seg_facet_int, dist_2pts_cyl, wrap_phi, int_line_curve
 Use parallel_mod, Only : fin_mpi
+Use run_settings_namelist, Only : period, lsfi_tol, vessel_int_is_last_point
 Implicit None
 
-Real(real64), Intent(in) :: period, lsfi_tol
 Integer(int32), Intent(in) :: linenum, nsteps_line,ifail
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
@@ -389,23 +375,17 @@ Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
 Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 Logical, Intent(In) :: calc_lc, calc_theta
 
-Integer(int32) :: iseg
-Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri, inside_it
+Integer(int32) :: iseg, ierr_pint
+Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri
+Logical :: inside_it, inside_last
 Integer(int32), Dimension(1) :: ind_min, ind_max
-Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom
-Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end
-Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
+Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom, pint2D(2), rint,zint,uint
+Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end,r_start,r_end,R2a,R1a
+Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp, Pint2
 Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
-
-
+Real(real64) :: RLast, ZLast, PLast
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
-
 !- End of header -------------------------------------------------------------
-
-r_hitline = 0.d0
-z_hitline = 0.d0
-phi_hitline = 0.d0
-
 
 npts_line = nsteps_line + 1
 If (ifail .ne. nsteps_line) npts_line = ifail - 1
@@ -416,7 +396,13 @@ iout(:) = -1
 iout(1) = ihit
 totL = 0._real64
 Do i=1,npts_line - 1
-!  Write(*,*) i
+
+   r_hitline = 0.d0
+   z_hitline = 0.d0
+   phi_hitline = 0.d0
+   
+                 
+   !  Write(*,*) i
   ! Current point along line
   R1 = rout(i)
   Z1 = zout(i)
@@ -431,21 +417,15 @@ Do i=1,npts_line - 1
 
   ! Distance
   If (calc_lc) Then
-     totL = totL + sqrt(R1*R1 + R2*R2 - 2._real64*R1*R2*cos(dphi1) + Z1*Z1 + Z2*Z2 - 2._real64*Z1*Z2)
+     totL = totL + dist_2pts_cyl(R1, R2, Z1, Z2, P1, P2)
   Endif
 
-  ! Convert to Cartesian coordinates  
-  Do While (P1 .lt. 0.d0)
-    P1 = P1 + period
-  Enddo
-  P1 = Mod(P1,period)
+  ! Convert to Cartesian coordinates
+  Call wrap_phi(P1,period)
   X1 = R1*cos(P1)
   Y1 = R1*sin(P1)
 
-  Do While (P2 .lt. 0.d0)
-    P2 = P2 + period
-  Enddo
-  P2 = Mod(P2,period)
+  Call wrap_phi(P2,period)
   X2 = R2*cos(P2)
   Y2 = R2*sin(P2)
 
@@ -468,9 +448,11 @@ Do i=1,npts_line - 1
     X1a = Xtmp(ind_min(1))
     Y1a = Ytmp(ind_min(1))
     Z1a = Ztmp(ind_min(1))
+    R1a = Rtmp(ind_min(1))
     X2a = Xtmp(ind_max(1))
     Y2a = Ytmp(ind_max(1))
     Z2a = Ztmp(ind_max(1))
+    R2a = Rtmp(ind_max(1))
 
 
     !---------------------------------------------
@@ -506,10 +488,13 @@ Do i=1,npts_line - 1
     
     ! Define two new points 
     P1 = 0._real64
+    R1 = R3
     X1 = R3*cos(P1)
     Y1 = R3*sin(P1)
     Z1 = Z3
+    
     P2 = period
+    R2 = R3
     X2 = R3*cos(P2)
     Y2 = R3*sin(P2)
     Z2 = Z3
@@ -517,47 +502,52 @@ Do i=1,npts_line - 1
 
   Do iseg = 1,1+twofer
 
-  if (twofer .eq. 0) Then
-    p_start = P1
-    x_start = X1
-    y_start = Y1
-    z_start = Z1
-    p_end   = P2
-    x_end   = X2
-    y_end   = Y2
-    z_end   = Z2
-  endif
-  if (twofer .eq. 1) Then
-    if ( iseg .eq. 1) Then
+     if (twofer .eq. 0) Then
         p_start = P1
         x_start = X1
         y_start = Y1
         z_start = Z1
-        p_end   = P1a
-        x_end   = X1a
-        y_end   = Y1a
-        z_end   = Z1a
-    else
-        p_start = P2a
-        x_start = X2a
-        y_start = Y2a
-        z_start = Z2a
+        r_start = R1
         p_end   = P2
         x_end   = X2
         y_end   = Y2
         z_end   = Z2
-    endif
-  endif
-
+        r_end   = R2
+     endif
+     if (twofer .eq. 1) Then
+        if ( iseg .eq. 1) Then
+           p_start = P1
+           x_start = X1
+           y_start = Y1
+           z_start = Z1
+           r_start = R1
+           p_end   = P1a
+           x_end   = X1a
+           y_end   = Y1a
+           z_end   = Z1a
+           r_end   = R1a
+        else
+           p_start = P2a
+           x_start = X2a
+           y_start = Y2a
+           z_start = Z2a
+           r_start = R2a
+           p_end   = P2
+           x_end   = X2
+           y_end   = Y2
+           z_end   = Z2
+           r_end   = R2
+        endif
+     endif
     
-  ihit = 0
-  Do ipart=1,nparts
+     ihit = 0
+     Do ipart=1,nparts
 
-    !Check if this line segment is within the phi bounds of the part
-    Pmin = Pmins(ipart)
-    Pmax = Pmaxs(ipart)
+        !Check if this line segment is within the phi bounds of the part
+        Pmin = Pmins(ipart)
+        Pmax = Pmaxs(ipart)
 
-    inphi = 0
+        inphi = 0
 !    If ( twofer .eq. 1 ) Then  ! This line crossed the f.p. plane (2pi/Nfp)
 !      If ( P1a .ge. Pmin .AND. P1a .le. Pmax ) inphi = 1
 !      If ( P2a .ge. Pmin .AND. P2a .le. Pmax ) inphi = 1
@@ -569,68 +559,72 @@ Do i=1,npts_line - 1
 !      Endif
 !    Endif
 
-    If ( p_start .ge. Pmin .AND. p_start .le. Pmax ) inphi = 1
-    If ( p_end .ge. Pmin .AND. p_end .le. Pmax ) inphi = 1
+        If ( p_start .ge. Pmin .AND. p_start .le. Pmax ) inphi = 1
+        If ( p_end .ge. Pmin .AND. p_end .le. Pmax ) inphi = 1
+        
+        If (inphi .eq. 1 ) Then
+           
+           If (is_AS_part(ipart)) Then
+              ! Part is AS (allowing for it to have a finite toroidal extent)
+              Call int_line_curve((/r_start,z_start/),(/r_end,z_end/), &
+                   Rparts(ipart,1,:),Zparts(ipart,1,:),np_parts(ipart),.true.,pint2D,ierr_pint,uint)
+              If (ierr_pint .eq. 0) Then
+                 ihit = 1                 
+                 pint(1) = pint2D(1)*cos(uint*(p_end-p_start)+p_start)
+                 pint(2) = pint2D(1)*sin(uint*(p_end-p_start)+p_start)
+                 pint(3) = pint2D(2)
+                 itri = -1
+              End If              
+           Else              
+              ! If not AS then check triangles
+              ntri = ntri_parts(ipart)
+              Do itri = 1,ntri
+                 
+                 pa = [xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)]
+                 pb = [xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)]
+                 pc = [xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)]
+                 pt1 = [x_start,y_start,z_start]
+                 pt2 = [x_end,y_end,z_end]
 
-    If (inphi .eq. 1 ) Then
-      ntri = ntri_parts(ipart)
-      Do itri = 1,ntri
-          
-        If (check_tri(ipart,itri) .eq. 1 ) Then
+                 Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol,calc_theta,theta)
 
-          pa = [xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)]
-          pb = [xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)]
-          pc = [xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)]
-          pt1 = [x_start,y_start,z_start]
-          pt2 = [x_end,y_end,z_end]
+                 If (ihit_tmp .eq. 1) Then
+                    ihit = 1
+                    Exit ! stop looking for triangle intersections
+                 Endif
+                 
+              Enddo !triangle loop
+              
+           End If ! is AS part
 
-          Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol,calc_theta,theta)
+           ! If it hit then write pint and hitline
+           If (ihit .eq. 1 ) Then
+              Write(*,'(A,I0,A,I0,A,I0,1X,4(G0.3,1X))') ' Line ',linenum,' hit! [i,ipart,Px,Py,Pz,Lc] ',&
+                   i,' ',ipart,pint(1),pint(2),pint(3),totL
+              iout(1) = ihit
+              iout(2) = ipart
+              iout(3) = itri
+              iout(4) = i
+              ! write(*,*) 'totL',totL
+              if ( (i - nhitline+1) .lt. 1 ) Then
+                 Write(*,*) 'Truncating hitline'
+                 r_hitline(1:i) = rout(1:i)
+                 z_hitline(1:i) = zout(1:i)
+                 phi_hitline(1:i) = phiout(1:i)
+              Else
+                 r_hitline = rout(i-nhitline+1:i)
+                 z_hitline = zout(i-nhitline+1:i)
+                 phi_hitline = phiout(i-nhitline+1:i)
+              Endif
+              Exit  ! Stop looking for part intersections
+           End If
+              
+        Endif !inphi check
+     Enddo ! part index
 
-!          If ( ihit .eq. 1 ) Then
-!            Write(6,*) 'Something is wrong'
-!          Endif
-
-          If (ihit_tmp .eq. 1) Then
-            ihit = 1
-            Write(*,'(A,I0,A,I0,A,I0,1X,4(G0.3,1X))') ' Line ',linenum,' hit! [i,ipart,P,Lc] ',&
-                 i,' ',ipart,pint(1),pint(2),pint(3),totL
-            iout(1) = ihit
-            iout(2) = ipart
-            iout(3) = itri
-            iout(4) = i
-!            write(*,*) 'totL',totL
-            if ( (i - nhitline+1) .lt. 1 ) Then
-              !Write(6,*) 'Write something to handle this', i, nhitline
-              !Stop
-              Write(*,*) 'Truncating hitline'
-              r_hitline = 0.d0
-              z_hitline = 0.d0
-              phi_hitline = 0.d0
-              r_hitline(1:i) = rout(1:i)
-              z_hitline(1:i) = zout(1:i)
-              phi_hitline(1:i) = phiout(1:i)
-            Else
-              r_hitline = rout(i-nhitline+1:i)
-              z_hitline = zout(i-nhitline+1:i)
-              phi_hitline = phiout(i-nhitline+1:i)
-            Endif
-            Exit ! stop looking for triangle intersections
-          Endif
-
-        Else ! check tri
-          Write(6,*) 'Should not be here unless 3d parts have been implemented'
-          stop
-        Endif
-          
-      Enddo !triangle loop
-
-      If (ihit .eq. 1 ) Exit  ! Stop looking for part intersections
-    Endif !inphi check
-  Enddo ! part index
-
-      If (ihit .eq. 1 ) Exit  ! Stop looking for segment intersections
+     If (ihit .eq. 1 ) Exit  ! Stop looking for segment intersections
   Enddo ! seg index (twofer)
-
+  
   If (ihit .eq. 1 ) Exit  ! Quit fieldline if it hit a part
 Enddo ! points along line (i)
 
@@ -638,62 +632,90 @@ Enddo ! points along line (i)
 
 If ( ihit .eq. 0 ) Then
   Write(6,'(A,I0,A)') ' No part intersections found for line ',linenum,', checking for vessel intersection'
+
+  ! Check if first point is outside vessel, if so quit
+  i = 1
+  RLast = rout(i)
+  ZLast = zout(i)
+  PLast = phiout(i)
+  inside_it = inside_vessel(RLast,ZLast,PLast,R_ves,Z_ves,P_ves,ntor_ves,npol_ves)
+  If (.not. inside_it) Then
+     Write(*,*) 'Error: initial point on fl',linenum,' is already outside vessel!'
+     Write(*,*) 'Point (R,Z,Phi) = ',RLast,ZLast,PLast
+     Call fin_mpi(.true.)
+  Endif
+
+  ! Loop over curve points
   totL = 0._real64
-  
-  Do i=1,npts_line
+  Do i=2,npts_line
+    
     ! Current point along line
     R1 = rout(i)
     Z1 = zout(i)
     P1 = phiout(i)
 
+    ! Calculate connection length
     If (calc_lc) Then
-      ! next point
-      R2 = rout(i+1)
-      Z2 = zout(i+1)
-      P2 = phiout(i+1)
-
-      dphi1 = P2-P1
-
-      ! Distance
-      totL = totL + sqrt(R1*R1 + R2*R2 - 2._real64*R1*R2*cos(dphi1) + Z1*Z1 + Z2*Z2 - 2._real64*Z1*Z2)
+      totL = totL + dist_2pts_cyl(R1, RLast, Z1, ZLast, P1, PLast)
     Endif
+
+    ! Check if current point is inside vessel
+    inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves)
+
+    ! Three cases
+    ! 1) Both points outside. Could intersect poly but we assume the fl started inside.
+    ! 2) Both points inside. Cannot intersect
+    ! 3) One in and one out. Intersects. Since we started inside we only need to check inside_it.
     
-    inside_it = inside_vessel(R1,Z1,P1,R_ves,Z_ves,P_ves,ntor_ves,npol_ves,msym_ves)
-    If (inside_it .eq. 0 ) Then
-      Do While (P1 .lt. 0.d0)
-         P1 = P1 + period
-      Enddo
-      P1 = Mod(P1,period)
-      X1 = R1*cos(P1)
-      Y1 = R1*sin(P1)
-      pint(1) = X1
-      pint(2) = Y1
-      pint(3) = Z1
-      Write(6,'(A,I0,A,I0,4(F8.3))') ' Line ',linenum,' did hit the vessel at [i,P,Lc]=',i,pint,totL
-      ihit = 2
-      iout(1) = ihit
-      iout(2) = -2
-      iout(3) = -2
-      iout(4) = i
-!      write(*,*) 'totL',totL      
-      if ( (i - nhitline+1) .lt. 1 ) Then
-         r_hitline = 0.d0
-         z_hitline = 0.d0
-         phi_hitline = 0.d0
-         r_hitline(1:i) = rout(1:i)
-         z_hitline(1:i) = zout(1:i)
-         phi_hitline(1:i) = phiout(1:i)
-      Else
-         r_hitline = rout(i-nhitline+1:i)
-         z_hitline = zout(i-nhitline+1:i)
-         phi_hitline = phiout(i-nhitline+1:i)
-      Endif
+    ! If there is an intersection find int point and define hitline
+    If (.not. inside_it) Then
 
+       ! Define vessel intersection point
+       If (vessel_int_is_last_point) Then
+          ! Just use first point on fl outside of vessel
+          Call wrap_phi(P1,period)
+          pint(1) = R1*cos(P1)
+          pint(2) = R1*sin(P1)
+          pint(3) = Z1
+       Else
+          ! Check for intersection with vessel
+          Call find_vessel_intersection(R1,Z1,RLast,ZLast,P1,Rint,Zint)
+          pint(1) = Rint*cos(P1)
+          pint(2) = Rint*sin(P1)
+          pint(3) = Zint
+       End If
+       Write(*,*) ' Line ',linenum,' did hit the vessel at [i,P,Lc]=',i,pint,totL
 
-      Exit
-    Endif
-  Enddo
-Endif
+       ! Set the MPI integer output
+       ihit = 2
+       iout(1) = ihit
+       iout(2) = -2
+       iout(3) = -2
+       iout(4) = i
+
+       ! Set hitline
+       r_hitline = 0.d0
+       z_hitline = 0.d0
+       phi_hitline = 0.d0
+       if ( (i - nhitline+1) .lt. 1 ) Then
+          r_hitline(1:i) = rout(1:i)
+          z_hitline(1:i) = zout(1:i)
+          phi_hitline(1:i) = phiout(1:i)
+       Else
+          r_hitline = rout(i-nhitline+1:i)
+          z_hitline = zout(i-nhitline+1:i)
+          phi_hitline = phiout(i-nhitline+1:i)
+       Endif
+       Exit
+    Endif ! not inside_it
+
+    ! Save last point
+    RLast = R1
+    ZLast = Z1
+    PLast = P1
+
+  Enddo ! npts line
+Endif ! did not hit part
 
 
 End subroutine check_line_for_intersections

@@ -2,21 +2,14 @@
 !+ 
 !-----------------------------------------------------------------------------
 Subroutine init_points_line(fname_surf,numl,fname_launch)
-!
-! Description: 
-!
 ! Inputs: 
 !  numl -- number of points to define along line
-!
-! Outputs:
-!   none
-!
 ! Author(s): J.D. Lore - 07/26/2011 - xxx
 
 ! Modules used:
 Use kind_mod
-Use io_unit_spec, Only: &
-iu_launch, iu_surf
+Use io_unit_spec, Only: iu_launch, iu_surf
+Use math_routines_mod, Only : wrap_phi
 Implicit none
 
 ! Input/output
@@ -55,10 +48,7 @@ Do ii = 1,numl
   Call Random_number(rnum)
   rand_ind = Nint(npts_line*rnum)
   P1 = phisurf(rand_ind)
-  Do While (P1 .lt. 0.d0)
-    P1 = P1 + period
-  Enddo
-  P1 = Mod(P1,period)
+  Call wrap_phi(P1,period)
   Write(iu_launch,*) rsurf(rand_ind),zsurf(rand_ind),P1
 Enddo
 Close(iu_launch)

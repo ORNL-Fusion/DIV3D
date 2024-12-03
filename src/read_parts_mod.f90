@@ -10,24 +10,31 @@ Module read_parts_mod
 Use kind_mod
 
 Implicit None
-Integer(int32),Allocatable,Dimension(:) :: nt_parts,np_parts
-Integer(int32), Allocatable, Dimension(:) :: pol_dirs, tor_dirs, part_type
-Character(len=300),Allocatable,Dimension(:) :: part_names
 
+! Parts
 Real(real64), Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
 Real(real64), Allocatable, Dimension(:) :: Pmaxs, Pmins
+Logical, Allocatable, Dimension(:) :: is_AS_part
+Integer(int32) :: nparts, nt_max, np_max
+Real(real64), Allocatable :: near_part(:)
+Integer(int32),Allocatable,Dimension(:) :: nt_parts, np_parts
+Integer(int32), Allocatable, Dimension(:) :: part_type
+Character(len=300),Allocatable,Dimension(:) :: part_names
+Integer(int32) ::ic_near
+
+! Vessel
 Real(real64), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
+Integer(int32) :: ntor_ves, npol_ves
+Logical :: is_AS_ves
+
+! Triangles
+Integer(int32) :: ntri_max
 Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
-
-Integer(int32) :: ntor_ves, npol_ves, msym_ves, msym
-Integer(int32) :: nparts
-Integer(int32) :: nt_max, np_max
-
-Integer(int32) :: ntri_max, ic_near
 Real(real64), Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
 Integer(int32), Allocatable,Dimension(:,:) :: check_tri
 Integer(int32), Allocatable,Dimension(:) :: ntri_parts
-Real(real64), Allocatable :: near_part(:), near_tri(:)
+Real(real64), Allocatable :: near_tri(:)
+
 !- End of header -------------------------------------------------------------
 
 Contains
@@ -269,14 +276,14 @@ Endsubroutine load_2d_jpart
 !-----------------------------------------------------------------------------
 !+ Get dimensions from part file
 !-----------------------------------------------------------------------------
-Subroutine query_part(fname,ntor,npol)
+Subroutine query_part(fname,ntor,npol,nfp_part)
 Use kind_mod, Only : int32, real64
 Use io_unit_spec, Only : iu_thispart
 Use parallel_mod, Only : fin_mpi
 Implicit none
 Character(len=100), Intent(in) :: fname
-Integer(int32), Intent(out) :: ntor,npol
-Integer(int32) :: nfp_part, iostat
+Integer(int32), Intent(out) :: ntor,npol,nfp_part
+Integer(int32) :: iostat
 Real(real64) :: rshift, zshift
 Character(len=100) :: label
 !- End of header -------------------------------------------------------------
@@ -363,22 +370,23 @@ Subroutine read_parts(fname_plist,fname_parts,fname_ves,verbose)
 !
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
-! Modules used:
 Use kind_mod, Only : int32, real64
-Use io_unit_spec, Only: &
-iu_plist, &    ! Parts filename list file (input) 
-iu_parts
+Use io_unit_spec, Only: iu_plist, iu_parts
 Use phys_const, Only : pi
+Use run_settings_namelist, Only : period
+Use math_routines_mod, Only : wrap_phi
 Implicit none
 Character(len=300), Intent(in) ::  fname_plist, fname_parts, fname_ves
 Logical, Intent(in) :: verbose
 Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
 Real(real64) :: check_AS
-Integer(int32) :: i, j
-Integer(int32) :: ipart
-Integer(int32) :: ntor, npol
-Character(len=300) :: part_name
-Character(len=300) :: label
+Integer(int32) :: i, j, ipart, ntor, npol, nfp_part, msym, msym_ves
+Character(len=300) :: part_name, label
+! Parameters
+! Tolerance on checking phi limits against bfield periodicity.
+Real(real64), Parameter :: phi_period_tol = 1.e-3_real64
+! Tolerance on part R,Z contour comparison
+Real(real64), Parameter :: check_AS_tol   = 1.e-8_real64
 !- End of header -------------------------------------------------------------
 
 ! Read parts list file and query each part for dimensions
@@ -393,11 +401,13 @@ Do ipart = 1,nparts
   Else
     part_type(ipart)= 0
   Endif
-  Call query_part(part_name,ntor,npol)
+  Call query_part(part_name,ntor,npol,nfp_part)
   part_names(ipart) = part_name
   nt_parts(ipart) = ntor
   np_parts(ipart) = npol  
-  If (verbose) Write(6,'(A,A,A,I4,I4)') ' ',Trim(Adjustl(part_names(ipart))),' [nt,np] =',ntor,npol
+  If (verbose) Then
+     Write(*,*) 'Part',ipart,Trim(Adjustl(part_names(ipart)))
+  End If
 Enddo
 Close(iu_plist)
 
@@ -408,12 +418,14 @@ Allocate(Rparts(nparts,nt_max,np_max))
 Allocate(Zparts(nparts,nt_max,np_max))
 Allocate(Pparts(nparts,nt_max,np_max))
 Allocate(Pmins(nparts),Pmaxs(nparts))
+Allocate(is_AS_part(nparts))
 
 Rparts = 0._real64
 Zparts = 0._real64
 Pparts = 0._real64
 Pmins  = 0._real64
 Pmaxs  = 0._real64
+is_AS_part = .false.
 
 ! Part coordinates are written to file
 Open(iu_parts,file=fname_parts)
@@ -425,43 +437,58 @@ Do ipart = 1,nparts
   npol = np_parts(ipart)
   Allocate( Ppart(ntor,npol),Rpart(ntor,npol),Zpart(ntor,npol) )
 
+  ! Read part
   If (part_type(ipart) .EQ. 0) Then
      Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
-!xxx     Call check_if_part_is_AS(
   Else
      Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
-     ! Need to add AS part here! XXX
-  Endif
+  Endif       
 
+  ! Set R,Z arrays
+  Rparts(ipart,1:ntor,1:npol) = Rpart
+  Zparts(ipart,1:ntor,1:npol) = Zpart
+
+  ! Shift phi to first field period and set Phi array
+  Do i=1,ntor
+     Do j=1,npol
+        Call wrap_phi(Ppart(i,j),2._real64*pi/Real(msym,real64))
+    Enddo
+  Enddo
+  Pparts(ipart,1:ntor,1:npol) = Ppart
+
+  ! Get min/max of Phi for filtering out intersection checks and to determine if part is AS
+  Pmins(ipart) = Minval(Ppart)
+  Pmaxs(ipart) = Maxval(Ppart)
+  
+  ! Extra screen output
+  If (verbose) Then
+     Write(*,*)'Part ',ipart,'[nt,np] =',ntor,npol,'defined with nsym',nfp_part
+     Write(*,*)'  Extends from Phi = ',Pmins(ipart)*180./pi,' to ',Pmaxs(ipart)*180./pi,' deg.'
+  End If
+
+  If (Pmaxs(ipart) .gt. period) Then
+     Write(*,*) 'Warning: Part extends beyond Bfield period, extra range is not used!'
+  End If
+
+  ! Part is AS if the points are the same across each phi cut
+  ! AND the phi range is equal to the Bfield period
   check_AS = 0._real64
   Do i=2,ntor
      check_AS = Max(Maxval(Abs(Rpart(i,1:npol) - Rpart(1,1:npol))) &
           + Maxval(Abs(Zpart(i,1:npol) - Zpart(1,1:npol))),check_AS)
   Enddo
-  If (check_AS .lt. 1.e-8_real64) Then
-     If (verbose) Write(*,*) 'Part ',ipart, ' is AS?'
+  If (       (check_AS .lt. check_AS_tol) &
+!       .and. (Pmins(ipart)          .le. phi_period_tol) &
+!       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
+     ) Then
+     If (verbose) Write(*,*) '  Part will be treated as axisymmetric over this phi range!'
+     is_AS_part(ipart) = .true.
   Endif
-       
 
-  Rparts(ipart,1:ntor,1:npol) = Rpart
-  Zparts(ipart,1:ntor,1:npol) = Zpart
-
-  ! Shift phi to first field period
-  Do i=1,ntor
-    Do j=1,npol
-      Do While (Ppart(i,j) .lt. 0.d0) 
-        Ppart(i,j) = Ppart(i,j) + 2._real64*pi/Real(msym,real64)
-      Enddo
-      Ppart(i,j) = Mod(Ppart(i,j),2._real64*pi/Real(msym,real64))
-    Enddo
-  Enddo
-  Pparts(ipart,1:ntor,1:npol) = Ppart
-
-  Pmins(ipart) = Minval(Ppart)
-  Pmaxs(ipart) = Maxval(Ppart)
-
+  ! Clean up 
   Deallocate(Rpart,Zpart,Ppart)
 
+  ! Write all parts file
   Write(iu_parts,*) ntor,npol
   Do i = 1,nt_max
     Do j = 1,np_max
@@ -475,9 +502,32 @@ Close(iu_parts) !all parts file
 
 ! Load vessel
 If (verbose) Write(6,*) 'Loading vessel file: ',Trim(Adjustl(fname_ves))
-Call query_part(fname_ves,ntor_ves,npol_ves)
+Call query_part(fname_ves,ntor_ves,npol_ves,msym_ves)
 Allocate(R_ves(ntor_ves,npol_ves),Z_ves(ntor_ves,npol_ves),P_ves(ntor_ves,npol_ves))
 Call load_w7_part(fname_ves,label,ntor_ves,npol_ves,msym_ves,R_ves,Z_ves,P_ves)
+
+
+! Shift phi to first field period and set Phi array
+Do i=1,ntor_ves
+   Do j=1,npol_ves
+      Call wrap_phi(P_ves(i,j),2._real64*pi/Real(msym_ves,real64))
+   Enddo
+Enddo
+
+! Check if vessel is AS
+is_AS_ves = .false.
+check_AS = 0._real64
+Do i=2,ntor_ves
+   check_AS = Max(Maxval(Abs(R_ves(i,1:npol_ves) - R_ves(1,1:npol_ves))) &
+        + Maxval(Abs(Z_ves(i,1:npol_ves) - Z_ves(1,1:npol_ves))),check_AS)
+Enddo
+If (       (check_AS .lt. check_AS_tol) &
+     .and. (Minval(P_ves)          .le. phi_period_tol) &
+     .and. (period - Maxval(P_ves) .le. phi_period_tol) &
+   ) Then
+   If (verbose) Write(*,*) '  Vessel will be treated as axisymmetric!'
+   is_AS_ves = .true.
+Endif
 
 End Subroutine read_parts
 !-----------------------------------------------------------------------------
