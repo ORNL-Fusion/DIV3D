@@ -2,11 +2,8 @@
 !+ Program to calculate intersections of fieldlines initiated on a flux surface
 !  and diffused until they intersect components
 !-----------------------------------------------------------------------------
-program div3d_follow_and_int
+Program div3d_follow_and_int
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
-!
-! To do:
-!  - Vessel intersection is just nearest phi cut
 !
 ! Modules used:
 Use run_settings_namelist
@@ -89,7 +86,7 @@ Else
    ! 5. Additional nodes wait for lines and follow them
    !    Then check for intersections 
    !----------------------------------------------------------------
-   Call diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,calc_lc,calc_theta)
+   Call diffuse_lines3_worker(dphi_line_diff,nhitline,calc_lc,calc_theta)
 Endif
 
 ! Finialize MPI

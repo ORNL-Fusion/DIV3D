@@ -97,7 +97,7 @@ The format of the part is specified by the file extension.
 * .part files have the following format:
 ```
 Label 
-ntor npol nfp rshift zshift
+ntor npol nfp rshift zshift force_non_AS
 Do itor = 1,ntor
   phi(itor)
   Do ipol = 1,npol
@@ -114,13 +114,14 @@ ntor  : Number of toroidal planes.  Integer
 npol  : Number of poloidal points.  Integer
 nfp   : Field period symmetry of the component. Integer
 Rshift, Zshift : The part can be uniformly shifted from the given (R,Z) points using these inputs. Real, [cm].
+force_non_AS : Even if the part geometry is axisymmetric, treat it as a 3D part (faceted). Logical
 phi   : Toroidal coordinate of each slice. Real, [deg].
 R,Z   : Radial and vertical coordinate of each point. Real, [cm].
 
 * .jpart files have the following format:
 ```
 Label 
-ntor npol nfp rshift zshift
+ntor npol nfp rshift zshift force_non_AS
 Do itor = 1,ntor
   Do ipol = 1,npol
      R(itor,ipol), Z(itor,ipol), phi(itor,ipol)

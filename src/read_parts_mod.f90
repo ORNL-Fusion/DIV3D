@@ -14,18 +14,17 @@ Implicit None
 ! Parts
 Real(real64), Allocatable :: Rparts(:,:,:),Zparts(:,:,:),Pparts(:,:,:)
 Real(real64), Allocatable, Dimension(:) :: Pmaxs, Pmins
-Logical, Allocatable, Dimension(:) :: is_AS_part
+Logical, Allocatable, Dimension(:) :: is_AS_part, force_non_AS
 Integer(int32) :: nparts, nt_max, np_max
 Real(real64), Allocatable :: near_part(:)
-Integer(int32),Allocatable,Dimension(:) :: nt_parts, np_parts
-Integer(int32), Allocatable, Dimension(:) :: part_type
+Integer(int32),Allocatable,Dimension(:) :: nt_parts, np_parts, part_type
 Character(len=300),Allocatable,Dimension(:) :: part_names
 Integer(int32) ::ic_near
 
 ! Vessel
 Real(real64), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
 Integer(int32) :: ntor_ves, npol_ves
-Logical :: is_AS_ves
+Logical :: is_AS_ves, force_non_AS_ves
 
 ! Triangles
 Integer(int32) :: ntri_max
@@ -172,7 +171,7 @@ End Subroutine make_triangles
 !-----------------------------------------------------------------------------
 !+ Reads 2d part file (w7 format)
 !-----------------------------------------------------------------------------
-Subroutine load_w7_part(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart)
+Subroutine load_w7_part(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart,force_non_AS)
 Use kind_mod
 Use io_unit_spec, Only : iu_thispart
 Use phys_const, Only : pi
@@ -182,25 +181,29 @@ Character(len=100), Intent(in) :: fname
 Integer(int32), Intent(in) :: ntor, npol
 Character(len=100), Intent(out) :: label
 Integer(int32),Intent(out) :: msym  
-Real(real64),Dimension(ntor,npol), Intent(out) :: &
-  Rpart, Zpart, Phipart
-Integer(int32) :: itor, ipol, ntor_dum, npol_dum
-! Local variables
+Real(real64),Dimension(ntor,npol), Intent(out) :: Rpart, Zpart, Phipart
+Logical, Intent(out) :: force_non_AS
+Integer(int32) :: itor, ipol, ntor_dum, npol_dum, iostat
 Real(real64) :: rshift, zshift, Phitmp
-
+Character(len=256) :: line
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname)
 Read(iu_thispart,*) label
-Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
+
+! Parse header, allowing for optional logical force_non_AS
+!Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
+force_non_AS = .false.
+Read(iu_thispart, '(A)') line
+Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
 
 ! When read [R,Z] = cm and Phi = degrees
 Do itor = 1,ntor
-  Read(iu_thispart,*) Phitmp
-  Phipart(itor,:) = Phitmp
-  Do ipol = 1,npol
-    Read(iu_thispart,*) Rpart(itor,ipol), Zpart(itor,ipol)
-  Enddo
+   Read(iu_thispart,*) Phitmp
+   Phipart(itor,:) = Phitmp
+   Do ipol = 1,npol
+      Read(iu_thispart,*) Rpart(itor,ipol), Zpart(itor,ipol)
+   Enddo
 Enddo
 close(iu_thispart)
 
@@ -215,13 +218,10 @@ Endsubroutine load_w7_part
 !-----------------------------------------------------------------------------
 
 
-
-
-
 !-----------------------------------------------------------------------------
 !+ Reads 2d jpart file 
 !-----------------------------------------------------------------------------
-Subroutine load_2d_jpart(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart)
+Subroutine load_2d_jpart(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart,force_non_AS)
 Use kind_mod, Only : int32, real64
 Use parallel_mod, Only : fin_mpi 
 Use io_unit_spec, Only : iu_thispart
@@ -232,11 +232,11 @@ Character(len=100), Intent(in) :: fname
 Integer(int32), Intent(in) :: ntor,npol
 Character(len=100), Intent(out) :: label
 Integer(int32),Intent(out) :: msym
-Real(real64),Dimension(ntor,npol), Intent(out) :: &
-  Rpart, Zpart, Phipart
+Real(real64),Dimension(ntor,npol), Intent(out) :: Rpart, Zpart, Phipart
+Logical, Intent(out) :: force_non_AS
 Integer(int32) :: itor, ipol, ntor_dum, npol_dum, iostat
-! Local variables
 Real(real64) :: rshift, zshift
+Character(len=256) :: line
 !- End of header -------------------------------------------------------------
 
 open(iu_thispart,file=fname,status='old',iostat=iostat)
@@ -245,7 +245,11 @@ If (iostat /= 0) Then
    Call fin_mpi(.true.) ! True means this is an exit-on-error
 Endif
 Read(iu_thispart,*) label
-Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
+
+!Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
+force_non_AS = .false.
+Read(iu_thispart, '(A)') line
+Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
 
 ! When read [R,Z] = cm and Phi = degrees
 Do itor = 1,ntor 
@@ -413,7 +417,7 @@ Allocate(Rparts(nparts,nt_max,np_max))
 Allocate(Zparts(nparts,nt_max,np_max))
 Allocate(Pparts(nparts,nt_max,np_max))
 Allocate(Pmins(nparts),Pmaxs(nparts))
-Allocate(is_AS_part(nparts))
+Allocate(is_AS_part(nparts),force_non_AS(nparts))
 
 Rparts = 0._real64
 Zparts = 0._real64
@@ -434,9 +438,9 @@ Do ipart = 1,nparts
 
   ! Read part
   If (part_type(ipart) .EQ. 0) Then
-     Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+     Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
   Else
-     Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart)
+     Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
   Endif       
 
   ! Set R,Z arrays
@@ -474,10 +478,14 @@ Do ipart = 1,nparts
   Enddo
   If (       (check_AS .lt. check_AS_tol) &
 !       .and. (Pmins(ipart)          .le. phi_period_tol) &
-!       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
-     ) Then
-     If (verbose) Write(*,*) '  Part will be treated as axisymmetric over this phi range!'
-     is_AS_part(ipart) = .true.
+!       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &       
+       ) Then
+     If (force_non_AS(ipart)) Then
+        If (verbose) Write(*,*) '  Part appears AS but AS treatment overridden in part file'
+     Else
+        If (verbose) Write(*,*) '  Part will be treated as axisymmetric over this phi range!'
+        is_AS_part(ipart) = .true.
+     End If
   Endif
 
   ! Clean up 
@@ -499,8 +507,7 @@ Close(iu_parts) !all parts file
 If (verbose) Write(6,*) 'Loading vessel file: ',Trim(Adjustl(fname_ves))
 Call query_part(fname_ves,ntor_ves,npol_ves,msym_ves)
 Allocate(R_ves(ntor_ves,npol_ves),Z_ves(ntor_ves,npol_ves),P_ves(ntor_ves,npol_ves))
-Call load_w7_part(fname_ves,label,ntor_ves,npol_ves,msym_ves,R_ves,Z_ves,P_ves)
-
+Call load_w7_part(fname_ves,label,ntor_ves,npol_ves,msym_ves,R_ves,Z_ves,P_ves,force_non_AS_ves)
 
 ! Shift phi to first field period and set Phi array
 Do i=1,ntor_ves
@@ -519,9 +526,13 @@ Enddo
 If (       (check_AS .lt. check_AS_tol) &
      .and. (Minval(P_ves)          .le. phi_period_tol) &
      .and. (period - Maxval(P_ves) .le. phi_period_tol) &
-   ) Then
-   If (verbose) Write(*,*) '  Vessel will be treated as axisymmetric!'
-   is_AS_ves = .true.
+    ) Then
+   If (force_non_AS_ves) Then
+      If (verbose) Write(*,*) '  Vessel appears AS but AS treatment overridden in part file'
+     Else
+        If (verbose) Write(*,*) '  Vessel will be treated as axisymmetric!'
+        is_AS_ves = .true.
+     End If
 Endif
 
 End Subroutine read_parts

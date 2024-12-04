@@ -7,13 +7,15 @@ Contains
 !+ Worker node subroutine for following fieldlines and calculating intersections
 !  Counterpart to diffuse_lines3 
 !-----------------------------------------------------------------------------
-Subroutine diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,calc_lc,calc_theta)
+Subroutine diffuse_lines3_worker(dphi_line_diff,nhitline,calc_lc,calc_theta)
 Use kind_mod, Only : real64, int32
-Use parallel_mod
+Use run_settings_namelist, Only : dmag
+Use parallel_mod, Only : ierr_mpi, rank, status, &
+     MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV
 Implicit None 
 
 Integer(int32), Intent(in) :: nhitline
-Real(real64), Intent(in) :: dmag, dphi_line_diff
+Real(real64), Intent(in) :: dphi_line_diff
 Logical, Intent(in) :: calc_lc, calc_theta
 
 Real(real64), Dimension(3) :: line_start_data_r
