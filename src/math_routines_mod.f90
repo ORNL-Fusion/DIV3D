@@ -15,22 +15,44 @@ Implicit None
 Contains
 
 !------------------------------------------------------------------------------
-!+ Linear interpolation of curve C to find intersection with line L
+!+ Linear interpolation of curve C to find intersection with line segment L
 !------------------------------------------------------------------------------
-Subroutine int_line_curve(p1,p2,rline,zline,nline,first,pint1,ierr,u1,found_ind,int_count_out)
+Subroutine int_line_curve(p1,p2,rline,zline,first,pint1,ierr,u1,found_ind,int_count_out)
 ! Curve is defined by array of points, L by p1,p2
-! JL 2/2011
+!------------------------------------------------------------------------------
+!+ Linear interpolation of curve C to find intersection with line L
+!
+! Inputs:
+!   p1, p2       - Line endpoints defining line segment L (2D, R,Z).
+!   rline, zline - Arrays defining curve C in cylindrical coordinates.
+!   first        - Logical flag to return the first intersection found.
+!
+! Outputs:
+!   pint1        - Intersection point (2D) between L and C.
+!   ierr         - Error code:
+!                    0 - Success
+!                    1 - No intersection found
+!   u1           - Parameter defining intersection point along L.
+!   found_ind    - (Optional) Index of the segment of C where intersection occurs.
+!   int_count_out - (Optional) Number of intersections found.
+!
+! Notes:
+!   rline and zline must have the same size.
+!------------------------------------------------------------------------------
+!
+! JL 2/2011-2024
 Use kind_mod, Only: real64, int32
 Implicit None
 Logical, Intent(in) :: first
-Integer(int32), Intent(in) :: nline
-Real(real64), Intent(in) :: p1(2), p2(2), rline(nline), zline(nline)
+Real(real64), Intent(in) :: p1(2), p2(2), rline(:), zline(:)
 Real(real64), Intent(out) :: pint1(2), u1
 Integer(int32), Intent(out):: ierr
 Integer(int32), Intent(out), Optional :: found_ind, int_count_out
 Logical :: test
-Integer(int32) :: ii, ierr2, int_count
+Integer(int32) :: ii, ierr2, int_count, nline
 Real(real64) :: p3(2), p4(2), u2
+
+nline = Size(rline)
 
 int_count = 0
 If (Present(found_ind)) found_ind = 0

@@ -1,6 +1,27 @@
 Module inside_vessel_mod
+Use kind_mod, Only : real64, int32
+Implicit None
 
+Real(real64), Allocatable, Private :: Rslice(:), Zslice(:)
+  
 Contains
+
+!-----------------------------------------------------------------------------  
+Subroutine init_find_vessel_intersection
+Use read_parts_mod, Only : npol_ves
+Implicit None
+!- End of header -------------------------------------------------------------
+Allocate(Rslice(npol_ves),Zslice(npol_ves))
+End Subroutine init_find_vessel_intersection
+
+
+!-----------------------------------------------------------------------------  
+Subroutine fin_find_vessel_intersection
+Implicit None
+!- End of header -------------------------------------------------------------
+Deallocate(Rslice,Zslice)
+End Subroutine fin_find_vessel_intersection
+
 
 !-----------------------------------------------------------------------------
 Function inside_vessel(R,Z,Phiin,Rves,Zves,Pves,ntor,npol) &
@@ -63,6 +84,11 @@ End If
 
 End Subroutine get_vessel_at_phi
 
+!-----------------------------------------------------------------------------
+!
+! Must call init_find_vessel_intersection first!
+! This all assumes that the vessel has a constant npol
+! JDL 12/2024
 Subroutine find_vessel_intersection(R1,Z1,R2,Z2,Phi,Rint,Zint)
 Use kind_mod, Only : real64, int32
 Use read_parts_mod, Only : R_ves, Z_ves, P_ves, npol_ves, ntor_ves
@@ -70,15 +96,12 @@ Use math_routines_mod, Only : int_line_curve
 Implicit None
 Real(real64), Intent(in) :: R1,Z1,R2,Z2,Phi
 Real(real64), Intent(out) :: Rint, Zint
-Real(real64), Allocatable :: Rslice(:), Zslice(:) 
 Real(real64) :: pint2D(2), Uint
 Integer(int32) :: ierr_pint
 !- End of header -------------------------------------------------------------
 
-Allocate(Rslice(npol_ves),Zslice(npol_ves))
 Call get_vessel_at_phi(Phi, P_ves, R_ves, Z_ves, Rslice, Zslice, ntor_ves, npol_ves)
-Call int_line_curve((/R1,Z1/),(/R2,Z2/),Rslice,Zslice,npol_ves,.true.,pint2D,ierr_pint,Uint)
-Deallocate(Rslice,Zslice)
+Call int_line_curve((/R1,Z1/),(/R2,Z2/),Rslice,Zslice,.true.,pint2D,ierr_pint,Uint)
 
 Rint = pint2D(1)
 Zint = pint2D(2)

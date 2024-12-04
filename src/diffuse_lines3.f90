@@ -354,7 +354,8 @@ Subroutine check_line_for_intersections(pint,iout, &
 
 Use kind_mod, Only : real64, int32
 Use read_parts_mod
-Use inside_vessel_mod, Only : inside_vessel, find_vessel_intersection
+Use inside_vessel_mod, Only : inside_vessel, find_vessel_intersection, &
+     init_find_vessel_intersection, fin_find_vessel_intersection
 Use math_routines_mod, Only : line_seg_facet_int, dist_2pts_cyl, wrap_phi, int_line_curve
 Use parallel_mod, Only : fin_mpi
 Use run_settings_namelist, Only : period, lsfi_tol, vessel_int_is_last_point
@@ -560,7 +561,8 @@ Do i=1,npts_line - 1
            If (is_AS_part(ipart)) Then
               ! Part is AS (allowing for it to have a finite toroidal extent)
               Call int_line_curve((/r_start,z_start/),(/r_end,z_end/), &
-                   Rparts(ipart,1,:),Zparts(ipart,1,:),np_parts(ipart),.true.,pint2D,ierr_pint,uint)
+                   Rparts(ipart,1,1:np_parts(ipart)),Zparts(ipart,1,1:np_parts(ipart)), &
+                   .true.,pint2D,ierr_pint,uint)
               If (ierr_pint .eq. 0) Then
                  ihit = 1                 
                  pint(1) = pint2D(1)*cos(uint*(p_end-p_start)+p_start)
@@ -638,6 +640,9 @@ If ( ihit .eq. 0 ) Then
      Call fin_mpi(.true.)
   Endif
 
+  ! Allocate slice arrays for find_vessel_intersection
+  If (.not. vessel_int_is_last_point) Call init_find_vessel_intersection
+  
   ! Loop over curve points
   totL = 0._real64
   Do i=2,npts_line
@@ -707,9 +712,12 @@ If ( ihit .eq. 0 ) Then
     ZLast = Z1
     PLast = P1
 
-  Enddo ! npts line
-Endif ! did not hit part
+ Enddo ! npts line
+ 
+  ! Allocate slice arrays for find_vessel_intersection
+  If (.not. vessel_int_is_last_point) Call fin_find_vessel_intersection
 
+Endif ! did not hit part
 
 End subroutine check_line_for_intersections
 
