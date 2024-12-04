@@ -1,3 +1,8 @@
+Module surface_mod
+  Implicit None
+  Public :: trace_surface
+
+Contains
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
@@ -20,10 +25,6 @@ Subroutine trace_surface(Rstart,Zstart,Phistart,dphi_line,nsteps_line,period,fna
 !   rsurf,zsurf: Array(nsteps_line+1) (meters)
 !   phisurf: Array(nsteps_line+1) (radians)
 !
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/15/2011   JDL
 ! Author(s): J.D. Lore - 07/15/2011 - xxx
 
 ! Modules used:
@@ -88,5 +89,6 @@ Do ii = 1,nsteps_line + 1
 Enddo
 Close(iu_surf)
 
+End Subroutine trace_surface
 
-Endsubroutine trace_surface
+End Module surface_mod

@@ -14,6 +14,8 @@ Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
 Use read_parts_mod, Only : read_parts, make_triangles
 Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
 Use initialize_bfield_div3d, Only : init_bfield
+Use surface_mod, Only : trace_surface
+Use initialize_points, Only : init_points_line
 Implicit none
 Logical :: verbose = .false.
 
@@ -72,8 +74,6 @@ If (rank .eq. 0) Then
   Endif
 Endif
 
-
-
 If (rank .eq. 0) Then
    !----------------------------------------------------------------------------------------
    ! 5. Root node distributes jobs using init points
@@ -89,9 +89,8 @@ Else
    ! 5. Additional nodes wait for lines and follow them
    !    Then check for intersections 
    !----------------------------------------------------------------
-   Call diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,period,calc_lc,calc_theta,lsfi_tol)
+   Call diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,calc_lc,calc_theta)
 Endif
-
 
 ! Finialize MPI
 Call fin_mpi(.false.) ! False means this is a non-error exit

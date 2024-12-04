@@ -7,14 +7,13 @@ Contains
 !+ Worker node subroutine for following fieldlines and calculating intersections
 !  Counterpart to diffuse_lines3 
 !-----------------------------------------------------------------------------
-Subroutine diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,period,calc_lc,calc_theta,lsfi_tol)
+Subroutine diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,calc_lc,calc_theta)
 Use kind_mod, Only : real64, int32
 Use parallel_mod
 Implicit None 
 
-! I/O
 Integer(int32), Intent(in) :: nhitline
-Real(real64), Intent(in) :: dmag, period, lsfi_tol, dphi_line_diff
+Real(real64), Intent(in) :: dmag, dphi_line_diff
 Logical, Intent(in) :: calc_lc, calc_theta
 
 Real(real64), Dimension(3) :: line_start_data_r
@@ -65,8 +64,8 @@ Do While (line_start_data_i(1) .ne. -1)
 
       Call line_follow_and_int(Rstart_local,Zstart_local, &
            Pstart_local,dphi_line_diff,nsteps_line_local,&
-           dmag,period,pint,iout,r_hitline, &
-           z_hitline,phi_hitline,nhitline,iline_local,lsfi_tol,totL, &
+           dmag,pint,iout,r_hitline, &
+           z_hitline,phi_hitline,nhitline,iline_local,totL, &
            calc_lc,calc_theta,theta)
       ierr_follow = 0
 
@@ -75,7 +74,6 @@ Do While (line_start_data_i(1) .ne. -1)
       ! first send handshake signal (this_job_done)
       buffer = 1
       Call MPI_SEND(buffer,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
-
 
       line_done_data_i(1) = ierr_follow
       line_done_data_i(2:5) = iout
@@ -314,16 +312,15 @@ End Subroutine diffuse_lines3
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
-Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,period,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,lsfi_tol,totL,calc_lc,calc_theta,theta)
+Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,pint,iout, &
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,calc_lc,calc_theta,theta)
 
-Use kind_mod
-Use read_parts_mod
+Use kind_mod, Only : real64, int32
 Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
 Use setup_bfield_module, Only : bfield
 Implicit None
 
-Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line, period, lsfi_tol
+Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line
 Integer(int32), Intent(in) :: nsteps_line, linenum
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
@@ -334,18 +331,15 @@ Logical, Intent(in) :: calc_lc, calc_theta
 
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
 Integer(int32) :: ifail, ierr(1),ilg(1)
-
 !- End of header -------------------------------------------------------------
 
-!write(*,*) 'a'
 Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
      dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
 ifail = ilg(1)
-!write(*,*) 'b'
+
 Call check_line_for_intersections(pint,iout, &
      r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
      nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
-!write(*,*) 'c'
 
 End Subroutine line_follow_and_int
 !-----------------------------------------------------------------------------
@@ -377,11 +371,11 @@ Logical, Intent(In) :: calc_lc, calc_theta
 
 Integer(int32) :: iseg, ierr_pint
 Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri
-Logical :: inside_it, inside_last
+Logical :: inside_it
 Integer(int32), Dimension(1) :: ind_min, ind_max
 Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom, pint2D(2), rint,zint,uint
 Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end,r_start,r_end,R2a,R1a
-Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp, Pint2
+Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
 Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
 Real(real64) :: RLast, ZLast, PLast
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
@@ -502,7 +496,7 @@ Do i=1,npts_line - 1
 
   Do iseg = 1,1+twofer
 
-     if (twofer .eq. 0) Then
+     If (twofer .eq. 0) Then
         p_start = P1
         x_start = X1
         y_start = Y1
@@ -513,8 +507,7 @@ Do i=1,npts_line - 1
         y_end   = Y2
         z_end   = Z2
         r_end   = R2
-     endif
-     if (twofer .eq. 1) Then
+     Else
         if ( iseg .eq. 1) Then
            p_start = P1
            x_start = X1
@@ -537,8 +530,8 @@ Do i=1,npts_line - 1
            y_end   = Y2
            z_end   = Z2
            r_end   = R2
-        endif
-     endif
+        End If
+     End If
     
      ihit = 0
      Do ipart=1,nparts

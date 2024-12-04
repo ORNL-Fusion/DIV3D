@@ -1,3 +1,8 @@
+Module initialize_points
+  Implicit None
+  Public :: init_points_line
+
+Contains
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
@@ -7,7 +12,7 @@ Subroutine init_points_line(fname_surf,numl,fname_launch)
 ! Author(s): J.D. Lore - 07/26/2011 - xxx
 
 ! Modules used:
-Use kind_mod
+Use kind_mod, Only : int32, real64
 Use io_unit_spec, Only: iu_launch, iu_surf
 Use math_routines_mod, Only : wrap_phi
 Implicit none
@@ -53,5 +58,7 @@ Do ii = 1,numl
 Enddo
 Close(iu_launch)
 
-Endsubroutine init_points_line
+End Subroutine init_points_line
 !-----------------------------------------------------------------------------
+
+End Module initialize_points

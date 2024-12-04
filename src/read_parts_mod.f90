@@ -7,7 +7,7 @@ Module read_parts_mod
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
 
-Use kind_mod
+Use kind_mod, Only : real64, int32
 
 Implicit None
 
@@ -31,7 +31,6 @@ Logical :: is_AS_ves
 Integer(int32) :: ntri_max
 Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
 Real(real64), Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
-Integer(int32), Allocatable,Dimension(:,:) :: check_tri
 Integer(int32), Allocatable,Dimension(:) :: ntri_parts
 Real(real64), Allocatable :: near_tri(:)
 
@@ -43,7 +42,7 @@ Contains
 !+ Makes triangles from 2d parts
 !-----------------------------------------------------------------------------
 Subroutine make_triangles(fname_ptri,fname_ptri_mid)
-Use kind_mod
+Use kind_mod, Only : real64, int32
 Use io_unit_spec, Only : iu_ptri, iu_ptmid
 Implicit None
 
@@ -71,7 +70,6 @@ Allocate(xmid(nparts,ntri_max))
 Allocate(ymid(nparts,ntri_max))
 Allocate(zmid(nparts,ntri_max))
 Allocate(dmid(nparts,ntri_max))
-Allocate(check_tri(nparts,ntri_max))
 
 xmid(:,:) = 0._real64
 ymid(:,:) = 0._real64
@@ -79,7 +77,6 @@ zmid(:,:) = 0._real64
 xtri(:,:,:) = 0._real64
 ytri(:,:,:) = 0._real64
 ztri(:,:,:) = 0._real64
-check_tri(:,:) = 0_int32
 
 Open(iu_ptri,file=fname_ptri)
 Write(iu_ptri,*) nparts
@@ -117,7 +114,6 @@ Do ipart=1,nparts
       xtri(ipart,itri,1:3) = [Pt1(1),Pt2(1),Pt3(1)]
       ytri(ipart,itri,1:3) = [Pt1(2),Pt2(2),Pt3(2)]
       ztri(ipart,itri,1:3) = [Pt1(3),Pt2(3),Pt3(3)]
-      check_tri(ipart,itri) = 1  !all 2d triangles are checked
       write(iu_ptri,*) itri
       write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
       write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
@@ -142,8 +138,7 @@ Do ipart=1,nparts
 !      ztri(ipart,itri,1:3) = [Pt4(3),Pt2(3),Pt3(3)]
       xtri(ipart,itri,1:3) = [Pt4(1),Pt3(1),Pt2(1)]
       ytri(ipart,itri,1:3) = [Pt4(2),Pt3(2),Pt2(2)]
-      ztri(ipart,itri,1:3) = [Pt4(3),Pt3(3),Pt2(3)]      
-      check_tri(ipart,itri) = 1  !all 2d triangles are checked
+      ztri(ipart,itri,1:3) = [Pt4(3),Pt3(3),Pt2(3)]
       write(iu_ptri,*) itri
       write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
       write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)

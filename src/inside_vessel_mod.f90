@@ -8,9 +8,7 @@ Result(inside)
 
 Use kind_mod, Only : real64, int32
 Use math_routines_mod, Only : wrap_phi, inside_poly
-Use read_parts_mod, Only : is_AS_ves
-Use run_settings_namelist, Only : period, vessel_is_nearest_slice
-Use parallel_mod, Only : fin_mpi
+Use run_settings_namelist, Only : period
 Implicit None
 
 Real(real64), Intent(in) :: R, Z, Phiin
@@ -20,7 +18,6 @@ Real(real64), Dimension(ntor), Intent(in) :: Pves
 Real(real64),Dimension(ntor,npol), Intent(in) :: Rves, Zves
 
 Real(real64) :: Rs(npol), Zs(npol), Phi
-Integer(int32) :: ind_near
 !- End of header -------------------------------------------------------------
 
 Phi = Phiin
