@@ -7,16 +7,12 @@ Contains
 !+ Worker node subroutine for following fieldlines and calculating intersections
 !  Counterpart to diffuse_lines3 
 !-----------------------------------------------------------------------------
-Subroutine diffuse_lines3_worker(dphi_line_diff,nhitline,calc_lc,calc_theta)
+Subroutine diffuse_lines3_worker
 Use kind_mod, Only : real64, int32
-Use run_settings_namelist, Only : dmag
+Use run_settings_namelist, Only : dmag, dphi_line_diff, nhitline,calc_lc, calc_theta
 Use parallel_mod, Only : ierr_mpi, rank, status, &
      MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV
 Implicit None 
-
-Integer(int32), Intent(in) :: nhitline
-Real(real64), Intent(in) :: dphi_line_diff
-Logical, Intent(in) :: calc_lc, calc_theta
 
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
@@ -65,10 +61,10 @@ Do While (line_start_data_i(1) .ne. -1)
       Allocate(phi_hitline(nhitline))      
 
       Call line_follow_and_int(Rstart_local,Zstart_local, &
-           Pstart_local,dphi_line_diff,nsteps_line_local,&
-           dmag,pint,iout,r_hitline, &
+           Pstart_local,nsteps_line_local,&
+           pint,iout,r_hitline, &
            z_hitline,phi_hitline,nhitline,iline_local,totL, &
-           calc_lc,calc_theta,theta)
+           theta)
       ierr_follow = 0
 
       ! Compile results and send data back to master
@@ -108,23 +104,19 @@ End Subroutine diffuse_lines3_worker
 !-----------------------------------------------------------------------------
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
-Subroutine diffuse_lines3(fname_launch,dmag,nsteps_line,fname_hit, &
-fname_intpts,fname_nhit,nhitline)
+Subroutine diffuse_lines3
 ! Author(s): J.D. Lore - 07/15/2011 - xxx
 
 ! Modules used:
-Use kind_mod
-Use parallel_mod
+Use kind_mod, Only : int32, real64
+Use parallel_mod, Only : nprocs, ierr_mpi, request, status, &
+     MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV, &
+     MPI_IRECV, MPI_TEST
 Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
-Use read_parts_mod
+Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
+     fname_hit, fname_intpts, fname_nhit, nhitline
 Implicit none
 
-! Input/output
-Character(len=100),Intent(in) :: fname_launch, fname_hit, fname_intpts, fname_nhit
-Real(real64), Intent(in) :: dmag
-Integer(int32), Intent(in) :: nsteps_line, nhitline
-
-! Local scalars
 Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck
 Real(real64) :: Rstart, Zstart, Phistart
 
@@ -132,7 +124,6 @@ Integer(int32) :: work_done, work_done_count
 Integer :: tag, dest
 Logical :: flag
 
-! Local arrays
 Real(real64), Dimension(3) :: pint
 Real(real64) :: totL, theta
 Integer(int32), Dimension(4) :: iout
@@ -182,7 +173,7 @@ Do dest = 1,nprocs - 1
   Zstart   = Z0(iline)
   Phistart = Phi0(iline)
   
-  line_start_data_i(1) = nsteps_line
+  line_start_data_i(1) = ns_line_diff
   line_start_data_i(2) = nhitline
   line_start_data_i(3) = iline
   Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
@@ -259,7 +250,7 @@ Do While ( work_done .ne. 1 )
         line_start_data_r(1) = Rstart
         line_start_data_r(2) = Zstart
         line_start_data_r(3) = Phistart
-        line_start_data_i(1) = nsteps_line
+        line_start_data_i(1) = ns_line_diff
         line_start_data_i(2) = nhitline
         line_start_data_i(3) = iline
         Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
@@ -314,29 +305,29 @@ End Subroutine diffuse_lines3
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
-Subroutine line_follow_and_int(Rstart,Zstart,Phistart,dphi_line,nsteps_line,dmag,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,calc_lc,calc_theta,theta)
+Subroutine line_follow_and_int(Rstart,Zstart,Phistart,nsteps_line,pint,iout, &
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,theta)
 
 Use kind_mod, Only : real64, int32
 Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
 Use setup_bfield_module, Only : bfield
+Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta
 Implicit None
 
-Real(real64), Intent(in) :: Rstart, Zstart, Phistart, dmag, dphi_line
+Real(real64), Intent(in) :: Rstart, Zstart, Phistart
 Integer(int32), Intent(in) :: nsteps_line, linenum
 Integer(int32), Intent(out), Dimension(4) :: iout
 Real(real64), Dimension(3), Intent(out) :: pint
 Real(real64), Intent(out) :: totL, theta
 Integer(int32), Intent(in) :: nhitline
 Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-Logical, Intent(in) :: calc_lc, calc_theta
 
 Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
 Integer(int32) :: ifail, ierr(1),ilg(1)
 !- End of header -------------------------------------------------------------
 
 Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
-     dphi_line,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
+     dphi_line_diff,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
 ifail = ilg(1)
 
 Call check_line_for_intersections(pint,iout, &
@@ -679,6 +670,7 @@ If ( ihit .eq. 0 ) Then
           pint(3) = Z1
        Else
           ! Check for intersection with vessel
+          ! This is not perfect because it just uses the vessel at Phi1
           Call find_vessel_intersection(R1,Z1,RLast,ZLast,P1,Rint,Zint)
           pint(1) = Rint*cos(P1)
           pint(2) = Rint*sin(P1)

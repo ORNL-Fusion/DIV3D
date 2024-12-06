@@ -40,12 +40,12 @@ Contains
 !-----------------------------------------------------------------------------
 !+ Makes triangles from 2d parts
 !-----------------------------------------------------------------------------
-Subroutine make_triangles(fname_ptri,fname_ptri_mid)
+Subroutine make_triangles
 Use kind_mod, Only : real64, int32
 Use io_unit_spec, Only : iu_ptri, iu_ptmid
+Use run_settings_namelist, Only : fname_ptri, fname_ptri_mid
 Implicit None
 
-Character(len=300), Intent(in) :: fname_ptri,fname_ptri_mid
 Real(real64) :: R1,Z1,P1,Pt1(3)
 Real(real64) :: R2,Z2,P2,Pt2(3)
 Real(real64) :: R3,Z3,P3,Pt3(3)
@@ -359,7 +359,7 @@ End Subroutine close_2pt_part
 !-----------------------------------------------------------------------------
 !+ Reads parts list and load part coordinates
 !-----------------------------------------------------------------------------
-Subroutine read_parts(fname_plist,fname_parts,fname_ves,verbose)
+Subroutine read_parts(verbose)
 !
 ! Description: 
 !
@@ -372,10 +372,9 @@ Subroutine read_parts(fname_plist,fname_parts,fname_ves,verbose)
 Use kind_mod, Only : int32, real64
 Use io_unit_spec, Only: iu_plist, iu_parts
 Use phys_const, Only : pi
-Use run_settings_namelist, Only : period
+Use run_settings_namelist, Only : period, fname_plist, fname_parts, fname_ves
 Use math_routines_mod, Only : wrap_phi
 Implicit none
-Character(len=300), Intent(in) ::  fname_plist, fname_parts, fname_ves
 Logical, Intent(in) :: verbose
 Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
 Real(real64) :: check_AS

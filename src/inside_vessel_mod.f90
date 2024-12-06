@@ -100,6 +100,7 @@ Real(real64) :: pint2D(2), Uint
 Integer(int32) :: ierr_pint
 !- End of header -------------------------------------------------------------
 
+! This is not perfect because it just uses the vessel at Phi1
 Call get_vessel_at_phi(Phi, P_ves, R_ves, Z_ves, Rslice, Zslice, ntor_ves, npol_ves)
 Call int_line_curve((/R1,Z1/),(/R2,Z2/),Rslice,Zslice,.true.,pint2D,ierr_pint,Uint)
 

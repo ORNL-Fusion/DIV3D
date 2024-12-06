@@ -6,7 +6,7 @@ Program div3d_follow_and_int
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
 ! Modules used:
-Use run_settings_namelist
+Use run_settings_namelist, Only : read_run_settings_namelist, ns_line_surf, trace_surface_opt
 Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
 Use read_parts_mod, Only : read_parts, make_triangles
 Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
@@ -40,11 +40,11 @@ Call init_bfield(verbose)
 !  -- make trianges from parts
 !----------------------------------------------------------------
 If (verbose) Write(*,'(A)') ' Reading parts list and part files:'
-Call read_parts(fname_plist,fname_parts,fname_ves,verbose)
+Call read_parts(verbose)
   
 ! Make triangles from 2d parts
 If (verbose) Write(*,'(/A/)') ' Generating 2d part triangles'
-Call make_triangles(fname_ptri,fname_ptri_mid)
+Call make_triangles
 
 !----------------------------------------------------------------
 ! Root node traces initial surface and defines starting points
@@ -58,14 +58,13 @@ If (rank .eq. 0) Then
   ! 3. Trace out a surface (no diffusion)
   !----------------------------------------------------------
   If (trace_surface_opt .eqv. .true.) Then
-    Write(*,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
-    Call trace_surface(Rstart,Zstart,Phistart,dphi_line_surf,ns_line_surf,period,fname_surf)
+    Call trace_surface(ns_line_surf)
 
     !----------------------------------------------------------
     ! 4. Initialize points on surface to carry heat
     !----------------------------------------------------------
     Write(*,*) 'Initializing points along initial surface line'
-    Call init_points_line(fname_surf,npts_start,fname_launch)
+    Call init_points_line
   Else
     Write(*,*) 'Skipping trace_surface, loading init points from file.'
   Endif
@@ -78,7 +77,7 @@ If (rank .eq. 0) Then
    
    Write(*,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
    write(*,*) 'Beginning MPI line diffusion'
-   Call diffuse_lines3(fname_launch,dmag,ns_line_diff,fname_hit,fname_intpts,fname_nhit,nhitline)
+   Call diffuse_lines3
   
 Else
 
@@ -86,7 +85,7 @@ Else
    ! 5. Additional nodes wait for lines and follow them
    !    Then check for intersections 
    !----------------------------------------------------------------
-   Call diffuse_lines3_worker(dphi_line_diff,nhitline,calc_lc,calc_theta)
+   Call diffuse_lines3_worker
 Endif
 
 ! Finialize MPI
