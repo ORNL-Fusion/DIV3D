@@ -3,16 +3,53 @@ Module diffusion
   Public :: diffuse_lines3, line_follow_and_int, diffuse_lines3_worker
 
 Contains
+
+!-----------------------------------------------------------------------------
+!+
+!-----------------------------------------------------------------------------
+Subroutine line_follow_and_int(Rstart,Zstart,Phistart,nsteps_line,pint,iout, &
+r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,theta)
+
+Use kind_mod, Only : real64, int32
+Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
+Use setup_bfield_module, Only : bfield
+Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta
+Implicit None
+
+Real(real64), Intent(in) :: Rstart, Zstart, Phistart
+Integer(int32), Intent(in) :: nsteps_line, linenum
+Integer(int32), Intent(out), Dimension(4) :: iout
+Real(real64), Dimension(3), Intent(out) :: pint
+Real(real64), Intent(out) :: totL, theta
+Integer(int32), Intent(in) :: nhitline
+Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
+
+Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
+Integer(int32) :: ifail, ierr(1),ilg(1)
+!- End of header -------------------------------------------------------------
+
+Call follow_fieldlines_rzphi_diffuse(bfield,[Rstart],[Zstart],[Phistart],1,&
+     dphi_line_diff,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
+ifail = ilg(1)
+
+Call check_line_for_intersections(pint,iout, &
+     r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
+     nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
+
+End Subroutine line_follow_and_int
+!-----------------------------------------------------------------------------
+
+
 !-----------------------------------------------------------------------------
 !+ Worker node subroutine for following fieldlines and calculating intersections
-!  Counterpart to diffuse_lines3 
+!  Counterpart to diffuse_lines3
 !-----------------------------------------------------------------------------
 Subroutine diffuse_lines3_worker
 Use kind_mod, Only : real64, int32
-Use run_settings_namelist, Only : dmag, dphi_line_diff, nhitline,calc_lc, calc_theta
+Use run_settings_namelist, Only : dmag, nhitline,calc_lc, calc_theta
 Use parallel_mod, Only : ierr_mpi, rank, status, &
      MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV
-Implicit None 
+Implicit None
 
 Real(real64), Dimension(3) :: line_start_data_r
 Integer(int32), Dimension(3) :: line_start_data_i
@@ -36,15 +73,15 @@ num_myjobs = 0
 line_start_data_i = 0
 
 !  Write(*,*) 'Process ',rank,' reporting as READY'
-Do While (line_start_data_i(1) .ne. -1) 
+Do While (line_start_data_i(1) .ne. -1)
 
    ! Wait for line data
    source = 0
    dest = 0
    tag = rank
-   Call MPI_RECV(line_start_data_i,3,MPI_INTEGER,source,tag,MPI_COMM_WORLD,status,ierr_mpi)   
+   Call MPI_RECV(line_start_data_i,3,MPI_INTEGER,source,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
-   ! Check for kill signal    
+   ! Check for kill signal
    if (line_start_data_i(1) .ne. -1 ) Then
 
       ! Get rest of start data
@@ -54,11 +91,11 @@ Do While (line_start_data_i(1) .ne. -1)
       Pstart_local    = line_start_data_r(3)
       nsteps_line_local = line_start_data_i(1)
       iline_local       = line_start_data_i(3)
-      
+
       ! Follow the line
       Allocate(r_hitline(nhitline))
       Allocate(z_hitline(nhitline))
-      Allocate(phi_hitline(nhitline))      
+      Allocate(phi_hitline(nhitline))
 
       Call line_follow_and_int(Rstart_local,Zstart_local, &
            Pstart_local,nsteps_line_local,&
@@ -83,7 +120,7 @@ Do While (line_start_data_i(1) .ne. -1)
       Call MPI_SEND(line_done_data_r,5,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
       If (nhitline .gt. 0) Then
-         Allocate(line_done_data_r2(3*nhitline))      
+         Allocate(line_done_data_r2(3*nhitline))
          line_done_data_r2(1+0*nhitline:1*nhitline) = r_hitline
          line_done_data_r2(1+1*nhitline:2*nhitline) = z_hitline
          line_done_data_r2(1+2*nhitline:3*nhitline) = phi_hitline
@@ -91,7 +128,7 @@ Do While (line_start_data_i(1) .ne. -1)
          Deallocate(line_done_data_r2)
       Endif
       Deallocate(r_hitline,z_hitline,phi_hitline)
-      
+
       num_myjobs = num_myjobs + 1
     Endif ! kill signal check
 
@@ -100,7 +137,7 @@ Do While (line_start_data_i(1) .ne. -1)
   Write(*,*) 'Process ',rank,'received signal that all work is complete'
   Write(*,*) 'Process ',rank,' completed ',num_myjobs,' jobs'
 End Subroutine diffuse_lines3_worker
-  
+
 !-----------------------------------------------------------------------------
 !+ Main subroutine for following fieldlines and calculating intersections
 !-----------------------------------------------------------------------------
@@ -141,7 +178,7 @@ Integer, Dimension(:), Allocatable :: req_arr
 !- End of header -------------------------------------------------------------
 
 ! Read init point data
-Write(6,'(A,A)') ' Reading launch point data from ',Trim(Adjustl(fname_launch))
+Write(*,'(A,A)') ' Reading launch point data from ',Trim(Adjustl(fname_launch))
 Open(iu_launch,file=fname_launch)
 Read(iu_launch,*) numl
 Allocate(R0(numl),Z0(numl),Phi0(numl))
@@ -150,9 +187,9 @@ Do ii = 1,numl
 Enddo
 Close(iu_launch)
 
-Write(6,*) 'Total number of fieldlines to follow:',numl
-Write(6,*) 'Diffusing fieldlines with D_mag (m**2/m) = ',dmag
-Write(6,*) 
+Write(*,*) 'Total number of fieldlines to follow:',numl
+Write(*,*) 'Diffusing fieldlines with D_mag (m**2/m) = ',dmag
+Write(*,*)
 
 Allocate(this_job_done(nprocs-1),is_working_arr(nprocs-1),req_arr(nprocs-1))
 
@@ -164,7 +201,7 @@ work_done_count = 0
 req_arr = 0
 is_working_arr = 0
 Do dest = 1,nprocs - 1
-   
+
   tag = dest
 
   ! Send line start data
@@ -172,7 +209,7 @@ Do dest = 1,nprocs - 1
   Rstart   = R0(iline)
   Zstart   = Z0(iline)
   Phistart = Phi0(iline)
-  
+
   line_start_data_i(1) = ns_line_diff
   line_start_data_i(2) = nhitline
   line_start_data_i(3) = iline
@@ -180,14 +217,14 @@ Do dest = 1,nprocs - 1
 
   line_start_data_r(1) = Rstart
   line_start_data_r(2) = Zstart
-  line_start_data_r(3) = Phistart  
+  line_start_data_r(3) = Phistart
   Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
   ! Request signal that job is finished
   Call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
   req_arr(dest) = request
   is_working_arr(dest) = 1
-  
+
 Enddo
 
 !-----------------------------------------------------------
@@ -198,7 +235,7 @@ hitcount = 0
 
 Open(iu_int,file=fname_intpts,iostat=iocheck)
 Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
-Open(iu_hit,file=fname_hit   ,iostat=iocheck)   
+Open(iu_hit,file=fname_hit   ,iostat=iocheck)
 Do While ( work_done .ne. 1 )
   Do dest = 1,nprocs - 1
 
@@ -219,7 +256,7 @@ Do While ( work_done .ne. 1 )
            Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
         Endif
         ihit        = line_done_data_i(2)
-        if ( ihit .ge. 1 ) Then 
+        if ( ihit .ge. 1 ) Then
           hitcount = hitcount + 1
           iout = line_done_data_i(2:5)
           pint = line_done_data_r(1:3) ! X,Y,Z
@@ -238,10 +275,10 @@ Do While ( work_done .ne. 1 )
         Endif
       Endif ! flag true
 
-    ! If the process is not working, send a new job (if there are still jobs to do)           
-    Elseif (is_working_arr(dest) == 0 ) Then        
+    ! If the process is not working, send a new job (if there are still jobs to do)
+    Elseif (is_working_arr(dest) == 0 ) Then
 !      write(*,*) 'process ',dest,' is reporting idle, sending new job'
-      If (iline .lt. numl) Then       
+      If (iline .lt. numl) Then
         tag = dest
         iline = iline + 1
         Rstart   = R0(iline)
@@ -256,26 +293,26 @@ Do While ( work_done .ne. 1 )
         Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
         Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
         is_working_arr(dest) = 1
-        
+
         ! Initiate request for completed job
-        call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)       
+        call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
         req_arr(dest) = request
       Else
         ! If there are no more jobs, turn this process 'off'
         is_working_arr(dest) = -1
       Endif
-      
+
     Endif
-    
+
   Enddo ! nprocs
 
   if ( work_done_count .ge. numl ) Then
     work_done = 1
   Endif
-  
+
 Enddo ! while NOT work done
 
-! 
+!
 ! Send signal to each process that we are done
 !
 
@@ -283,14 +320,14 @@ Do dest = 1,nprocs-1
   tag = dest
   Write(*,*) 'Master sending kill signal to process',dest
   line_start_data_i = -1 ! Kill signal
-  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi) 
+  Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 Enddo
 
 
 Close(iu_hit)
 close(iu_int)
 
-Write(6,*) ' We had ',hitcount,' lines -hit-'
+Write(*,*) ' We had ',hitcount,' lines -hit-'
 
 Open(iu_nhit,file=fname_nhit)
 Write(iu_nhit,*) hitcount
@@ -302,45 +339,11 @@ End Subroutine diffuse_lines3
 
 
 
-!-----------------------------------------------------------------------------
-!+ 
-!-----------------------------------------------------------------------------
-Subroutine line_follow_and_int(Rstart,Zstart,Phistart,nsteps_line,pint,iout, &
-r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,theta)
-
-Use kind_mod, Only : real64, int32
-Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
-Use setup_bfield_module, Only : bfield
-Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta
-Implicit None
-
-Real(real64), Intent(in) :: Rstart, Zstart, Phistart
-Integer(int32), Intent(in) :: nsteps_line, linenum
-Integer(int32), Intent(out), Dimension(4) :: iout
-Real(real64), Dimension(3), Intent(out) :: pint
-Real(real64), Intent(out) :: totL, theta
-Integer(int32), Intent(in) :: nhitline
-Real(real64), Intent(out),Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
-
-Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
-Integer(int32) :: ifail, ierr(1),ilg(1)
-!- End of header -------------------------------------------------------------
-
-Call follow_fieldlines_rzphi_diffuse(bfield,(/Rstart/),(/Zstart/),(/Phistart/),1,&
-     dphi_line_diff,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
-ifail = ilg(1)
-
-Call check_line_for_intersections(pint,iout, &
-     r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
-     nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
-
-End Subroutine line_follow_and_int
-!-----------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------------
-!+ 
+!+
 !-----------------------------------------------------------------------------
-
+! Todo: cleanup
 Subroutine check_line_for_intersections(pint,iout, &
      r_hitline,z_hitline,phi_hitline,nhitline,linenum,nsteps_line,rout,zout,phiout,ifail,totL, &
      calc_lc,calc_theta,theta)
@@ -364,15 +367,16 @@ Real(real64), Dimension(nsteps_line+1),intent(in) :: rout,zout,phiout
 Logical, Intent(In) :: calc_lc, calc_theta
 
 Integer(int32) :: iseg, ierr_pint
-Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri
+Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri,inphi1,inphi2
 Logical :: inside_it
 Integer(int32), Dimension(1) :: ind_min, ind_max
 Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom, pint2D(2), rint,zint,uint
 Real(real64) :: p_start, x_start, y_start, z_start, p_end, x_end, y_end, z_end,r_start,r_end,R2a,R1a
 Real(Real64), Dimension(2) :: Rtmp, Ztmp, Ytmp, Xtmp
-Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, Pmin, Pmax, X1a, Y1a, Z1a, X2a, Y2a, Z2a
+Real(real64) :: R2,Z2,P2, X1, Y1, X2, Y2, dphi1, dphi2, X1a, Y1a, Z1a, X2a, Y2a, Z2a
 Real(real64) :: RLast, ZLast, PLast
 Real(real64), Dimension(3) :: Pt1, pt2, pa, pb, pc
+Real(real64) :: Pmin_line, Pmax_line, Pmin_test, Pmax_test
 !- End of header -------------------------------------------------------------
 
 npts_line = nsteps_line + 1
@@ -389,8 +393,6 @@ Do i=1,npts_line - 1
    z_hitline = 0.d0
    phi_hitline = 0.d0
    
-                 
-   !  Write(*,*) i
   ! Current point along line
   R1 = rout(i)
   Z1 = zout(i)
@@ -412,16 +414,16 @@ Do i=1,npts_line - 1
   Call wrap_phi(P1,period)
   X1 = R1*cos(P1)
   Y1 = R1*sin(P1)
-
+  
   Call wrap_phi(P2,period)
   X2 = R2*cos(P2)
   Y2 = R2*sin(P2)
-
+  
   dphi2 = P2-P1
 
   ! Check for lines that cross symmetry (field period) plane
   twofer = 0
-  If ( abs(dphi1-dphi2) .gt. 1.d-12) Then 
+  If ( abs(dphi1-dphi2) .gt. 1.d-12) Then
     twofer = 1
     P1a = Minval([P1,P2])
     P2a = Maxval([P1,P2])
@@ -457,7 +459,7 @@ Do i=1,npts_line - 1
     pa = [0.d0,0.d0,0.d0]
     pb = [0.d0,0.d0,1.d0]
     pc = [cos(period),sin(period),0.d0]
-    
+
     ! Calc unit vector normal to plane of Pa-c (gives plane components A-C)
     Aplane=-sin(period)
     Bplane= cos(period)
@@ -473,14 +475,14 @@ Do i=1,npts_line - 1
     Y3 = pt1(2) + mu * (pt2(2) - pt1(2))
     Z3 = pt1(3) + mu * (pt2(3) - pt1(3))
     R3 = sqrt(X3*X3+Y3*Y3)
-    
-    ! Define two new points 
+
+    ! Define two new points
     P1 = 0._real64
     R1 = R3
     X1 = R3*cos(P1)
     Y1 = R3*sin(P1)
     Z1 = Z3
-    
+
     P2 = period
     R2 = R3
     X2 = R3*cos(P2)
@@ -526,63 +528,65 @@ Do i=1,npts_line - 1
            r_end   = R2
         End If
      End If
-    
+
+     Pmin_line = Min(p_start,p_end)
+     Pmax_line = Max(p_start,p_end)
+
      ihit = 0
-     Do ipart=1,nparts
-
-        !Check if this line segment is within the phi bounds of the part
-        Pmin = Pmins(ipart)
-        Pmax = Pmaxs(ipart)
-
-        inphi = 0
-!    If ( twofer .eq. 1 ) Then  ! This line crossed the f.p. plane (2pi/Nfp)
-!      If ( P1a .ge. Pmin .AND. P1a .le. Pmax ) inphi = 1
-!      If ( P2a .ge. Pmin .AND. P2a .le. Pmax ) inphi = 1
-!      If (inphi .eq. 1 ) Then
-!        Write(6,*) 'NEED TO WRITE THIS PART!!!!'
-!        WRite(6,*) 'ipart',ipart
-!        Write(6,*) P1a,P2a,Pmin,Pmax,dphi1,dphi2,abs(dphi1-dphi2)
-!        stop
-!      Endif
-!    Endif
-
-        If ( p_start .ge. Pmin .AND. p_start .le. Pmax ) inphi = 1
-        If ( p_end .ge. Pmin .AND. p_end .le. Pmax ) inphi = 1
+     Do ipart=1,nparts        
         
+        ! Check if this line segment is within the phi bounds of the part
+        ! The phi segments overlap if Max(Min(phi_line),Min(phi_test)) <= Min(Max(phi_line),Max(phi_test))
+        Pmin_test = Min(Pmins(ipart),Pmaxs(ipart))
+        Pmax_test = Max(Pmins(ipart),Pmaxs(ipart))
+        
+        inphi = 0
+        If (Max(Pmin_line, Pmin_test) <= Min(Pmax_line, Pmax_test)) Then
+           inphi = 1
+        End If
         If (inphi .eq. 1 ) Then
-           
+
            If (is_AS_part(ipart)) Then
               ! Part is AS (allowing for it to have a finite toroidal extent)
               Call int_line_curve((/r_start,z_start/),(/r_end,z_end/), &
                    Rparts(ipart,1,1:np_parts(ipart)),Zparts(ipart,1,1:np_parts(ipart)), &
                    .true.,pint2D,ierr_pint,uint)
               If (ierr_pint .eq. 0) Then
-                 ihit = 1                 
+                 ihit = 1
                  pint(1) = pint2D(1)*cos(uint*(p_end-p_start)+p_start)
                  pint(2) = pint2D(1)*sin(uint*(p_end-p_start)+p_start)
                  pint(3) = pint2D(2)
                  itri = -1
-              End If              
-           Else              
+              End If
+           Else
               ! If not AS then check triangles
               ntri = ntri_parts(ipart)
               Do itri = 1,ntri
-                 
-                 pa = [xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)]
-                 pb = [xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)]
-                 pc = [xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)]
-                 pt1 = [x_start,y_start,z_start]
-                 pt2 = [x_end,y_end,z_end]
 
-                 Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol,calc_theta,theta)
-
-                 If (ihit_tmp .eq. 1) Then
-                    ihit = 1
-                    Exit ! stop looking for triangle intersections
-                 Endif
+                 ! Check if this line segment is within the phi bounds of the triangle
+                 ! The phi segments overlap if Max(Min(phi_line),Min(phi_test)) <= Min(Max(phi_line),Max(phi_test))
+                 Pmin_test = Min(Pmintri(ipart,itri),Pmaxtri(ipart,itri))
+                 Pmax_test = Max(Pmintri(ipart,itri),Pmaxtri(ipart,itri))
                  
+                 If (Max(Pmin_line, Pmin_test) <= Min(Pmax_line, Pmax_test)) Then
+
+                    pa = [xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)]
+                    pb = [xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)]
+                    pc = [xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)]
+                    pt1 = [x_start,y_start,z_start]
+                    pt2 = [x_end,y_end,z_end]
+
+                    Call line_seg_facet_int(pa,pb,pc,pt1,pt2,ihit_tmp,pint,lsfi_tol,calc_theta,theta)
+
+                    If (ihit_tmp .eq. 1) Then
+                       ihit = 1
+                       Exit ! stop looking for triangle intersections
+                    Endif
+
+                 End If ! Is in triangle phi range
+
               Enddo !triangle loop
-              
+
            End If ! is AS part
 
            ! If it hit then write pint and hitline
@@ -606,20 +610,20 @@ Do i=1,npts_line - 1
               Endif
               Exit  ! Stop looking for part intersections
            End If
-              
+
         Endif !inphi check
      Enddo ! part index
 
      If (ihit .eq. 1 ) Exit  ! Stop looking for segment intersections
   Enddo ! seg index (twofer)
-  
+
   If (ihit .eq. 1 ) Exit  ! Quit fieldline if it hit a part
 Enddo ! points along line (i)
 
 
 
 If ( ihit .eq. 0 ) Then
-  Write(6,'(A,I0,A)') ' No part intersections found for line ',linenum,', checking for vessel intersection'
+  Write(*,'(A,I0,A)') ' No part intersections found for line ',linenum,', checking for vessel intersection'
 
   ! Check if first point is outside vessel, if so quit
   i = 1
@@ -635,11 +639,11 @@ If ( ihit .eq. 0 ) Then
 
   ! Allocate slice arrays for find_vessel_intersection
   If (.not. vessel_int_is_last_point) Call init_find_vessel_intersection
-  
+
   ! Loop over curve points
   totL = 0._real64
   Do i=2,npts_line
-    
+
     ! Current point along line
     R1 = rout(i)
     Z1 = zout(i)
@@ -657,7 +661,7 @@ If ( ihit .eq. 0 ) Then
     ! 1) Both points outside. Could intersect poly but we assume the fl started inside.
     ! 2) Both points inside. Cannot intersect
     ! 3) One in and one out. Intersects. Since we started inside we only need to check inside_it.
-    
+
     ! If there is an intersection find int point and define hitline
     If (.not. inside_it) Then
 
@@ -707,7 +711,7 @@ If ( ihit .eq. 0 ) Then
     PLast = P1
 
  Enddo ! npts line
- 
+
   ! Allocate slice arrays for find_vessel_intersection
   If (.not. vessel_int_is_last_point) Call fin_find_vessel_intersection
 

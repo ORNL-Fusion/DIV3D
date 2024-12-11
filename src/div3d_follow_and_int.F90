@@ -15,12 +15,21 @@ Use surface_mod, Only : trace_surface
 Use initialize_points, Only : init_points_line
 Implicit none
 Logical :: verbose = .false.
+! Variables for timing
+Integer :: start = 1, finish = 1, count_rate = 1
+Real :: elapsed_time
 
 !----------------------------------------------------------
 ! 0. Setup
+! --Initialize timing
 ! --Initialize MPI
 ! --Read namelist
 !----------------------------------------------------------
+If (rank .eq. 0) Then
+   call system_clock(count_rate = count_rate)
+   call system_clock(start)
+End If
+
 Call init_mpi
 If (rank .eq. 0) verbose = .true. 
 If (verbose) Write(*,'(/A)') '-------------------------------------------------------------------------'
@@ -43,8 +52,8 @@ If (verbose) Write(*,'(A)') ' Reading parts list and part files:'
 Call read_parts(verbose)
   
 ! Make triangles from 2d parts
-If (verbose) Write(*,'(/A/)') ' Generating 2d part triangles'
-Call make_triangles
+If (verbose) Write(*,'(/A)') ' Generating 2d part triangles'
+Call make_triangles(verbose)
 
 !----------------------------------------------------------------
 ! Root node traces initial surface and defines starting points
@@ -70,7 +79,17 @@ If (rank .eq. 0) Then
   Endif
 Endif
 
+! Display timing info for prep
 If (rank .eq. 0) Then
+   call system_clock(finish)
+   elapsed_time = Real(finish - start)/Real(count_rate)
+   Write(*,*) "Time spent in prep: ", elapsed_time, " seconds"
+   call system_clock(start) ! Re-initialize for next call
+End If
+
+
+If (rank .eq. 0) Then
+
    !----------------------------------------------------------------------------------------
    ! 5. Root node distributes jobs using init points
    !----------------------------------------------------------------------------------------
@@ -88,6 +107,13 @@ Else
    Call diffuse_lines3_worker
 Endif
 
+! Write timing info
+If (rank .eq. 0) Then
+   call system_clock(finish)
+   elapsed_time = Real(finish - start) / Real(count_rate)
+   Write(*,*) "Time spent in following and intersection: ", elapsed_time, " seconds"
+End If
+ 
 ! Finialize MPI
 Call fin_mpi(.false.) ! False means this is a non-error exit
 

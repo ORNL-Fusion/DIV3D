@@ -2,7 +2,7 @@
 !+ Contains routines used to read and interact with part files.
 !-----------------------------------------------------------------------------
 Module read_parts_mod
-! Description: 
+! Description:
 !
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
@@ -19,7 +19,7 @@ Integer(int32) :: nparts, nt_max, np_max
 Real(real64), Allocatable :: near_part(:)
 Integer(int32),Allocatable,Dimension(:) :: nt_parts, np_parts, part_type
 Character(len=300),Allocatable,Dimension(:) :: part_names
-Integer(int32) ::ic_near
+Integer(int32) :: ic_near
 
 ! Vessel
 Real(real64), Allocatable :: R_ves(:,:),Z_ves(:,:),P_ves(:,:)
@@ -28,7 +28,7 @@ Logical :: is_AS_ves, force_non_AS_ves
 
 ! Triangles
 Integer(int32) :: ntri_max
-Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid
+Real(real64), Allocatable, Dimension(:,:) :: xmid, ymid, zmid, dmid, pmintri, pmaxtri
 Real(real64), Allocatable,Dimension(:,:,:) :: xtri,ytri,ztri
 Integer(int32), Allocatable,Dimension(:) :: ntri_parts
 Real(real64), Allocatable :: near_tri(:)
@@ -40,17 +40,17 @@ Contains
 !-----------------------------------------------------------------------------
 !+ Makes triangles from 2d parts
 !-----------------------------------------------------------------------------
-Subroutine make_triangles
+Subroutine make_triangles(verbose)
 Use kind_mod, Only : real64, int32
 Use io_unit_spec, Only : iu_ptri, iu_ptmid
 Use run_settings_namelist, Only : fname_ptri, fname_ptri_mid
 Implicit None
-
+Logical, Intent(in) :: verbose
 Real(real64) :: R1,Z1,P1,Pt1(3)
 Real(real64) :: R2,Z2,P2,Pt2(3)
 Real(real64) :: R3,Z3,P3,Pt3(3)
 Real(real64) :: R4,Z4,P4,Pt4(3), dmids(3)
-Integer(int32) :: ipart, jpol, itor, itri, npol, ntor
+Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet
 !- End of header -------------------------------------------------------------
 
 !first have to get max number of triangles for allocation
@@ -62,26 +62,23 @@ Do ipart=1,nparts
 Enddo
 ntri_max = Maxval(ntri_parts)
 
-Allocate(xtri(nparts,ntri_max,3))
-Allocate(ytri(nparts,ntri_max,3))
-Allocate(ztri(nparts,ntri_max,3))
-Allocate(xmid(nparts,ntri_max))
-Allocate(ymid(nparts,ntri_max))
-Allocate(zmid(nparts,ntri_max))
-Allocate(dmid(nparts,ntri_max))
+Allocate(xtri(nparts,ntri_max,3) ,source=0._real64)
+Allocate(ytri(nparts,ntri_max,3) ,source=0._real64)
+Allocate(ztri(nparts,ntri_max,3) ,source=0._real64)
+Allocate(xmid(nparts,ntri_max)   ,source=0._real64)
+Allocate(ymid(nparts,ntri_max)   ,source=0._real64)
+Allocate(zmid(nparts,ntri_max)   ,source=0._real64)
+Allocate(dmid(nparts,ntri_max)   ,source=0._real64)
+Allocate(pmintri(nparts,ntri_max),source=0._real64)
+Allocate(pmaxtri(nparts,ntri_max),source=0._real64)
 
-xmid(:,:) = 0._real64
-ymid(:,:) = 0._real64
-zmid(:,:) = 0._real64
-xtri(:,:,:) = 0._real64
-ytri(:,:,:) = 0._real64
-ztri(:,:,:) = 0._real64
-
+! Open and initialize files
 Open(iu_ptri,file=fname_ptri)
 Write(iu_ptri,*) nparts
 Open(iu_ptmid,file=fname_ptri_mid)
 Write(iu_ptmid,*) nparts
 
+! Create triangles
 Do ipart=1,nparts
   write(iu_ptri,*) ipart,ntri_parts(ipart)
   write(iu_ptmid,*) ipart,ntri_parts(ipart)
@@ -110,58 +107,56 @@ Do ipart=1,nparts
       Pt4(1:3) = [R4*cos(P4),R4*sin(P4),Z4]
 
       ! define triangles for this part
-      xtri(ipart,itri,1:3) = [Pt1(1),Pt2(1),Pt3(1)]
-      ytri(ipart,itri,1:3) = [Pt1(2),Pt2(2),Pt3(2)]
-      ztri(ipart,itri,1:3) = [Pt1(3),Pt2(3),Pt3(3)]
-      write(iu_ptri,*) itri
-      write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
-      write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
-      write(iu_ptri,*) xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)
-      ! Define triangle midpoint
-      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._real64
-      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._real64
-      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._real64
-      dmids(1) = sqrt( (xtri(ipart,itri,1) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,1) - ymid(ipart,itri))**2 + (ztri(ipart,itri,1) - zmid(ipart,itri))**2 )
-      dmids(2) = sqrt( (xtri(ipart,itri,2) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,2) - ymid(ipart,itri))**2 + (ztri(ipart,itri,2) - zmid(ipart,itri))**2 )
-      dmids(3) = sqrt( (xtri(ipart,itri,3) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,3) - ymid(ipart,itri))**2 + (ztri(ipart,itri,3) - zmid(ipart,itri))**2 )
-      dmid(ipart,itri) = maxval(dmids,1)
-      write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
 
-      ! 2nd triangle
-      itri = itri+1_int32
-!      xtri(ipart,itri,1:3) = [Pt4(1),Pt2(1),Pt3(1)]
-!      ytri(ipart,itri,1:3) = [Pt4(2),Pt2(2),Pt3(2)]
-!      ztri(ipart,itri,1:3) = [Pt4(3),Pt2(3),Pt3(3)]
-      xtri(ipart,itri,1:3) = [Pt4(1),Pt3(1),Pt2(1)]
-      ytri(ipart,itri,1:3) = [Pt4(2),Pt3(2),Pt2(2)]
-      ztri(ipart,itri,1:3) = [Pt4(3),Pt3(3),Pt2(3)]
-      write(iu_ptri,*) itri
-      write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
-      write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
-      write(iu_ptri,*) xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)
-      ! Define triangle midpoint
-      xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._real64
-      ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._real64
-      zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._real64
-      dmids(1) = sqrt( (xtri(ipart,itri,1) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,1) - ymid(ipart,itri))**2 + (ztri(ipart,itri,1) - zmid(ipart,itri))**2 )
-      dmids(2) = sqrt( (xtri(ipart,itri,2) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,2) - ymid(ipart,itri))**2 + (ztri(ipart,itri,2) - zmid(ipart,itri))**2 )
-      dmids(3) = sqrt( (xtri(ipart,itri,3) - xmid(ipart,itri))**2 + &
-           (ytri(ipart,itri,3) - ymid(ipart,itri))**2 + (ztri(ipart,itri,3) - zmid(ipart,itri))**2 )
-      dmid(ipart,itri) = maxval(dmids,1)
-      write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
+      ! Loop over the two facets from each quad
+      Do ifacet = 1,2
+         If (ifacet .eq. 1) Then
+            ! 1st triangle
+            xtri(ipart,itri,1:3) = [Pt1(1),Pt2(1),Pt3(1)]
+            ytri(ipart,itri,1:3) = [Pt1(2),Pt2(2),Pt3(2)]
+            ztri(ipart,itri,1:3) = [Pt1(3),Pt2(3),Pt3(3)]
+            ! Set phi range of triangle for checking
+            pmintri(ipart,itri) = Minval([P1,P2,P3])
+            pmaxtri(ipart,itri) = Maxval([P1,P2,P3])
+         Else
+            ! 2nd triangle
+            xtri(ipart,itri,1:3) = [Pt4(1),Pt3(1),Pt2(1)]
+            ytri(ipart,itri,1:3) = [Pt4(2),Pt3(2),Pt2(2)]
+            ztri(ipart,itri,1:3) = [Pt4(3),Pt3(3),Pt2(3)]
+            ! Set phi range of triangle for checking
+            pmintri(ipart,itri) = Minval([P4,P3,P2])
+            pmaxtri(ipart,itri) = Maxval([P4,P3,P2])
+         End If
 
-      itri = itri+1_int32
+         write(iu_ptri,*) itri
+         write(iu_ptri,*) xtri(ipart,itri,1),ytri(ipart,itri,1),ztri(ipart,itri,1)
+         write(iu_ptri,*) xtri(ipart,itri,2),ytri(ipart,itri,2),ztri(ipart,itri,2)
+         write(iu_ptri,*) xtri(ipart,itri,3),ytri(ipart,itri,3),ztri(ipart,itri,3)
+
+         ! Define triangle midpoint
+         xmid(ipart,itri) = sum(xtri(ipart,itri,1:3))/3._real64
+         ymid(ipart,itri) = sum(ytri(ipart,itri,1:3))/3._real64
+         zmid(ipart,itri) = sum(ztri(ipart,itri,1:3))/3._real64
+         dmids(1) = sqrt( (xtri(ipart,itri,1) - xmid(ipart,itri))**2 + &
+              (ytri(ipart,itri,1) - ymid(ipart,itri))**2 + (ztri(ipart,itri,1) - zmid(ipart,itri))**2 )
+         dmids(2) = sqrt( (xtri(ipart,itri,2) - xmid(ipart,itri))**2 + &
+              (ytri(ipart,itri,2) - ymid(ipart,itri))**2 + (ztri(ipart,itri,2) - zmid(ipart,itri))**2 )
+         dmids(3) = sqrt( (xtri(ipart,itri,3) - xmid(ipart,itri))**2 + &
+              (ytri(ipart,itri,3) - ymid(ipart,itri))**2 + (ztri(ipart,itri,3) - zmid(ipart,itri))**2 )
+         dmid(ipart,itri) = maxval(dmids,1)
+         write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
+
+
+         itri = itri + 1
+      End Do
 
     Enddo
   Enddo
 Enddo
 Close(iu_ptri)
 Close(iu_ptmid)
+
+If (verbose) Write(*,*) "Total number of triangles:",itri-1
 
 End Subroutine make_triangles
 !-----------------------------------------------------------------------------
@@ -180,7 +175,7 @@ Implicit none
 Character(len=100), Intent(in) :: fname
 Integer(int32), Intent(in) :: ntor, npol
 Character(len=100), Intent(out) :: label
-Integer(int32),Intent(out) :: msym  
+Integer(int32),Intent(out) :: msym
 Real(real64),Dimension(ntor,npol), Intent(out) :: Rpart, Zpart, Phipart
 Logical, Intent(out) :: force_non_AS
 Integer(int32) :: itor, ipol, ntor_dum, npol_dum, iostat
@@ -192,7 +187,6 @@ open(iu_thispart,file=fname)
 Read(iu_thispart,*) label
 
 ! Parse header, allowing for optional logical force_non_AS
-!Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
 force_non_AS = .false.
 Read(iu_thispart, '(A)') line
 Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
@@ -219,11 +213,11 @@ Endsubroutine load_w7_part
 
 
 !-----------------------------------------------------------------------------
-!+ Reads 2d jpart file 
+!+ Reads 2d jpart file
 !-----------------------------------------------------------------------------
 Subroutine load_2d_jpart(fname,label,ntor,npol,msym,Rpart,Zpart,Phipart,force_non_AS)
 Use kind_mod, Only : int32, real64
-Use parallel_mod, Only : fin_mpi 
+Use parallel_mod, Only : fin_mpi
 Use io_unit_spec, Only : iu_thispart
 Use phys_const, Only : pi
 Implicit none
@@ -252,7 +246,7 @@ Read(iu_thispart, '(A)') line
 Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
 
 ! When read [R,Z] = cm and Phi = degrees
-Do itor = 1,ntor 
+Do itor = 1,ntor
   Do ipol = 1,npol
     Read(iu_thispart,*) Rpart(itor,ipol), Zpart(itor,ipol), Phipart(itor,ipol)
   Enddo
@@ -327,7 +321,7 @@ Do i=1,ntor
   R2 = Rin(i,npol)
   Z2 = Zin(i,npol)
   dL = Sqrt( (R1-R2)*(R1-R2) + (Z1-Z2)*(Z1-Z2) )
-  
+
   V1(1) = R2-R1
   V1(2) = Z2-Z1
   V1 = V1/dL
@@ -341,8 +335,8 @@ Do i=1,ntor
 
   Rout(i,npol+1) = Rmid + real(dir,real64)*unit_out(1)*step
   Zout(i,npol+1) = Zmid + real(dir,real64)*unit_out(2)*step
-!  Rout(i,npol+1) = Rmid 
-!  Zout(i,npol+1) = Zmid 
+!  Rout(i,npol+1) = Rmid
+!  Zout(i,npol+1) = Zmid
 
 !  Write(*,*) '------'
 !  Write(*,*) Rout(i,:)
@@ -361,7 +355,7 @@ End Subroutine close_2pt_part
 !-----------------------------------------------------------------------------
 Subroutine read_parts(verbose)
 !
-! Description: 
+! Description:
 !
 !  Notes:
 !    part_type == 0 indicates 'w7' type. (R,Z) points at toroidal angles
@@ -402,7 +396,7 @@ Do ipart = 1,nparts
   Call query_part(part_name,ntor,npol,nfp_part)
   part_names(ipart) = part_name
   nt_parts(ipart) = ntor
-  np_parts(ipart) = npol  
+  np_parts(ipart) = npol
   If (verbose) Then
      Write(*,*) 'Part',ipart,Trim(Adjustl(part_names(ipart)))
   End If
@@ -440,7 +434,7 @@ Do ipart = 1,nparts
      Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
   Else
      Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
-  Endif       
+  Endif
 
   ! Set R,Z arrays
   Rparts(ipart,1:ntor,1:npol) = Rpart
@@ -457,7 +451,7 @@ Do ipart = 1,nparts
   ! Get min/max of Phi for filtering out intersection checks and to determine if part is AS
   Pmins(ipart) = Minval(Ppart)
   Pmaxs(ipart) = Maxval(Ppart)
-  
+
   ! Extra screen output
   If (verbose) Then
      Write(*,*)'Part ',ipart,'[nt,np] =',ntor,npol,'defined with nsym',nfp_part
@@ -477,7 +471,7 @@ Do ipart = 1,nparts
   Enddo
   If (       (check_AS .lt. check_AS_tol) &
 !       .and. (Pmins(ipart)          .le. phi_period_tol) &
-!       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &       
+!       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
        ) Then
      If (force_non_AS(ipart)) Then
         If (verbose) Write(*,*) '  Part appears AS but AS treatment overridden in part file'
@@ -487,7 +481,7 @@ Do ipart = 1,nparts
      End If
   Endif
 
-  ! Clean up 
+  ! Clean up
   Deallocate(Rpart,Zpart,Ppart)
 
   ! Write all parts file
@@ -540,4 +534,3 @@ End Subroutine read_parts
 !-----------------------------------------------------------------------------
 
 End Module read_parts_mod
-
