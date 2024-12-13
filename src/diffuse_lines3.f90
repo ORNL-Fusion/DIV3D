@@ -154,6 +154,9 @@ Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
      fname_hit, fname_intpts, fname_nhit, nhitline
 Implicit none
 
+
+Logical, parameter :: write_hitline_to_netcdf = .false.
+
 Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck
 Real(real64) :: Rstart, Zstart, Phistart
 
@@ -227,15 +230,24 @@ Do dest = 1,nprocs - 1
 
 Enddo
 
+
+! Set up output files
+Open(iu_int,file=fname_intpts,iostat=iocheck)
+Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
+
+! Open hitline file
+If (write_hitline_to_netcdf) Then
+   Call init_hitline_netcdf(fname_hit,nhitline)
+Else
+   Open(iu_hit,file=fname_hit,iostat=iocheck)
+End If
+
 !-----------------------------------------------------------
 ! Loop over processors until work is complete
 !-----------------------------------------------------------
 work_done = 0
 hitcount = 0
 
-Open(iu_int,file=fname_intpts,iostat=iocheck)
-Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
-Open(iu_hit,file=fname_hit   ,iostat=iocheck)
 Do While ( work_done .ne. 1 )
   Do dest = 1,nprocs - 1
 
@@ -262,16 +274,23 @@ Do While ( work_done .ne. 1 )
           pint = line_done_data_r(1:3) ! X,Y,Z
           totL = line_done_data_r(4)
           theta = line_done_data_r(5)
+
           Write(iu_int,*)   sqrt(pint(1)*pint(1)+pint(2)*pint(2)),pint(3),atan2(pint(2),pint(1)),iout,totL,theta !R,Z,phi,ihit,ipart,itri,i,totL,theta
+
           If (nhitline .gt. 0) Then
              r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
              z_hitline   = line_done_data_r2(1+1*nhitline:2*nhitline)
              phi_hitline = line_done_data_r2(1+2*nhitline:3*nhitline)
-             Write(iu_hit,*) nhitline
-             Write(iu_hit,*) r_hitline
-             Write(iu_hit,*) z_hitline
-             Write(iu_hit,*) phi_hitline
-          Endif
+             
+             If (write_hitline_to_netcdf) Then
+                Call write_hitline_data_netcdf(fname_hit, r_hitline, z_hitline, phi_hitline)
+             Else          
+                Write(iu_hit,*) nhitline
+                Write(iu_hit,*) r_hitline
+                Write(iu_hit,*) z_hitline
+                Write(iu_hit,*) phi_hitline
+             Endif
+          End If
         Endif
       Endif ! flag true
 
@@ -718,5 +737,103 @@ If ( ihit .eq. 0 ) Then
 Endif ! did not hit part
 
 End subroutine check_line_for_intersections
+
+
+Subroutine init_hitline_netcdf(fname,nhitline)
+  use netcdf
+  implicit none
+
+  character(len=*), intent(in) :: fname
+  integer,          intent(in) :: nhitline
+
+  integer :: ncid, ierr
+  integer :: dimid_snapshot, dimid_hit_length
+  integer :: varid_r, varid_z, varid_phi
+
+  ! Master process creates the file (serial, no MPI communicator needed)
+  ierr = nf90_create(trim(fname), IOR(NF90_CLOBBER, NF90_NETCDF4), ncid)
+  if (ierr /= NF90_NOERR) stop "Error creating NetCDF file"
+
+  ! Define dimensions
+  ierr = nf90_def_dim(ncid, "snapshot", NF90_UNLIMITED, dimid_snapshot)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_def_dim(ncid, "hit_length", nhitline, dimid_hit_length)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ! Define variables with dimensions [snapshot, hit_length]
+  ierr = nf90_def_var(ncid, "r_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_r)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_def_var(ncid, "z_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_z)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_def_var(ncid, "phi_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_phi)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_enddef(ncid)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_close(ncid)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+end subroutine init_hitline_netcdf
+
+
+subroutine write_hitline_data_netcdf(fname, r_hitline, z_hitline, phi_hitline)
+  use netcdf
+  implicit none
+
+  character(len=*), intent(in) :: fname
+  character(len=NF90_MAX_NAME) :: dim_name
+  real(8), intent(in) :: r_hitline(:)
+  real(8), intent(in) :: z_hitline(:)
+  real(8), intent(in) :: phi_hitline(:)
+
+  integer :: ncid, ierr
+  integer :: varid_r, varid_z, varid_phi
+  integer :: dimid_snapshot
+  integer(kind=4) :: snapshot_len
+  integer :: start(2), count(2)
+
+  ! Master process reopens file in write mode
+  ierr = nf90_open(trim(fname), NF90_WRITE, ncid)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ! Get dimension IDs and var IDs
+  ierr = nf90_inq_dimid(ncid, "snapshot", dimid_snapshot)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ! Current length of snapshot dimension
+  ierr = nf90_inquire_dimension(ncid, dimid_snapshot, dim_name, snapshot_len)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_inq_varid(ncid, "r_hitline", varid_r)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_inq_varid(ncid, "z_hitline", varid_z)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_inq_varid(ncid, "phi_hitline", varid_phi)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  start = [snapshot_len+1, 1]
+  count = [1, size(r_hitline)]
+
+  ! write data
+  ierr = nf90_put_var(ncid, varid_r, r_hitline, start=start, count=count)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_put_var(ncid, varid_z, z_hitline, start=start, count=count)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_put_var(ncid, varid_phi, phi_hitline, start=start, count=count)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+  ierr = nf90_close(ncid)
+  if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+
+end subroutine write_hitline_data_netcdf
+
 
 End Module diffusion
