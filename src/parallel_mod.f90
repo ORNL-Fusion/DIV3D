@@ -31,7 +31,7 @@ Implicit None
 ! initialize mpi
 call MPI_INIT(ierr_mpi)
 if (ierr_mpi .ne. MPI_SUCCESS) then
-  Write(6,*) 'Error starting MPI program. Terminating.'
+  Write(*,*) 'Error starting MPI program. Terminating.'
   call MPI_ABORT(MPI_COMM_WORLD, ret_code, ierr_mpi)
 end if
 
@@ -50,7 +50,7 @@ Implicit None
 Logical, Intent(In) :: iserror  
 
 If (iserror) Then
-   Write(*,*) "Exiting due to error on rank: ", rank
+!   Write(*,*) "Exiting due to error on rank: ", rank
    Call MPI_ABORT(MPI_COMM_WORLD,1,ierr_mpi)
 Else
    Call MPI_FINALIZE(ierr_mpi)

@@ -2,34 +2,37 @@
 !+ Program to calculate intersections of fieldlines initiated on a flux surface
 !  and diffused until they intersect components
 !-----------------------------------------------------------------------------
-program div3d_follow_and_int
+Program div3d_follow_and_int
 ! Author(s): J.D. Lore - 07/14/2011 - xxx
 !
-!
-! To do:
-!  - Add default namelist variables or check for missing
-!  - Vessel intersection is just nearest phi cut
-!  - Need to add exiting routine to deallocate and finalize mpi
-!
 ! Modules used:
-Use run_settings_namelist
+Use run_settings_namelist, Only : read_run_settings_namelist, ns_line_surf, trace_surface_opt
 Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
 Use read_parts_mod, Only : read_parts, make_triangles
-Use setup_bfield_module
 Use diffusion, Only : diffuse_lines3, diffuse_lines3_worker
+Use initialize_bfield_div3d, Only : init_bfield
+Use surface_mod, Only : trace_surface
+Use initialize_points, Only : init_points_line
 Implicit none
-
 Logical :: verbose = .false.
+! Variables for timing
+Integer :: start = 1, finish = 1, count_rate = 1
+Real :: elapsed_time
 
 !----------------------------------------------------------
 ! 0. Setup
+! --Initialize timing
 ! --Initialize MPI
 ! --Read namelist
 !----------------------------------------------------------
+If (rank .eq. 0) Then
+   call system_clock(count_rate = count_rate)
+   call system_clock(start)
+End If
+
 Call init_mpi
 If (rank .eq. 0) verbose = .true. 
 If (verbose) Write(*,'(/A)') '-------------------------------------------------------------------------'
-setup_bfield_verbose = verbose
 
 ! Read namelists
 Call read_run_settings_namelist(verbose)
@@ -37,34 +40,7 @@ Call read_run_settings_namelist(verbose)
 !----------------------------------------------------------
 ! 1. Initialize magnetic field
 !----------------------------------------------------------
-! Setup rmp field
-Select Case (rmp_type)
-  Case ('g')
-    Call setup_bfield_g3d
-#ifdef HAVE_FXDR 
-  Case ('xdr')
-    Call setup_bfield_xdr
-#endif 
-  Case ('vmec_coils')
-    Call setup_bfield_vmec_coils
-  Case ('vmec_coils_to_fil')
-    Call setup_bfield_vmec_coils_to_fil
-  Case ('bgrid')
-    Call setup_bfield_bgrid        
-  Case Default
-    If (rank == 0) Then
-      Write(*,*) 'Unknown rmp_type in div3d!'
-      Write(*,*) 'Current options are:'
-      Write(*,*) '''g'''      
-      Write(*,*) '''vmec_coils'''
-      Write(*,*) '''vmec_coils_to_fil'''
-      Write(*,*) '''bgrid'''
-#ifdef HAVE_FXDR 
-      Write(*,*) '''xdr'''
-#endif
-    Endif
-    Stop      
-End Select
+Call init_bfield(verbose)
 
 !----------------------------------------------------------------
 ! 2. Load intersection components
@@ -73,60 +49,71 @@ End Select
 !  -- make trianges from parts
 !----------------------------------------------------------------
 If (verbose) Write(*,'(A)') ' Reading parts list and part files:'
-Call read_parts(fname_plist,fname_parts,fname_ves,verbose)
+Call read_parts(verbose)
   
 ! Make triangles from 2d parts
-If (verbose) Write(*,'(/A/)') ' Generating 2d part triangles'
-Call make_triangles(fname_ptri,fname_ptri_mid)
+If (verbose) Write(*,'(/A)') ' Generating 2d part triangles'
+Call make_triangles(verbose)
 
 !----------------------------------------------------------------
-! Master node traces initial surface and defines starting points
-! Master then calls diffuse_lines3 and distributes field lines
-! to be followed
+! Root node traces initial surface and defines starting points
 !----------------------------------------------------------------
 If (rank .eq. 0) Then
 
-  Write(*,'(A,I0,A)') ' Master node (rank ',rank,') is initializing run'
+  Write(*,'(A,I0,A)') ' Root node (rank ',rank,') is initializing run'
   Write(*,'(A,I0,A)') ' Total number of processes: ',nprocs
-
-  If (npts_start .lt. nprocs) Then
-    Write(*,*) 'nprocs must be less than npts_start!!!'
-    Stop "Cannot handle this" 
-  Endif
 
   !----------------------------------------------------------
   ! 3. Trace out a surface (no diffusion)
   !----------------------------------------------------------
   If (trace_surface_opt .eqv. .true.) Then
-    Write(*,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
-    If (.true.) Call trace_surface(Rstart,Zstart,Phistart,dphi_line_surf,ns_line_surf,period,fname_surf)
+    Call trace_surface(ns_line_surf)
 
     !----------------------------------------------------------
     ! 4. Initialize points on surface to carry heat
     !----------------------------------------------------------
     Write(*,*) 'Initializing points along initial surface line'
-    If (.true.) Call init_points_line(fname_surf,npts_start,fname_launch)
+    Call init_points_line
   Else
-    Write(*,*) 'Skipping trace_surface, loading file.'
+    Write(*,*) 'Skipping trace_surface, loading init points from file.'
   Endif
+Endif
 
-  !----------------------------------------------------------------------------------------
-  ! 5. Follow fieldlines from init points and check for intersections 
-  !----------------------------------------------------------------------------------------
+! Display timing info for prep
+If (rank .eq. 0) Then
+   call system_clock(finish)
+   elapsed_time = Real(finish - start)/Real(count_rate)
+   Write(*,*) "Time spent in prep: ", elapsed_time, " seconds"
+   call system_clock(start) ! Re-initialize for next call
+End If
 
-  Write(*,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-  write(*,*) 'Beginning MPI line diffusion'
-  Call diffuse_lines3(fname_launch,dmag,ns_line_diff,fname_hit,fname_intpts,fname_nhit,nhitline)
 
+If (rank .eq. 0) Then
+
+   !----------------------------------------------------------------------------------------
+   ! 5. Root node distributes jobs using init points
+   !----------------------------------------------------------------------------------------
+   
+   Write(*,'(/A)') '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+   write(*,*) 'Beginning MPI line diffusion'
+   Call diffuse_lines3
+  
 Else
 
- !----------------------------------------------------------------
- ! Additional nodes wait for lines and follow them
- !----------------------------------------------------------------
- Call diffuse_lines3_worker(dmag,dphi_line_diff,nhitline,period,calc_lc,calc_theta,lsfi_tol)
-Endif 
+   !----------------------------------------------------------------
+   ! 5. Additional nodes wait for lines and follow them
+   !    Then check for intersections 
+   !----------------------------------------------------------------
+   Call diffuse_lines3_worker
+Endif
 
-
+! Write timing info
+If (rank .eq. 0) Then
+   call system_clock(finish)
+   elapsed_time = Real(finish - start) / Real(count_rate)
+   Write(*,*) "Time spent in following and intersection: ", elapsed_time, " seconds"
+End If
+ 
 ! Finialize MPI
 Call fin_mpi(.false.) ! False means this is a non-error exit
 

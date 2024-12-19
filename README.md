@@ -51,20 +51,20 @@ run_settings and bfield_nml namelists are read from run_settings.nml
     * vmec_coils_file = path + file name of VMEC coils file (if rmp_type=vmec_coils)
     * vmec_extcur_set = external current scaling(if rmp_type=vmec_coils)
     * gfile_name = path + file name of equdsk file (if rmp_type=g)
+    * nfp_bfield = Periodicity number for the magnetic field
 
 * [run_settings namelist](https://github.com/ORNL-Fusion/DIV3D?tab=readme-ov-file#bfield-namelist-example)
-    * fname_plist = parts.list file name
-    * fname_ves = vessel.part file name 
-    * fname_surf = surface line output file name
-    * fname_launch = launch points output file name
-    * fname_parts = all parts output file name
-    * fname_hit = fieldline trace prior to strikepoint output file name
-    * fname_intpts = intersection points output file name
-    * fname_nhit = number of hits output file name
-    * fname_ptri = part triangular groups output file name
-    * fname_ptri_mid = triangular mid-points output file name
+    * fname_plist = parts.list file name (default parts.list)
+    * fname_ves = vessel.part file name (default vessel.part)
+    * fname_surf = surface line output file name (default surface_line.out)
+    * fname_launch = launch points output file name (default launch_pts.out)
+    * fname_parts = all parts output file name (default allparts.out)
+    * fname_hit = fieldline trace prior to strikepoint output file name (default hitline.out)
+    * fname_intpts = intersection points output file name (default int_pts.out)
+    * fname_nhit = number of hits output file name (default hitcount.out)
+    * fname_ptri = part triangular groups output file name (default part_triangles.out)
+    * fname_ptri_mid = triangular mid-points output file name (default part_triangle_mids.out)
     
-    * nfp = number of field periods
     * Rstart, Zstart, Phistart = location of LCFS trace start point
     * dphi_line_surf_deg = step size in field line tracing (degrees), used for LCFS surface without diffusion
     * ntran_surf = number of toroidal transits for LCFS field line tracing
@@ -76,10 +76,14 @@ run_settings and bfield_nml namelists are read from run_settings.nml
  
     * myseed = random number generator seed
     * hit_length = length of end of fieldline recorded. This is an estimate computed as floor(hit_length/Rstart/abs(dphi_line_diff))
-    * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge
+    * lsfi_tol = tolerance in computing intersection of line segment with facets, when int point is along edge (default 1e-12)
     * calc_lc = logical variable controlling whether connection length is computed. (default true)
     * calc_theta = logical variable controlling whether angle between field line and plane of facet is calculated. (default false)
     * quiet_bfield = logical variable controlling whether warnings from bfield routines are printed to screen. (default true)
+
+    * vessel_int_is_last_point = logical variable controlling small correction to vessel int points if false (default true)
+    * vessel_is_nearest_slice = logical variable controlling treatment of vessel -- not yet implemented fully
+    
 
 ### 2) parts.list  
 #### This file contains the description of the components to be checked for intersection.
@@ -93,7 +97,7 @@ The format of the part is specified by the file extension.
 * .part files have the following format:
 ```
 Label 
-ntor npol nfp rshift zshift
+ntor npol nfp rshift zshift force_non_AS
 Do itor = 1,ntor
   phi(itor)
   Do ipol = 1,npol
@@ -110,13 +114,14 @@ ntor  : Number of toroidal planes.  Integer
 npol  : Number of poloidal points.  Integer
 nfp   : Field period symmetry of the component. Integer
 Rshift, Zshift : The part can be uniformly shifted from the given (R,Z) points using these inputs. Real, [cm].
+force_non_AS : Even if the part geometry is axisymmetric, treat it as a 3D part (faceted). Logical
 phi   : Toroidal coordinate of each slice. Real, [deg].
 R,Z   : Radial and vertical coordinate of each point. Real, [cm].
 
 * .jpart files have the following format:
 ```
 Label 
-ntor npol nfp rshift zshift
+ntor npol nfp rshift zshift force_non_AS
 Do itor = 1,ntor
   Do ipol = 1,npol
      R(itor,ipol), Z(itor,ipol), phi(itor,ipol)
@@ -178,13 +183,13 @@ phi(npts) (radians)
 ```
 Row by row information of points that hit "parts".
 
-R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | theta
+R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)
 R,Z,Phi -> Int point in mapped periodic section  
 ihit    -> (1) hit a "part", (2) hit the vessel, (0) no intersection.  
 itri    -> Index of intersected triangle  
 i       -> Index along field line
 Lc      -> one-directional distance along diffused fieldline from start point to intersection point
-theta   -> signed angle (radians) between field line and plane of facet.
+theta   -> signed sin(angle) between field line and plane of facet.
 ```
 ### 6) hitcount.out     (fname_nhit)
 #### This file contains the number of points that hit a divertor / vessel surface vs not hitting anything

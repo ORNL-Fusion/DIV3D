@@ -970,7 +970,7 @@
       ALLOCATE(this_temp(is1,js2))
       
 !  Logic to determinate the value of xyz_dim_use 
-
+      xyz_dim_use = 0
       IF (PRESENT(xyz_dim)) THEN
          SELECT CASE (xyz_dim)
          CASE (1)
@@ -1820,8 +1820,7 @@
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
-     &                  flux)
+      CALL bsc_flux_sum(coil_b,tangents,avecs,sens,npoints,flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -1883,8 +1882,7 @@
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
-     &                  flux)
+      CALL bsc_flux_sum(coil_b,tangents,avecs,sens,npoints,flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -1946,8 +1944,7 @@
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
-     &                  flux)
+      CALL bsc_flux_sum(coil_b,tangents,avecs,sens,npoints,flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -2113,8 +2110,7 @@
 !-------------------------------------------------------------------------------
 !  Subroutine to find do summations for flux
 !-------------------------------------------------------------------------------
-      SUBROUTINE bsc_flux_sum(coil_b,positions,tangents,avecs,sens,            &
-     &                        npoints,flux)
+      SUBROUTINE bsc_flux_sum(coil_b,tangents,avecs,sens,npoints,flux)
       IMPLICIT NONE
 !  This subroutine will compute some sums
 !  It is called by the bsc_flux_ subroutines
@@ -2123,8 +2119,7 @@
 
 !  Required Arguments
       TYPE (bsc_coil), INTENT(in) :: coil_b
-      REAL(rprec), DIMENSION(:,:), POINTER :: positions, tangents,             &
-     &   avecs
+      REAL(rprec), DIMENSION(:,:), POINTER :: tangents,avecs
       REAL(rprec), DIMENSION(:), POINTER :: sens
       INTEGER(iprec), INTENT(in) ::  npoints
       REAL(rprec), INTENT(out) :: flux
