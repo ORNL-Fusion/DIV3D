@@ -442,7 +442,7 @@ Do i=1,npts_line - 1
 
   ! Check for lines that cross symmetry (field period) plane
   twofer = 0
-  If ( abs(dphi1-dphi2) .gt. 1.d-12) Then
+  If ( abs(dphi1-dphi2) .gt. 1.d-4) Then
     twofer = 1
     P1a = Minval([P1,P2])
     P2a = Maxval([P1,P2])
