@@ -13,47 +13,36 @@ endif()
 
 # Compiler flags
 if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  message(STATUS "Using gfortran compiler flags")
-  set(CMAKE_Fortran_FLAGS_RELEASE " -cpp -O3")
-  set(CMAKE_Fortran_FLAGS_DEBUG " -g -cpp -Og -Wrealloc-lhs -fbounds-check -frange-check -Wall -Wline-truncation -Wcharacter-truncation -Wsurprising -Waliasing -Wimplicit-interface -Wunused-parameter -fcheck=all -fbacktrace")
+    message(STATUS "Using gfortran compiler flags")
+    set(CMAKE_Fortran_FLAGS_RELEASE " -cpp -O3")
+    set(CMAKE_Fortran_FLAGS_DEBUG " -g -cpp -Og -Wrealloc-lhs -fbounds-check -frange-check -Wall -Wline-truncation -Wcharacter-truncation -Wsurprising -Waliasing -Wimplicit-interface -Wunused-parameter -fcheck=all -fbacktrace -Wshadow=local -Wpedantic -Wextra")
+elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+    message(STATUS "Using ifort compiler flags")
+    set(CMAKE_Fortran_FLAGS_RELEASE " -free -O3")
+    set(CMAKE_Fortran_FLAGS_DEBUG " -g -traceback -check all -fpe0 -warn -debug extended -assume realloc_lhs")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
 else()
-  message(WARNING "Unrecognized Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}. Compiler-specific flags will not be set.")
+    message(WARNING "Unrecognized Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}. Compiler-specific flags will not be set.")
 endif()
 
-# Incorporate HDF5_ROOT and NetCDF_ROOT as hints if provided
-set(HDF5_SEARCH_PATHS)
-if(HDF5_ROOT)
-  message(STATUS "HDF5 root set to: ${HDF5_ROOT}")
-  list(APPEND HDF5_SEARCH_PATHS "${HDF5_ROOT}")
+# Locate HDF5
+find_path(HDF5_INCLUDE_DIR NAMES hdf5.h PATHS ${HDF5_INCLUDE_DIR})
+find_library(HDF5_LIBRARY NAMES hdf5 PATHS ${HDF5_LIBRARY_DIR})
+
+if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY)
+    message(FATAL_ERROR "HDF5 include directory or library not found. Please specify the correct paths.")
 endif()
 
-set(NetCDF_SEARCH_PATHS)
-if(NetCDF_ROOT)
-  message(STATUS "NetCDF root set to: ${NetCDF_ROOT}")
-  list(APPEND NetCDF_SEARCH_PATHS "${NetCDF_ROOT}")
+# Locate NetCDF
+find_path(NetCDF_INCLUDE_DIR NAMES netcdf.mod PATHS ${NetCDF_INCLUDE_DIR})
+find_library(NetCDF_LIBRARY NAMES netcdff PATHS ${NetCDF_LIBRARY_DIR})
+
+if(NOT NetCDF_INCLUDE_DIR OR NOT NetCDF_LIBRARY)
+    message(FATAL_ERROR "NetCDF include directory or library not found. Please specify the correct paths.")
 endif()
 
-# Locate the HDF5 library
-find_library(H5 NAMES hdf5 PATHS ${HDF5_SEARCH_PATHS} /usr/lib/x86_64-linux-gnu/hdf5/openmpi)
-if(NOT H5)
-  message(FATAL_ERROR "HDF5 library not found. Please install HDF5 or specify its path.")
-endif()
-
-# Locate the NetCDF library
-find_library(NetCDF NAMES netcdff PATHS ${NetCDF_SEARCH_PATHS} /usr/lib/x86_64-linux-gnu)
-if(NOT NetCDF)
-  message(FATAL_ERROR "NetCDF library not found. Please install NetCDF or specify its path.")
-endif()
-
-# Locate the NetCDF Fortran module directory (netcdf.mod)
-find_path(NetCDF_INCLUDE_DIR netcdf.mod 
-  PATHS ${NetCDF_SEARCH_PATHS} /usr/include /usr/local/include /usr/lib/x86_64-linux-gnu/include)
-if(NOT NetCDF_INCLUDE_DIR)
-  message(FATAL_ERROR "NetCDF module directory (netcdf.mod) not found. Please install NetCDF or specify its path.")
-endif()
-
-# Add NetCDF include directory
-include_directories(${NetCDF_INCLUDE_DIR})
+# Add the include directories
+include_directories(${HDF5_INCLUDE_DIR} ${NetCDF_INCLUDE_DIR})
 
 # Directories
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -62,7 +51,7 @@ set(BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../bin)
 # Ensure binaries are built in ../bin
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
-# FXDR-related files (always included)
+# FXDR-related files
 set(FXDR_FILES
     ${SRC_DIR}/fxdr/cxdrinit.c
     ${SRC_DIR}/fxdr/cxdrint.c
@@ -105,6 +94,7 @@ add_executable(div3d
   ${SRC_DIR}/read_parts_mod.f90
   ${SRC_DIR}/run_settings_namelist.f90
   ${SRC_DIR}/trace_surface.f90
+  ${SRC_DIR}/timing.f90
   ${SRC_DIR}/setup_bfield.f90
   ${SRC_DIR}/VMEC_routines_mod.f90
   ${SRC_DIR}/LIBSTELL_LIGHT/tolower.f90
@@ -115,11 +105,23 @@ add_executable(div3d
   ${FXDR_FILES}
 )
 
+# Check if rpc/rpc.h exists
+include(CheckIncludeFiles)
+check_include_files("rpc/rpc.h" HAVE_RPC_RPC_H)
+
+if(NOT HAVE_RPC_RPC_H)
+    message(STATUS "rpc/rpc.h not found. Trying tirpc...")
+    target_include_directories(div3d PRIVATE /usr/include/tirpc)
+    target_link_libraries(div3d PRIVATE tirpc)
+else()
+    message(STATUS "Using system rpc/rpc.h.")
+endif()
+
 # Define HAVE_FXDR since FXDR is always used
 target_compile_definitions(div3d PRIVATE HAVE_FXDR)
 
 # Link div3d with HDF5, NetCDF, and other required libs
-target_link_libraries(div3d PRIVATE ${H5} z stdc++ lapack ${NetCDF})
+target_link_libraries(div3d PRIVATE ${HDF5_LIBRARY} ${NetCDF_LIBRARY} z stdc++ lapack)
 
 # Create the convert_ascii_bgrid_to_netcdf executable
 add_executable(convert_ascii_bgrid_to_netcdf
@@ -128,20 +130,17 @@ add_executable(convert_ascii_bgrid_to_netcdf
   ${SRC_DIR}/convert_ascii_bgrid_to_netcdf.f90
   ${SRC_DIR}/parallel_mod.f90
   ${SRC_DIR}/phys_const.f90  
-  )
+)
 
 # Set file names
 set_target_properties(div3d PROPERTIES OUTPUT_NAME "div3d.exe")
 set_target_properties(convert_ascii_bgrid_to_netcdf PROPERTIES OUTPUT_NAME "convert_ascii_bgrid_to_netcdf.exe")
 
-
-
 # Link with NetCDF
-target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE ${NetCDF})
+target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE ${NetCDF_LIBRARY})
 
 # Set the install prefix to the directory above the build directory
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/.." CACHE PATH "Install prefix" FORCE)
 
-# Now you can install targets into 'bin' and they will end up in ../bin relative to the build directory.
-install(TARGETS div3d convert_ascii_bgrid_to_netcdf
-  RUNTIME DESTINATION bin)
+# Install targets into 'bin'
+install(TARGETS div3d convert_ascii_bgrid_to_netcdf RUNTIME DESTINATION bin)
