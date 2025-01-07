@@ -191,7 +191,7 @@ Result(rlinvec)
 ! Author(s): J. Lore 07/2009 - 7/18/2011
 !
 ! Modules used:
-Use kind_mod                ! Import real64, int32 specifications
+Use kind_mod, Only : real64, int32
 
 Implicit None
 

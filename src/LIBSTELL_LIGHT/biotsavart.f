@@ -1,5 +1,5 @@
       MODULE biotsavart
-      USE stel_kinds
+      USE stel_kinds, Only : rprec
       USE bsc_T
       IMPLICIT NONE
 !-----------------------------------------------
