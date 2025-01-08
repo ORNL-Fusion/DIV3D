@@ -32,6 +32,11 @@ elif [ "$MACHINE_ID" == "THEALTANG23" ]; then
     NETCDF_LIB_PATH="/path/to/netcdf/lib64"
     HDF5_INCLUDE_PATH="/path/to/hdf5/include"
     HDF5_LIB_PATH="/path/to/hdf5/lib"
+elif [ "$MACHINE_ID" == "stellar-intel.princeton.edu" ]; then
+    NETCDF_INCLUDE_PATH=${NETCDFDIR}/include
+    NETCDF_LIB_PATH=${NETCDFDIR}/lib64
+    HDF5_INCLUDE_PATH="/usr/local/hdf5/oneapi-2024.2/1.14.4//include"
+    HDF5_LIB_PATH="/usr/local/hdf5/oneapi-2024.2/1.14.4/lib64" 
 else
     echo "$MACHINE_ID is not supported by this script."
     echo "Please add your machine."
