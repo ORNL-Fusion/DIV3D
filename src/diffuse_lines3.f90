@@ -5,7 +5,7 @@ Module diffusion
   ! Message array sizes
   Integer, Private, Parameter :: size_rdata = 7
   Integer, Private, Parameter :: size_idata = 5
-  
+
 Contains
 
   !-----------------------------------------------------------------------------
@@ -14,7 +14,7 @@ Contains
   Subroutine line_follow_and_int(Rstart,Zstart,Phistart,nsteps_line,pint,iout, &
        r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,theta, &
        etime_follow,etime_int)
-    
+
     Use kind_mod, Only : real64, int32
     Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
     Use setup_bfield_module, Only : bfield
@@ -47,20 +47,20 @@ Contains
          r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
          nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
     etime_int = get_elapsed_time(tstart)
-    
+
   End Subroutine line_follow_and_int
   !-----------------------------------------------------------------------------
-  
-  
+
+
   !-----------------------------------------------------------------------------
   !+ Worker node subroutine for following fieldlines and calculating intersections
   !  Counterpart to diffuse_lines3
   !-----------------------------------------------------------------------------
   Subroutine diffuse_lines3_worker
-    Use kind_mod, Only : real64, int32
+    Use kind_mod, Only : real64, int32, int16
     Use run_settings_namelist, Only : dmag, nhitline,calc_lc, calc_theta
-    Use parallel_mod, Only : ierr_mpi, rank, status, &
-         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
+    Use parallel_mod!, Only : ierr_mpi, rank, status, &
+!         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
     Implicit None
 
     Real(real64), Dimension(3) :: line_start_data_r
@@ -79,7 +79,7 @@ Contains
     Real(real64), Dimension(:), Allocatable :: line_done_data_r2
     Integer(int32), Dimension(4) :: iout
     Real(real64), Dimension(3) :: pint
-    Integer :: buffer
+    Integer(int16) :: buffer
 
     ! Initialize status
     num_myjobs = 0
@@ -125,7 +125,7 @@ Contains
 
           line_done_data_i(1) = ierr_follow
           line_done_data_i(2:5) = iout
-          Call MPI_SEND(line_done_data_i,size_idata,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+          Call MPI_SEND(line_done_data_i,size_idata,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
           line_done_data_r(1:3) = pint
           line_done_data_r(4) = totL
@@ -161,8 +161,8 @@ Contains
 
     ! Modules used:
     Use kind_mod, Only : int32, real64
-    Use parallel_mod, Only : nprocs, ierr_mpi, request, status, &
-         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
+    Use parallel_mod !, Only : nprocs, ierr_mpi, request, status, &
+!         MPI_COMM_WORLD, MPI_INT32, MPI_REAL64
     Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
          fname_hit, fname_intpts, fname_nhit, nhitline
@@ -230,6 +230,7 @@ Contains
        line_start_data_i(1) = ns_line_diff
        line_start_data_i(2) = nhitline
        line_start_data_i(3) = iline
+!       Call MPI_SEND(line_start_data_i,3,MPI_INT32,dest,tag,MPI_COMM_WORLD,ierr_mpi)
        Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
        line_start_data_r(1) = Rstart
@@ -242,7 +243,7 @@ Contains
        req_arr(dest) = request
        is_working_arr(dest) = 1
 
-    Enddo
+    End Do
 
 
     ! Set up output files
@@ -275,8 +276,8 @@ Contains
 
                 ! Request results
                 tag = dest
-                Call MPI_RECV(line_done_data_i ,size_idata,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
-                Call MPI_RECV(line_done_data_r ,size_rdata,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+                Call MPI_RECV(line_done_data_i,size_idata,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
+                Call MPI_RECV(line_done_data_r,size_rdata,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
 
                 If (nhitline .gt. 0) Then
                    Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
@@ -304,7 +305,7 @@ Contains
 
                       If (write_hitline_to_netcdf) Then
                          Call write_hitline_data_netcdf(fname_hit, r_hitline, z_hitline, phi_hitline)
-                      Else          
+                      Else
                          Write(iu_hit,*) nhitline
                          Write(iu_hit,*) r_hitline
                          Write(iu_hit,*) z_hitline
@@ -329,7 +330,7 @@ Contains
                 line_start_data_i(1) = ns_line_diff
                 line_start_data_i(2) = nhitline
                 line_start_data_i(3) = iline
-                Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+                Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
                 Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
                 is_working_arr(dest) = 1
 
@@ -359,7 +360,7 @@ Contains
        tag = dest
        Write(*,*) 'Master sending kill signal to process',dest
        line_start_data_i = -1 ! Kill signal
-       Call MPI_SEND(line_start_data_i,3,MPI_INTEGER         ,dest,tag,MPI_COMM_WORLD,ierr_mpi)
+       Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
     Enddo
 
 
@@ -572,7 +573,7 @@ Contains
           Pmax_line = Max(p_start,p_end)
 
           ihit = 0
-          Do ipart=1,nparts        
+          Do ipart=1,nparts
 
              ! Check if this line segment is within the phi bounds of the part
              ! The phi segments overlap if Max(Min(phi_line),Min(phi_test)) <= Min(Max(phi_line),Max(phi_test))
@@ -776,26 +777,47 @@ Contains
 
     ! Define dimensions
     ierr = nf90_def_dim(ncid, "snapshot", NF90_UNLIMITED, dimid_snapshot)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_def_dim(ncid, "hit_length", nhitline, dimid_hit_length)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ! Define variables with dimensions [snapshot, hit_length]
     ierr = nf90_def_var(ncid, "r_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_r)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_def_var(ncid, "z_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_z)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_def_var(ncid, "phi_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_phi)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_enddef(ncid)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_close(ncid)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
   end subroutine init_hitline_netcdf
 
@@ -818,40 +840,70 @@ Contains
 
     ! Master process reopens file in write mode
     ierr = nf90_open(trim(fname), NF90_WRITE, ncid)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ! Get dimension IDs and var IDs
     ierr = nf90_inq_dimid(ncid, "snapshot", dimid_snapshot)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ! Current length of snapshot dimension
     ierr = nf90_inquire_dimension(ncid, dimid_snapshot, dim_name, snapshot_len)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_inq_varid(ncid, "r_hitline", varid_r)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_inq_varid(ncid, "z_hitline", varid_z)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_inq_varid(ncid, "phi_hitline", varid_phi)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     start = [snapshot_len+1, 1]
     count = [1, size(r_hitline)]
 
     ! write data
     ierr = nf90_put_var(ncid, varid_r, r_hitline, start=start, count=count)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_put_var(ncid, varid_z, z_hitline, start=start, count=count)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_put_var(ncid, varid_phi, phi_hitline, start=start, count=count)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
     ierr = nf90_close(ncid)
-    if (ierr /= NF90_NOERR) stop nf90_strerror(ierr)
+    If (ierr /= NF90_NOERR) Then
+       Write(*,*) nf90_strerror(ierr)
+       Stop
+    End If
 
   End Subroutine write_hitline_data_netcdf
 
