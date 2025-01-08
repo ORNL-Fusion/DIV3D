@@ -60,7 +60,7 @@ Contains
     Use kind_mod, Only : real64, int32
     Use run_settings_namelist, Only : dmag, nhitline,calc_lc, calc_theta
     Use parallel_mod, Only : ierr_mpi, rank, status, &
-         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV
+         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
     Implicit None
 
     Real(real64), Dimension(3) :: line_start_data_r
@@ -162,8 +162,7 @@ Contains
     ! Modules used:
     Use kind_mod, Only : int32, real64
     Use parallel_mod, Only : nprocs, ierr_mpi, request, status, &
-         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION, MPI_SEND, MPI_RECV, &
-         MPI_IRECV, MPI_TEST
+         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
     Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
          fname_hit, fname_intpts, fname_nhit, nhitline
