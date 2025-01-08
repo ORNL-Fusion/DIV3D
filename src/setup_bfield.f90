@@ -1,6 +1,6 @@
 Module setup_bfield_module
   Use kind_mod, Only: int32, real64
-  Use bfield, Only : bfield_type, coil_type, g_type
+  Use bfield_module, Only : bfield_type, coil_type, g_type
   
   Implicit None
   

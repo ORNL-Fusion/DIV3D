@@ -27,7 +27,7 @@ End Module bfield_typedef
 ! 
 
 
-Module bfield
+Module bfield_module
   Use bfield_typedef, Only : bfield_type
   Use coil_typedef, Only : coil_type
   Use g3d_module, Only : g_type
@@ -97,5 +97,5 @@ Contains
     End Select
     If (Present(ierr_out)) ierr_out = ierr
   End Subroutine calc_B_rzphi_general
-End Module bfield
+End Module bfield_module
 

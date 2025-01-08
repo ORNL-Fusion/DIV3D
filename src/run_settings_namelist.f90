@@ -42,7 +42,7 @@ Contains
     Use parallel_mod, Only : fin_mpi, rank, nprocs
     Use setup_bfield_module, Only : bfield_nml, nfp_bfield
     Use init_random, Only : init_random_seed
-    Use bfield, Only : verbose_bfield
+    Use bfield_module, Only : verbose_bfield
     Implicit None
     Logical, Intent(In) :: verbose
     Character(len=256) :: iomsg

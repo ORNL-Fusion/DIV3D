@@ -12,7 +12,7 @@
 
 Module fieldline_follow_mod
   Use kind_mod, Only: int32
-  Use bfield, Only : bfield_type
+  Use bfield_module, Only : bfield_type
   Implicit None
   Private
   Save
@@ -318,7 +318,7 @@ EndSubroutine follow_fieldlines_rzphi_dz_Npts
 !-----------------------------------------------------------------------------
 !+ Routines field line equation derivatives (dphi)
 !-----------------------------------------------------------------------------
-Subroutine fl_derivs_fun(bfield_local,n,phi,RZ,df,ierr)
+Subroutine fl_derivs_fun(bfield,n,phi,RZ,df,ierr)
 !
 ! Description: 
 !  Evaluates field line deriviatives (based on bfield%method). Should be easy to generalize to different
@@ -346,9 +346,9 @@ Subroutine fl_derivs_fun(bfield_local,n,phi,RZ,df,ierr)
 !
 ! Modules used:
 Use kind_mod, Only: real64, int32
-Use bfield, Only : calc_B_rzphi_general
+Use bfield_module, Only : calc_B_rzphi_general
 Implicit None
-Type(bfield_type), Intent(In) :: bfield_local
+Type(bfield_type), Intent(In) :: bfield
 Real(real64), Intent(In) :: phi
 Integer(int32), Intent(In) :: n
 Integer(int32), Intent(Out) :: ierr
@@ -362,7 +362,7 @@ Real(real64) :: Bz, Br, Bphi, phi_tmp(Npts)
 
 bval = 0._real64
 phi_tmp = phi
-Call calc_B_rzphi_general(bfield_local,RZ(1),RZ(2),phi_tmp,Npts,bval(1,1),bval(1,2),bval(1,3),ierr_b) 
+Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),phi_tmp,Npts,bval(1,1),bval(1,2),bval(1,3),ierr_b) 
 Br   = bval(1,1)
 Bz   = bval(1,2)
 Bphi = bval(1,3)
@@ -536,7 +536,7 @@ End Subroutine rk45_fixed_step_integrate
 !-----------------------------------------------------------------------------
 !+ Main routine for RK45 fixed step integration with diffusion
 !-----------------------------------------------------------------------------
-Subroutine rk45_fixed_step_integrate_diffuse(bfield_local,y0,n,x0,dx,nsteps,odefun,yout,xout,ierr,i_last_good,dmag)
+Subroutine rk45_fixed_step_integrate_diffuse(bfield,y0,n,x0,dx,nsteps,odefun,yout,xout,ierr,i_last_good,dmag)
 !
 ! Description: 
 !  Should be a general implementation of RK45 fixed step integration
@@ -569,11 +569,11 @@ Subroutine rk45_fixed_step_integrate_diffuse(bfield_local,y0,n,x0,dx,nsteps,odef
 !
 ! Modules used:
 Use kind_mod, Only: real64, int32
-Use bfield, Only : calc_B_rzphi_general
+Use bfield_module, Only : calc_B_rzphi_general
 Use phys_const, Only : pi
 Implicit None
 
-Type(bfield_type), Intent(In) :: bfield_local
+Type(bfield_type), Intent(In) :: bfield
 Real(real64), Intent(In), Dimension(n) :: y0
 Integer(int32), Intent(In) :: n, nsteps
 Real(real64), Intent(In) :: x0, dx, dmag
@@ -588,10 +588,10 @@ Integer(int32) :: ierr_b
 Real(real64) :: Bz, Br, Bphi
 
 Interface
-  Subroutine odefun(bfield_local,n,x,y,dydx,ierr)
+  Subroutine odefun(bfield,n,x,y,dydx,ierr)
     Use kind_mod, Only: int32, real64
     Use bfield_typedef, Only : bfield_type
-    Type(bfield_type), Intent(In) :: bfield_local
+    Type(bfield_type), Intent(In) :: bfield
     Real(real64), Intent(In) :: x
     Integer(int32), Intent(In) :: n
     Integer(int32), Intent(Out) :: ierr
@@ -612,13 +612,13 @@ x = x0
 ierr = 0
 i_last_good = nsteps+1
 Do i=1,nsteps
-  Call odefun(bfield_local,n,x,y,dydx,ierr_odefun)
+  Call odefun(bfield,n,x,y,dydx,ierr_odefun)
   If (ierr_odefun == 1) Then
     ierr = 1
     i_last_good = i
     Return
   Endif
-  Call rk4_core(bfield_local,y,dydx,n,x,dx,odefun,ytmp,ierr_rk4core)
+  Call rk4_core(bfield,y,dydx,n,x,dx,odefun,ytmp,ierr_rk4core)
   If (ierr_rk4core == 1) Then
     ierr = 1
     i_last_good = i
@@ -637,7 +637,7 @@ Do i=1,nsteps
   bval = 0._real64
   ierr_b = 0
   phi_tmp(1) = phi
-  Call calc_B_rzphi_general(bfield_local,RZ(1),RZ(2),phi_tmp,1,bval(1,1),bval(1,2),bval(1,3),ierr_b)
+  Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),phi_tmp,1,bval(1,1),bval(1,2),bval(1,3),ierr_b)
   Br   = bval(1,1)
   Bz   = bval(1,2)
   Bphi = bval(1,3)
