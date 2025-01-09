@@ -1,42 +1,52 @@
 #!/bin/bash
 
+# This is the script to be modified to set machine-specific settings.
+#
+# Instructions:
+#  Add your machine below, and set the variables appropriately. Machine identified using uname -n.
+#
+#  BUILD_TYPE: Release or Debug. This can also by controlled by adding an argument to the
+#              call to this script. "./setup_cmake.sh debug"
+#
+#  VERBOSE_BUILD: "on" by default, so that compiler commands are displayed.
+#
+#  NETCDF_INCLUDE_PATH: Location of netcdf.mod
+#  NETCDF_LIB_PATH: Location of libnetcdf and libnetcdff
+#
+#  Other necessary libraries (assumed to be in standard locations)
+#    z, stdc++, lapack
+# 
+#  Corresponding cleanup script: clean_cmake.sh
+
+rm -rf CMakeFiles CMakeCache.txt
+
+# Default values
 BUILD_TYPE=Release
 VERBOSE_BUILD=1
+NETCDF_INCLUDE_PATH=""
+NETCDF_LIB_PATH=""
 
-MACHINE_ID=$(uname -n)
-
-echo "Building for machine $MACHINE_ID"
-echo
-
+# If argument passed, build debug
 if [ $# -eq 1 ]; then
     BUILD_TYPE=Debug
 fi
 
+# Identify machine
+MACHINE_ID=$(uname -n)
+
+echo "Building for machine $MACHINE_ID"
 echo "cmake configured to generate a $BUILD_TYPE build."
-
-rm -rf CMakeFiles CMakeCache.txt
-
-NETCDF_INCLUDE_PATH=""
-NETCDF_LIB_PATH=""
-HDF5_INCLUDE_PATH=""
-HDF5_LIB_PATH=""
 
 # Set machine-specific paths
 if [ "$MACHINE_ID" == "ultrabucky" ] || [ "$MACHINE_ID" == "fusion3" ] || [ "$MACHINE_ID" == "mac145666" ]; then
     NETCDF_INCLUDE_PATH="/usr/include"
     NETCDF_LIB_PATH="/usr/lib/x86_64-linux-gnu"
-    HDF5_INCLUDE_PATH="/usr/lib/x86_64-linux-gnu/hdf5/openmpi/include"
-    HDF5_LIB_PATH="/usr/lib/x86_64-linux-gnu/hdf5/openmpi/lib"
 elif [ "$MACHINE_ID" == "THEALTANG23" ]; then
     NETCDF_INCLUDE_PATH="/path/to/netcdf/include"
     NETCDF_LIB_PATH="/path/to/netcdf/lib64"
-    HDF5_INCLUDE_PATH="/path/to/hdf5/include"
-    HDF5_LIB_PATH="/path/to/hdf5/lib"
 elif [ "$MACHINE_ID" == "stellar-intel.princeton.edu" ]; then
     NETCDF_INCLUDE_PATH=${NETCDFDIR}/include
     NETCDF_LIB_PATH=${NETCDFDIR}/lib64
-    HDF5_INCLUDE_PATH="/usr/local/hdf5/oneapi-2024.2/1.14.4//include"
-    HDF5_LIB_PATH="/usr/local/hdf5/oneapi-2024.2/1.14.4/lib64" 
 else
     echo "$MACHINE_ID is not supported by this script."
     echo "Please add your machine."
@@ -48,8 +58,6 @@ cmake -DCMAKE_Fortran_COMPILER=mpif90 \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
       -DNetCDF_INCLUDE_DIR="$NETCDF_INCLUDE_PATH" \
       -DNetCDF_LIBRARY_DIR="$NETCDF_LIB_PATH" \
-      -DHDF5_INCLUDE_DIR="$HDF5_INCLUDE_PATH" \
-      -DHDF5_LIBRARY_DIR="$HDF5_LIB_PATH" \
       ..
 
 # Build the project

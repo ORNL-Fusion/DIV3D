@@ -25,14 +25,6 @@ else()
     message(WARNING "Unrecognized Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}. Compiler-specific flags will not be set.")
 endif()
 
-# Locate HDF5
-find_path(HDF5_INCLUDE_DIR NAMES hdf5.h PATHS ${HDF5_INCLUDE_DIR})
-find_library(HDF5_LIBRARY NAMES hdf5 PATHS ${HDF5_LIBRARY_DIR})
-
-if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY)
-    message(FATAL_ERROR "HDF5 include directory or library not found. Please specify the correct paths.")
-endif()
-
 # Locate NetCDF
 find_path(NetCDF_INCLUDE_DIR NAMES netcdf.mod PATHS ${NetCDF_INCLUDE_DIR})
 find_library(NetCDF_LIBRARY NAMES netcdff PATHS ${NetCDF_LIBRARY_DIR})
@@ -42,7 +34,7 @@ if(NOT NetCDF_INCLUDE_DIR OR NOT NetCDF_LIBRARY)
 endif()
 
 # Add the include directories
-include_directories(${HDF5_INCLUDE_DIR} ${NetCDF_INCLUDE_DIR})
+include_directories(${NetCDF_INCLUDE_DIR})
 
 # Directories
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -120,8 +112,8 @@ endif()
 # Define HAVE_FXDR since FXDR is always used
 target_compile_definitions(div3d PRIVATE HAVE_FXDR)
 
-# Link div3d with HDF5, NetCDF, and other required libs
-target_link_libraries(div3d PRIVATE ${HDF5_LIBRARY} ${NetCDF_LIBRARY} z stdc++ lapack)
+# Link div3d with NetCDF and other required libs
+target_link_libraries(div3d PRIVATE ${NetCDF_LIBRARY} z stdc++ lapack)
 
 # Create the convert_ascii_bgrid_to_netcdf executable
 add_executable(convert_ascii_bgrid_to_netcdf
