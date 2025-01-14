@@ -344,7 +344,7 @@
          DO i = 2, n_xnod_2
             vec_temp(1:3) = xnod_temp(1:3,itemp) - xnod(1:3,i)
             lsqnod_temp = DOT_PRODUCT(vec_temp,vec_temp)
-            IF (lsqnod_temp .eq. zero) THEN
+            IF (lsqnod_temp < epsilon(1.0D0)) THEN
                CYCLE
             ELSE
                IF (PRESENT(sen)) THEN
@@ -367,7 +367,7 @@
          IF ((c_type .eq.'fil_loop') .or. (c_type .eq.'floop')) THEN
             vec_temp(1:3) = xnod_temp(1:3,itemp) - xnod(1:3,1)
             lsqnod_temp = DOT_PRODUCT(vec_temp,vec_temp)
-            IF (lsqnod_temp .eq. zero) THEN
+            IF (lsqnod_temp < epsilon(1.0D0)) THEN
                itemp = itemp - 1
             ENDIF
          ENDIF
@@ -422,7 +422,7 @@
 !  Compute lsqnod = dxnod*dxnod
          this % lsqnod(1:nm1) = this % dxnod(1,1:nm1)**2 +                     &
      &      this % dxnod(2,1:nm1)**2 + this % dxnod(3,1:nm1)**2          
-         IF (ANY(this % lsqnod(1:nm1) .eq. zero))                              &
+         IF (ANY(ABS(this % lsqnod(1:nm1) - zero) < epsilon(1.0D0)))           &
      &      STOP 'FATAL: bsc_construct_coil : lsqnod must be nonzero'
          this % eps_sq = bsc_mach_eps *                                        &
      &                   MINVAL(this % lsqnod(1:nm1))

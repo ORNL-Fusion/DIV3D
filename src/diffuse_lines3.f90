@@ -161,8 +161,7 @@ Contains
 
     ! Modules used:
     Use kind_mod, Only : int32, real64
-    Use parallel_mod !, Only : nprocs, ierr_mpi, request, status, &
-!         MPI_COMM_WORLD, MPI_INT32, MPI_REAL64
+    Use parallel_mod
     Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
          fname_hit, fname_intpts, fname_nhit, nhitline
@@ -190,8 +189,13 @@ Contains
     Integer(int32), Dimension(size_idata) :: line_done_data_i
     Real(real64) :: etime_follow, etime_int
     Integer(int32), Dimension(:), Allocatable :: this_job_done, is_working_arr
+#ifdef USE_MPIF08
+    Type(MPI_Request), Dimension(:), Allocatable :: req_arr
+#else
     Integer, Dimension(:), Allocatable :: req_arr
+#endif
 
+    
     !- End of header -------------------------------------------------------------
 
     ! Read init point data
@@ -215,8 +219,13 @@ Contains
     !-----------------------------------------------------------------------------
     iline = 0
     work_done_count = 0
-    req_arr = 0
     is_working_arr = 0
+#ifdef USE_MPIF08
+    req_arr(:) = MPI_REQUEST_NULL
+#else
+    req_arr(:) = 0
+#endif
+    
     Do dest = 1,nprocs - 1
 
        tag = dest
@@ -230,7 +239,6 @@ Contains
        line_start_data_i(1) = ns_line_diff
        line_start_data_i(2) = nhitline
        line_start_data_i(3) = iline
-!       Call MPI_SEND(line_start_data_i,3,MPI_INT32,dest,tag,MPI_COMM_WORLD,ierr_mpi)
        Call MPI_SEND(line_start_data_i,3,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
        line_start_data_r(1) = Rstart
@@ -239,8 +247,7 @@ Contains
        Call MPI_SEND(line_start_data_r,3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
        ! Request signal that job is finished
-       Call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
-       req_arr(dest) = request
+       Call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,req_arr(dest),ierr_mpi)
        is_working_arr(dest) = 1
 
     End Do
@@ -268,8 +275,7 @@ Contains
 
           ! If we are still waiting on a job from this process, check if it is finished
           If (is_working_arr(dest) == 1) Then
-             request = req_arr(dest)
-             Call MPI_TEST(request,flag,status,ierr_mpi)
+             Call MPI_TEST(req_arr(dest),flag,status,ierr_mpi)
              If (flag) Then
                 is_working_arr(dest) = 0
                 work_done_count = work_done_count + 1
@@ -335,8 +341,7 @@ Contains
                 is_working_arr(dest) = 1
 
                 ! Initiate request for completed job
-                call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,request,ierr_mpi)
-                req_arr(dest) = request
+                call MPI_IRECV(this_job_done(dest),1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,req_arr(dest),ierr_mpi)
              Else
                 ! If there are no more jobs, turn this process 'off'
                 is_working_arr(dest) = -1
@@ -407,7 +412,7 @@ Contains
     Logical, Intent(In) :: calc_lc, calc_theta
 
     Integer(int32) :: iseg, ierr_pint
-    Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri,inphi1,inphi2
+    Integer(int32) :: npts_line, ihit, i, twofer, inphi, ntri, ihit_tmp, ipart, itri
     Logical :: inside_it
     Integer(int32), Dimension(1) :: ind_min, ind_max
     Real(real64) :: R1, Z1, P1, P1a, P2a, X3, Y3, Z3, R3, mu, Aplane, Bplane, denom, pint2D(2), rint,zint,uint

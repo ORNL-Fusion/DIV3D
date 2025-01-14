@@ -268,8 +268,8 @@ Subroutine bfield_bgrid(r,phi,z,Npts,Bout,ierr)
   Use phys_const, Only: pi
   Use parallel_mod, Only : fin_mpi
   Implicit None
+  Integer(int32), Intent(In) :: Npts  
   Real(Real64), Intent(In), Dimension(Npts) :: r, z, phi
-  Integer(int32), Intent(In) :: Npts
   Real(real64), Intent(Out), Dimension(Npts,3) :: Bout
   Integer(int32), Intent(Out) :: ierr
   ! Local variables

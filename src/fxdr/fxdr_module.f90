@@ -190,11 +190,11 @@ end function ixdrint
 !! Returns < 0 if error, 0 if OK
 !! -----------------------------
 function ixdrreal64( ixdrs, rval ) result(ierr)
-
+use, intrinsic :: iso_fortran_env, only: real64
 implicit none
 
 integer, intent(in) :: ixdrs
-real*8, intent(inout) :: rval
+real(real64), intent(inout) :: rval
 integer :: ixdrsm1, ierr
 
 ixdrsm1 = ixdrs - 1
@@ -243,11 +243,11 @@ end function ixdrrewind
 !! Returns < 0 if error, 0 if OK
 !! -----------------------------
 function ixdrrmat64( ixdrs, nels, rval ) result(ierr)
-
+use, intrinsic :: iso_fortran_env, only: real64
 implicit none
 
 integer, intent(in) :: ixdrs, nels
-real*8, dimension(nels), intent(inout) :: rval
+real(real64), dimension(nels), intent(inout) :: rval
 integer :: ixdrsm1, ierr
 
 ixdrsm1 = ixdrs - 1

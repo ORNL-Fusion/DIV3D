@@ -71,8 +71,8 @@ Contains
   Subroutine bfield_vmec_coils(r,phi,z,Npts,Bout,ierr)
     !   Bout = (:,[Br,Bz,Bt])
     Implicit None
+    Integer(int32), Intent(In) :: Npts    
     Real(Real64), Intent(In), Dimension(Npts) :: r, z, phi
-    Integer(int32), Intent(In) :: Npts
     Real(real64), Intent(Out), Dimension(Npts,3) :: Bout
     Integer(int32), Intent(Out) :: ierr
     ! Local variables

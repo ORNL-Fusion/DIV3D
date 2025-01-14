@@ -150,7 +150,7 @@ Integer(int32), Intent(out) :: ierr
 
 denom = (p4(2)-p3(2))*(p2(1)-p1(1)) - (p4(1)-p3(1))*(p2(2)-p1(2))
 
-if ( denom .eq. 0._real64 ) then 
+if ( ABS(denom) < epsilon(1.0_real64) ) then
   u1 = 1.d30
   u2 = 1.d30
   If (Present(pint)) pint = 0._real64

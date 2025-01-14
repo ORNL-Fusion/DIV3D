@@ -218,8 +218,8 @@ end subroutine readbgrid_xdr
 
 subroutine bint_xdr_n(r,phi,z,n,btmp,ierr)
   implicit none
+  Integer(int32), Intent(In) :: n  
   Real(real64), Intent(In) ::r(n),phi(n),z(n)
-  Integer(int32), Intent(In) :: n
   Real(real64), Intent(Out) :: btmp(n,3)
   Integer(int32), Intent(Out) :: ierr
 
@@ -356,7 +356,7 @@ Do i=1,6
 
   ! Find the grid indices around this point for interpolation
   af     = phi/dphi + 1._real64
-  lf     = af
+  lf     = INT(af)
   fq     = af - lf
   lf1    = lf + 1
   if ( lf1 .gt. ialfa )  lf1 = 1
@@ -479,21 +479,21 @@ Subroutine write_xdr_to_ascii(filename_out)
   do iz=1,k2
     do ir=1,k2
       do i=1,iald21
-        write(99,'(E18.12)') brg(i,ir,iz)
+        write(99,'(E19.12)') brg(i,ir,iz)
       enddo
     enddo
   enddo
   do iz=1,k2
     do ir=1,k2
       do i=1,iald21
-        write(99,'(E18.12)') bfg(i,ir,iz)
+        write(99,'(E19.12)') bfg(i,ir,iz)
       enddo
     enddo
   enddo
   do iz=1,k2
     do ir=1,k2
       do i=1,iald21
-        write(99,'(E18.12)') bzg(i,ir,iz)
+        write(99,'(E19.12)') bzg(i,ir,iz)
       enddo
     enddo
   enddo

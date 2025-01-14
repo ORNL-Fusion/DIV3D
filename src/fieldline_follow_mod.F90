@@ -475,8 +475,8 @@ Subroutine rk45_fixed_step_integrate(bfield,y0,n,x0,dx,nsteps,odefun,yout,xout,i
 Use kind_mod, Only: real64, int32
 Implicit None
 Type(bfield_type), Intent(In) :: bfield
-Real(real64), Intent(In), Dimension(n) :: y0
 Integer(int32), Intent(In) :: n, nsteps
+Real(real64), Intent(In), Dimension(n) :: y0
 Real(real64), Intent(In) :: x0, dx
 Real(real64), Intent(Out), Dimension(n,nsteps+1) :: yout
 Real(real64), Intent(Out), Dimension(nsteps+1) :: xout
@@ -574,8 +574,8 @@ Use phys_const, Only : pi
 Implicit None
 
 Type(bfield_type), Intent(In) :: bfield
-Real(real64), Intent(In), Dimension(n) :: y0
 Integer(int32), Intent(In) :: n, nsteps
+Real(real64), Intent(In), Dimension(n) :: y0
 Real(real64), Intent(In) :: x0, dx, dmag
 Real(real64), Intent(Out), Dimension(n,nsteps+1) :: yout
 Real(real64), Intent(Out), Dimension(nsteps+1) :: xout
@@ -700,10 +700,10 @@ Subroutine rk4_core(bfield,y,dydx_in,n,x,dx,odefun,yout,ierr)
 Use kind_mod, Only: real64, int32
 Implicit None
 Type(bfield_type), Intent(In) :: bfield
+Integer(int32), Intent(In) :: n
 Real(real64), Intent(In), Dimension(n) :: y, dydx_in
 Real(real64), Intent(Out), Dimension(n) :: yout
 Real(real64), Intent(In) :: x, dx
-Integer(int32), Intent(In) :: n
 Integer(int32), Intent(Out) :: ierr
 
 Real(real64), Parameter :: TWO = 2._real64

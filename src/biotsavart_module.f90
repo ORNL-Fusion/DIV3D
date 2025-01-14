@@ -109,8 +109,8 @@ Contains
     Implicit None
     !Input/output
     Type(coil_type), Intent(In) :: coil
+    Integer(int32), Intent(in) :: npts    
     Real(real64), Intent(in), Dimension(npts) :: P_r, P_phi, P_z
-    Integer(int32), Intent(in) :: npts
     Real(real64), Intent(out),Dimension(npts) :: Br, Bphi, Bz
     ! Local Variables
     Real(real64), Dimension(npts) :: Bx, By, cp, sp 
@@ -237,8 +237,8 @@ Contains
     Use kind_mod, Only: real64, int32
     Implicit None
     Type(coil_type), Intent(In) :: coil
+    Integer(int32), Intent(in) :: npts    
     Real(real64), Intent(in), Dimension(npts) :: P_x, P_y, P_z
-    Integer(int32), Intent(in) :: npts
     Real(real64), Intent(out),Dimension(npts) :: Bx, By, Bz
 
     Integer(int32) :: i
