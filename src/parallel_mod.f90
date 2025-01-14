@@ -1,12 +1,27 @@
 !-----------------------------------------------------------------------------
 !+ Contains routines for MPI computing
+!
+! Use precompiler flag USE_MPIF08 to control MPI interface
 !-----------------------------------------------------------------------------
 Module parallel_mod
-  Use mpi
+  
+#ifdef USE_MPIF08
+  Use mpi_f08      ! Modern MPI interface
+#else
+  Use mpi          ! Legacy MPI interface
+#endif
+  
   Implicit None
 
-  Integer :: nprocs, ierr_mpi, rank, ret_code, request
+  Integer :: nprocs, ierr_mpi, rank, ret_code
+
+#ifdef USE_MPIF08
+  Type(MPI_Status) :: status
+  Type(MPI_Request) :: request
+#else
+  Integer :: request
   Integer :: status(MPI_STATUS_SIZE)
+#endif
 
 Contains
 
