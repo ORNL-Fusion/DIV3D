@@ -1,9 +1,9 @@
 Module timing_mod
-  Use kind_mod, Only : real64
+  Use kind_mod, Only : real64, int32
   Implicit None
-  
+
   ! Variables for timing
-  Integer, Private :: timing_count_rate = 1
+  Integer(int32), Private :: timing_count_rate = 1
 
 Contains
 
@@ -16,9 +16,9 @@ Contains
     Implicit None
     Integer, Intent(In) :: tstart
     Real(real64) :: elapsed_time
-    Integer :: tend    
+    Integer(int32) :: tend
     Call system_clock(tend)
     elapsed_time = Real(tend-tstart)/Real(timing_count_rate)
   End Function get_elapsed_time
-  
+
 End Module timing_mod

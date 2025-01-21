@@ -30,8 +30,7 @@ Contains
     Real(real64), Intent(out), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
     Real(real64), Intent(out) :: etime_follow, etime_int
     Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
-    Integer(int32) :: ifail, ierr(1),ilg(1)
-    Integer :: tstart
+    Integer(int32) :: ifail, ierr(1),ilg(1), tstart
     !- End of header -------------------------------------------------------------
 
     ! Follow

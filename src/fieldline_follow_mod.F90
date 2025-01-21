@@ -706,6 +706,8 @@ Real(real64), Intent(Out), Dimension(n) :: yout
 Real(real64), Intent(In) :: x, dx
 Integer(int32), Intent(Out) :: ierr
 
+Real(real64), Dimension(n) :: ytemp
+
 Real(real64), Parameter :: TWO = 2._real64
 Real(real64), Parameter :: SIX = 6._real64
 Integer(int32) :: ierr_odefun
@@ -725,12 +727,15 @@ Interface
 End Interface
 !- End of header -------------------------------------------------------------
 
-dydx = dydx_in ! Do not want to overwrite input
+dydx(:) = dydx_in(:) ! Do not want to overwrite input
+
 ! First step (uses supplied derivatives)
 d1 = dx*dydx
 ierr = 0
+
 ! Second step
-Call odefun(bfield,n,x+dx/TWO,y+d1/TWO,dydx,ierr_odefun)
+ytemp = y+d1/TWO
+Call odefun(bfield,n,x+dx/TWO,ytemp,dydx,ierr_odefun)
 If (ierr_odefun == 1) Then
   ierr = 1
   yout = 0._real64
@@ -739,7 +744,8 @@ Endif
 d2 = dx*dydx
 
 ! Third step
-Call odefun(bfield,n,x+dx/TWO,y+d2/TWO,dydx,ierr_odefun)
+ytemp = y+d2/TWO
+Call odefun(bfield,n,x+dx/TWO,ytemp,dydx,ierr_odefun)
 If (ierr_odefun == 1) Then
   ierr = 1
   yout = 0._real64
@@ -748,7 +754,8 @@ Endif
 d3 = dx*dydx
 
 ! Fourth step
-Call odefun(bfield,n,x+dx,y+d3,dydx,ierr_odefun)
+ytemp = y+d3
+Call odefun(bfield,n,x+dx,ytemp,dydx,ierr_odefun)
 If (ierr_odefun == 1) Then
   ierr = 1
   yout = 0._real64
