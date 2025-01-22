@@ -16,7 +16,7 @@ Program div3d_follow_and_int
   Use timing_mod, Only : get_elapsed_time, init_timing
   Implicit none
   Logical :: verbose = .false.
-  Integer :: tstart = 1 ! Timing variable
+  Integer :: tstart ! Timing variable
   
   !----------------------------------------------------------
   ! 0. Setup

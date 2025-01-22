@@ -25,9 +25,9 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     message(STATUS "Using IntelLLVM compiler flags")
     set(CMAKE_Fortran_FLAGS_RELEASE " -O3")
     set(CMAKE_Fortran_FLAGS_DEBUG " -g -O0 -traceback -check bounds")
-#    set(CMAKE_Fortran_FLAGS_DEBUG " -g -traceback -check all -fpe0 -warn -debug extended -assume realloc_lhs")    
+#    set(CMAKE_Fortran_FLAGS_DEBUG " -g -traceback -check all -fpe0 -warn -debug extended -assume realloc_lhs")
 #    set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fpp -check bounds,uninit,pointers,stack -traceback -assume realloc_lhs -ftrapuv -debug minimal -check arg_temp_created")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")    
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")
 else()
     message(WARNING "Unrecognized Fortran compiler: ${CMAKE_Fortran_COMPILER_ID}. Compiler-specific flags will not be set.")
 endif()
@@ -115,14 +115,6 @@ add_executable(div3d
 include(CheckIncludeFiles)
 check_include_files("rpc/rpc.h" HAVE_RPC_RPC_H)
 
-if(NOT HAVE_RPC_RPC_H)
-    message(STATUS "rpc/rpc.h not found. Trying tirpc...")
-    target_include_directories(div3d PRIVATE /usr/include/tirpc)
-    target_link_libraries(div3d PRIVATE tirpc)
-else()
-    message(STATUS "Using system rpc/rpc.h.")
-endif()
-
 # Define HAVE_FXDR since FXDR is always used
 target_compile_definitions(div3d PRIVATE HAVE_FXDR)
 
@@ -140,7 +132,7 @@ add_executable(convert_ascii_bgrid_to_netcdf
   ${SRC_DIR}/bgrid_routines_mod.f90
   ${SRC_DIR}/convert_ascii_bgrid_to_netcdf.f90
   ${SRC_DIR}/parallel_mod.f90
-  ${SRC_DIR}/phys_const.f90  
+  ${SRC_DIR}/phys_const.f90
 )
 
 # Conditionally define USE_MPIF08 for convert_ascii_bgrid_to_netcdf
@@ -148,15 +140,69 @@ if(USE_MPIF08)
     target_compile_definitions(convert_ascii_bgrid_to_netcdf PRIVATE USE_MPIF08)
 endif()
 
+# Link with NetCDF
+target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY}  z stdc++ lapack)
+
+# Create the poincare executable
+add_executable(poincare
+  ${SRC_DIR}/bgrid_routines_mod.f90
+  ${SRC_DIR}/poincare/poincare_driver.F90
+  ${SRC_DIR}/poincare/poincare_namelist.f90
+  ${SRC_DIR}/bgrid_routines_mod.f90
+  ${SRC_DIR}/biotsavart_module.f90
+  ${SRC_DIR}/bfield_module.f90
+  ${SRC_DIR}/bspline90_22.f90
+  ${SRC_DIR}/coil_typedef.f90
+  ${SRC_DIR}/fieldline_follow_mod.F90
+  ${SRC_DIR}/g3d_module.f90
+  ${SRC_DIR}/initialize_bfield_div3d.F90
+  ${SRC_DIR}/init_random_seed.f90
+  ${SRC_DIR}/kind_mod.f90
+  ${SRC_DIR}/math_routines_mod.f90
+  ${SRC_DIR}/parallel_mod.f90
+  ${SRC_DIR}/phys_const.f90
+  ${SRC_DIR}/timing.f90
+  ${SRC_DIR}/run_settings_namelist.f90
+  ${SRC_DIR}/setup_bfield.f90
+  ${SRC_DIR}/VMEC_routines_mod.f90
+  ${SRC_DIR}/LIBSTELL_LIGHT/tolower.f90
+  ${SRC_DIR}/LIBSTELL_LIGHT/stel_kinds.f
+  ${SRC_DIR}/LIBSTELL_LIGHT/safe_open_mod.f90
+  ${SRC_DIR}/LIBSTELL_LIGHT/biotsavart.f
+  ${SRC_DIR}/LIBSTELL_LIGHT/bsc_T.f
+  ${FXDR_FILES}
+  )
+
+# Define HAVE_FXDR since FXDR is always used
+target_compile_definitions(poincare PRIVATE HAVE_FXDR)
+
+
+# Conditionally define USE_MPIF08 for poincare
+if(USE_MPIF08)
+    target_compile_definitions(poincare PRIVATE USE_MPIF08)
+endif()
+
+# Link with NetCDF
+target_link_libraries(poincare PRIVATE ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY}  z stdc++ lapack)
+
+if(NOT HAVE_RPC_RPC_H)
+    message(STATUS "rpc/rpc.h not found. Trying tirpc...")
+    target_include_directories(div3d PRIVATE /usr/include/tirpc)
+    target_link_libraries(div3d PRIVATE tirpc)
+    target_include_directories(poincare PRIVATE /usr/include/tirpc)
+    target_link_libraries(poincare PRIVATE tirpc)
+else()
+    message(STATUS "Using system rpc/rpc.h.")
+endif()
+
+
 # Set file names
 set_target_properties(div3d PROPERTIES OUTPUT_NAME "div3d.exe")
 set_target_properties(convert_ascii_bgrid_to_netcdf PROPERTIES OUTPUT_NAME "convert_ascii_bgrid_to_netcdf.exe")
-
-# Link with NetCDF
-target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY})
+set_target_properties(poincare PROPERTIES OUTPUT_NAME "poincare.exe")
 
 # Set the install prefix to the directory above the build directory
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/.." CACHE PATH "Install prefix" FORCE)
 
 # Install targets into 'bin'
-install(TARGETS div3d convert_ascii_bgrid_to_netcdf RUNTIME DESTINATION bin)
+install(TARGETS div3d convert_ascii_bgrid_to_netcdf poincare RUNTIME DESTINATION bin)
