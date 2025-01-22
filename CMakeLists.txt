@@ -24,7 +24,7 @@ elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
 elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     message(STATUS "Using IntelLLVM compiler flags")
     set(CMAKE_Fortran_FLAGS_RELEASE " -O3")
-    set(CMAKE_Fortran_FLAGS_DEBUG " -g -O0 -traceback -check all")
+    set(CMAKE_Fortran_FLAGS_DEBUG " -g -O0 -traceback -check bounds")
 #    set(CMAKE_Fortran_FLAGS_DEBUG " -g -traceback -check all -fpe0 -warn -debug extended -assume realloc_lhs")    
 #    set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fpp -check bounds,uninit,pointers,stack -traceback -assume realloc_lhs -ftrapuv -debug minimal -check arg_temp_created")
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fpp")    
@@ -94,6 +94,7 @@ add_executable(div3d
   ${SRC_DIR}/initialize_bfield_div3d.F90
   ${SRC_DIR}/kind_mod.f90
   ${SRC_DIR}/math_routines_mod.f90
+  ${SRC_DIR}/output_routines.f90
   ${SRC_DIR}/parallel_mod.f90
   ${SRC_DIR}/phys_const.f90
   ${SRC_DIR}/read_parts_mod.f90

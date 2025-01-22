@@ -11,32 +11,35 @@ Contains
   !-----------------------------------------------------------------------------
   !+ Follow fieldlines and then compute intersections, used by worker nodes
   !-----------------------------------------------------------------------------
-  Subroutine line_follow_and_int(Rstart,Zstart,Phistart,nsteps_line,pint,iout, &
+  Subroutine line_follow_and_int(Rstart,Zstart,Phistart,pint,iout, &
        r_hitline,z_hitline,phi_hitline,nhitline,linenum,totL,theta, &
        etime_follow,etime_int)
 
     Use kind_mod, Only : real64, int32
     Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
     Use setup_bfield_module, Only : bfield
-    Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta
+    Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta, ns_line_diff
     Use timing_mod, Only : get_elapsed_time
     Implicit None
 
     Real(real64), Intent(in) :: Rstart, Zstart, Phistart
-    Integer(int32), Intent(in) :: nsteps_line, linenum, nhitline
+    Integer(int32), Intent(in) :: linenum, nhitline
     Integer(int32), Intent(out), Dimension(4) :: iout
     Real(real64), Dimension(3), Intent(out) :: pint
     Real(real64), Intent(out) :: totL, theta
     Real(real64), Intent(out), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
     Real(real64), Intent(out) :: etime_follow, etime_int
-    Real(real64), Dimension(nsteps_line+1) :: rout,zout,phiout
-    Integer(int32) :: ifail, ierr(1),ilg(1), tstart
+    Real(real64), Allocatable :: rout(:) ,zout(:) ,phiout(:)
+    Integer(int32) :: ifail, ierr(1),ilg(1)
+    Integer :: tstart
     !- End of header -------------------------------------------------------------
 
+    Allocate(rout(ns_line_diff+1),zout(ns_line_diff+1),phiout(ns_line_diff+1))
+    
     ! Follow
     Call system_clock(tstart)
     Call follow_fieldlines_rzphi_diffuse(bfield,[Rstart],[Zstart],[Phistart],1,&
-         dphi_line_diff,nsteps_line,rout,zout,phiout,ierr,ilg,dmag)
+         dphi_line_diff,ns_line_diff,rout,zout,phiout,ierr,ilg,dmag)
     ifail = ilg(1)
     etime_follow = get_elapsed_time(tstart)
 
@@ -44,8 +47,10 @@ Contains
     Call system_clock(tstart)
     Call check_line_for_intersections(pint,iout, &
          r_hitline,z_hitline,phi_hitline,nhitline,linenum, &
-         nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
+         ns_line_diff,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
     etime_int = get_elapsed_time(tstart)
+
+    Deallocate(rout,zout,phiout)
 
   End Subroutine line_follow_and_int
   !-----------------------------------------------------------------------------
@@ -65,7 +70,7 @@ Contains
     Real(real64), Dimension(3) :: line_start_data_r
     Integer(int32), Dimension(3) :: line_start_data_i
     Real(real64) :: Rstart_local, Zstart_local, Pstart_local
-    Integer(int32) :: iline_local, nsteps_line_local
+    Integer(int32) :: iline_local !, nsteps_line_local
     Integer :: dest, source, tag
     Real(real64), Dimension(:), Allocatable :: r_hitline,z_hitline,phi_hitline
     Integer(int32) :: ierr_follow
@@ -101,7 +106,7 @@ Contains
           Rstart_local    = line_start_data_r(1)
           Zstart_local    = line_start_data_r(2)
           Pstart_local    = line_start_data_r(3)
-          nsteps_line_local = line_start_data_i(1)
+!          nsteps_line_local = line_start_data_i(1)
           iline_local       = line_start_data_i(3)
 
           ! Follow the line
@@ -109,11 +114,9 @@ Contains
           Allocate(z_hitline(nhitline))
           Allocate(phi_hitline(nhitline))
 
-          Call line_follow_and_int(Rstart_local,Zstart_local, &
-               Pstart_local,nsteps_line_local,&
-               pint,iout,r_hitline, &
-               z_hitline,phi_hitline,nhitline,iline_local,totL, &
-               theta,etime_follow,etime_int)
+          Call line_follow_and_int(Rstart_local,Zstart_local,Pstart_local,pint,iout, &
+               r_hitline,z_hitline,phi_hitline,nhitline,iline_local, &
+               totL,theta,etime_follow,etime_int)
           ierr_follow = 0
 
           ! Compile results and send data back to master
@@ -162,12 +165,12 @@ Contains
     Use kind_mod, Only : int32, real64
     Use parallel_mod
     Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
+    Use output_routines, Only : init_hitline_netcdf, write_hitline_data_netcdf
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
          fname_hit, fname_intpts, fname_nhit, nhitline
     Implicit none
 
-
-    Logical, parameter :: write_hitline_to_netcdf = .false.
+    Logical, Parameter :: write_hitline_to_netcdf = .false.
 
     Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck
     Real(real64) :: Rstart, Zstart, Phistart
@@ -193,8 +196,6 @@ Contains
 #else
     Integer, Dimension(:), Allocatable :: req_arr
 #endif
-
-    
     !- End of header -------------------------------------------------------------
 
     ! Read init point data
@@ -423,19 +424,22 @@ Contains
     Real(real64) :: Pmin_line, Pmax_line, Pmin_test, Pmax_test
     !- End of header -------------------------------------------------------------
 
+    ! Set length of line to check. I
     npts_line = nsteps_line + 1
     If (ifail .ne. nsteps_line) npts_line = ifail - 1
 
+    ! Initialize variables 
     ihit = 0
-    pint(:) = 0.
+    pint(:) = 0._real64
     iout(:) = -1
     iout(1) = ihit
     totL = 0._real64
-    Do i=1,npts_line - 1
+    r_hitline(:) = 0._real64
+    z_hitline(:) = 0._real64
+    phi_hitline(:) = 0._real64
 
-       r_hitline = 0.d0
-       z_hitline = 0.d0
-       phi_hitline = 0.d0
+    ! Loop over fieldline points
+    Do i=1,npts_line - 1
 
        ! Current point along line
        R1 = rout(i)
@@ -447,6 +451,7 @@ Contains
        Z2 = zout(i+1)
        P2 = phiout(i+1)
 
+       ! Initial dphi used to check if line segment crosses symmetry plane
        dphi1 = P2-P1
 
        ! Distance
@@ -463,6 +468,7 @@ Contains
        X2 = R2*cos(P2)
        Y2 = R2*sin(P2)
 
+       ! Post wrapping dphi
        dphi2 = P2-P1
 
        ! Check for lines that cross symmetry (field period) plane
@@ -483,11 +489,11 @@ Contains
           Y1a = Ytmp(ind_min(1))
           Z1a = Ztmp(ind_min(1))
           R1a = Rtmp(ind_min(1))
+          
           X2a = Xtmp(ind_max(1))
           Y2a = Ytmp(ind_max(1))
           Z2a = Ztmp(ind_max(1))
           R2a = Rtmp(ind_max(1))
-
 
           !---------------------------------------------
           ! Find intersection of line segment with plane
@@ -532,7 +538,7 @@ Contains
           X2 = R3*cos(P2)
           Y2 = R3*sin(P2)
           Z2 = Z3
-       endif
+       End If
 
        Do iseg = 1,1+twofer
 
@@ -577,7 +583,7 @@ Contains
           Pmax_line = Max(p_start,p_end)
 
           ihit = 0
-          Do ipart=1,nparts
+          Do ipart = 1,nparts
 
              ! Check if this line segment is within the phi bounds of the part
              ! The phi segments overlap if Max(Min(phi_line),Min(phi_test)) <= Min(Max(phi_line),Max(phi_test))
@@ -625,12 +631,10 @@ Contains
                          If (ihit_tmp .eq. 1) Then
                             ihit = 1
                             Exit ! stop looking for triangle intersections
-                         Endif
+                         End If
 
                       End If ! Is in triangle phi range
-
-                   Enddo !triangle loop
-
+                   End Do !triangle loop
                 End If ! is AS part
 
                 ! If it hit then write pint and hitline
@@ -641,21 +645,21 @@ Contains
                    iout(2) = ipart
                    iout(3) = itri
                    iout(4) = i
-                   ! write(*,*) 'totL',totL
-                   if ( (i - nhitline+1) .lt. 1 ) Then
+
+                   If ( (i - nhitline+1) .lt. 1 ) Then
                       Write(*,*) 'Truncating hitline'
-                      r_hitline(1:i) = rout(1:i)
-                      z_hitline(1:i) = zout(1:i)
+                      r_hitline(1:i)   =   rout(1:i)
+                      z_hitline(1:i)   =   zout(1:i)
                       phi_hitline(1:i) = phiout(1:i)
                    Else
-                      r_hitline = rout(i-nhitline+1:i)
-                      z_hitline = zout(i-nhitline+1:i)
-                      phi_hitline = phiout(i-nhitline+1:i)
-                   Endif
+                      r_hitline(1:nhitline)   =   rout(i-nhitline+1:i)
+                      z_hitline(1:nhitline)   =   zout(i-nhitline+1:i)
+                      phi_hitline(1:nhitline) = phiout(i-nhitline+1:i)
+                   End If
                    Exit  ! Stop looking for part intersections
                 End If
 
-             Endif !inphi check
+             End If !inphi check
           Enddo ! part index
 
           If (ihit .eq. 1 ) Exit  ! Stop looking for segment intersections
@@ -734,9 +738,6 @@ Contains
              iout(4) = i
 
              ! Set hitline
-             r_hitline = 0.d0
-             z_hitline = 0.d0
-             phi_hitline = 0.d0
              if ( (i - nhitline+1) .lt. 1 ) Then
                 r_hitline(1:i) = rout(1:i)
                 z_hitline(1:i) = zout(1:i)
@@ -762,154 +763,6 @@ Contains
     Endif ! did not hit part
 
   End subroutine check_line_for_intersections
-
-
-  Subroutine init_hitline_netcdf(fname,nhitline)
-    use netcdf
-    implicit none
-
-    character(len=*), intent(in) :: fname
-    integer,          intent(in) :: nhitline
-
-    integer :: ncid, ierr
-    integer :: dimid_snapshot, dimid_hit_length
-    integer :: varid_r, varid_z, varid_phi
-
-    ! Master process creates the file (serial, no MPI communicator needed)
-    ierr = nf90_create(trim(fname), IOR(NF90_CLOBBER, NF90_NETCDF4), ncid)
-    if (ierr /= NF90_NOERR) stop "Error creating NetCDF file"
-
-    ! Define dimensions
-    ierr = nf90_def_dim(ncid, "snapshot", NF90_UNLIMITED, dimid_snapshot)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_def_dim(ncid, "hit_length", nhitline, dimid_hit_length)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ! Define variables with dimensions [snapshot, hit_length]
-    ierr = nf90_def_var(ncid, "r_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_r)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_def_var(ncid, "z_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_z)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_def_var(ncid, "phi_hitline", NF90_DOUBLE, [dimid_snapshot, dimid_hit_length], varid_phi)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_enddef(ncid)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_close(ncid)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-  end subroutine init_hitline_netcdf
-
-
-  subroutine write_hitline_data_netcdf(fname, r_hitline, z_hitline, phi_hitline)
-    use netcdf
-    implicit none
-
-    character(len=*), intent(in) :: fname
-    character(len=NF90_MAX_NAME) :: dim_name
-    real(8), intent(in) :: r_hitline(:)
-    real(8), intent(in) :: z_hitline(:)
-    real(8), intent(in) :: phi_hitline(:)
-
-    integer :: ncid, ierr
-    integer :: varid_r, varid_z, varid_phi
-    integer :: dimid_snapshot
-    integer(kind=4) :: snapshot_len
-    integer :: start(2), count(2)
-
-    ! Master process reopens file in write mode
-    ierr = nf90_open(trim(fname), NF90_WRITE, ncid)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ! Get dimension IDs and var IDs
-    ierr = nf90_inq_dimid(ncid, "snapshot", dimid_snapshot)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ! Current length of snapshot dimension
-    ierr = nf90_inquire_dimension(ncid, dimid_snapshot, dim_name, snapshot_len)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_inq_varid(ncid, "r_hitline", varid_r)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_inq_varid(ncid, "z_hitline", varid_z)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_inq_varid(ncid, "phi_hitline", varid_phi)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    start = [snapshot_len+1, 1]
-    count = [1, size(r_hitline)]
-
-    ! write data
-    ierr = nf90_put_var(ncid, varid_r, r_hitline, start=start, count=count)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_put_var(ncid, varid_z, z_hitline, start=start, count=count)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_put_var(ncid, varid_phi, phi_hitline, start=start, count=count)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-    ierr = nf90_close(ncid)
-    If (ierr /= NF90_NOERR) Then
-       Write(*,*) nf90_strerror(ierr)
-       Stop
-    End If
-
-  End Subroutine write_hitline_data_netcdf
 
 
 End Module diffusion
