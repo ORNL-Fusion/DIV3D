@@ -115,4 +115,4 @@ else
     make
 fi
 
-make install
+make

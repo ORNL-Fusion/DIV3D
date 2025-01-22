@@ -27,6 +27,7 @@ TO_REMOVE=(
     "CTestTestfile.cmake"
     "Testing"
     "install_manifest.txt"
+    "src"
 )
 
 # Function to remove items
