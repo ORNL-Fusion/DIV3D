@@ -22,6 +22,7 @@ TO_REMOVE=(
     "CMakeFiles"
     "Makefile"
     "*.mod"
+    "*genmod.f90"
     "cmake_install.cmake"
     "CTestTestfile.cmake"
     "Testing"
