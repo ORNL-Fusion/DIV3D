@@ -7,6 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 # Add fxdr library
 add_subdirectory(fxdr)
+add_subdirectory(LIBSTELL_LIGHT)
 
 # Define a shared library for common modules
 add_library(libcommon STATIC
@@ -30,11 +31,6 @@ add_library(libcommon STATIC
   setup_bfield.f90
   VMEC_routines_mod.f90
   xdr_routines_mod.f90
-  LIBSTELL_LIGHT/tolower.f90
-  LIBSTELL_LIGHT/stel_kinds.f
-  LIBSTELL_LIGHT/safe_open_mod.f90
-  LIBSTELL_LIGHT/biotsavart.f
-  LIBSTELL_LIGHT/bsc_T.f
 )
 
 # Apply the USE_MPIF08 definition globally to the shared library
@@ -43,14 +39,19 @@ if(USE_MPIF08)
 endif()
 
 # Include directories for shared library
-target_include_directories(libcommon PUBLIC ${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/fxdr)
+target_include_directories(libcommon PUBLIC ${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/fxdr ${CMAKE_CURRENT_BINARY_DIR}/LIBSTELL_LIGHT)
 
-# Make libcommon depend on libfxdr
+# libcommon dependencies
 target_link_libraries(libcommon PRIVATE libfxdr)
+target_link_libraries(libcommon PRIVATE libstell)
 
+# -------------------------------
 # Define executables
+# -------------------------------
 
+# -------------------------------
 # div3d executable
+# -------------------------------
 add_executable(div3d
   diffuse_lines3.f90
   div3d_follow_and_int.F90
@@ -68,15 +69,15 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to div3d
-target_link_libraries(div3d PRIVATE libcommon libfxdr ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(div3d PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
 
+# --------------------------------------------
 # convert_ascii_bgrid_to_netcdf executable
+# -------------------------------------------
 add_executable(convert_ascii_bgrid_to_netcdf
   convert_ascii_bgrid_to_netcdf.f90
 )
 set_target_properties(convert_ascii_bgrid_to_netcdf PROPERTIES OUTPUT_NAME "convert_ascii_bgrid_to_netcdf.exe")
-
-
 
 # Apply USE_MPIF08 to convert_ascii_bgrid_to_netcdf
 if(USE_MPIF08)
@@ -84,9 +85,11 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to convert_ascii_bgrid_to_netcdf
-target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE libcommon libfxdr ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(convert_ascii_bgrid_to_netcdf PRIVATE libcommon ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY})
 
+# -------------------------------
 # poincare executable
+# -------------------------------
 add_executable(poincare
   poincare/poincare_driver.F90
   poincare/poincare_namelist.f90
@@ -99,4 +102,4 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to poincare
-target_link_libraries(poincare PRIVATE libcommon libfxdr ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(poincare PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)

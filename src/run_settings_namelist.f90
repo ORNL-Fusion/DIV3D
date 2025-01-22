@@ -130,7 +130,7 @@ Contains
     ! --------------------------
     
     period = 2.d0*pi/Real(nfp_bfield,real64)
-    If (verbose) Write(*,*) 'Magnetic field set to have tor. symm. mode number ',nfp_bfield,period*180./pi,' deg.'
+    If (verbose) Write(*,*) 'Magnetic field set to have toroidal symmetry mode number ',nfp_bfield,period*180./pi,' deg.'
     dphi_line_surf = dphi_line_surf_deg * pi/180.d0
     dphi_line_diff = dphi_line_diff_deg * pi/180.d0
     ns_line_surf = Floor(ntran_surf*2.d0*pi/Abs(dphi_line_surf))

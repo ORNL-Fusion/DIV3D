@@ -1,14 +1,11 @@
       MODULE stel_kinds
-      Use kind_mod, Only : real64, int32
 !----------------------------------------------------------------------
-!  Kind specifications
+!     Kind specifications
 !----------------------------------------------------------------------
-      Integer, parameter :: rprec = real64
-      Integer, parameter :: iprec = int32
-      
-!      INTEGER, PARAMETER :: rprec = SELECTED_REAL_KIND(12,100)
-!      INTEGER, PARAMETER :: iprec = SELECTED_INT_KIND(8)
-!      INTEGER, PARAMETER :: cprec = KIND((1.0_rprec,1.0_rprec))
-!      INTEGER, PARAMETER :: dp = rprec
+      Use Iso_fortran_env , Only: int16, int32, int64, real32, real64
+      Implicit none
+      Private
+      Integer, Public, parameter :: rprec = real64
+      Integer, Public, parameter :: iprec = int32
 
       END MODULE stel_kinds
