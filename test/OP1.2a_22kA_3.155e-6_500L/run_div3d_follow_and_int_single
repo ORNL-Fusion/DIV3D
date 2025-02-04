@@ -1,1 +1,0 @@
-time mpirun -np 100 /home/jjl/DIV3D/bin/div3d.exe

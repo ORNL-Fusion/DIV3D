@@ -2,7 +2,8 @@ Module poincare_namelist
   Use kind_mod, Only : real64, int32
   Implicit None
 
-  Real(real64) :: period
+  Real(real64) :: period, dphi_line_poincare
+  Integer(int32) :: ind_poin, nsteps
   
   ! Namelist variables:
   Real(real64) :: phistart_deg_poincare, rstart_poincare, rend_poincare, zstart_poincare, zend_poincare, dphi_line_deg_poincare
@@ -23,7 +24,8 @@ Contains
     Implicit None
     Logical, Intent(In) :: verbose
     Character(len=256) :: iomsg
-    Integer(int32) :: iocheck    
+    Integer(int32) :: iocheck
+    Real(real64) :: Adphirat
 
     ! --------------------------------
     ! Defaults
@@ -39,7 +41,7 @@ Contains
     
     ! Open file
     If (verbose) Write(*,*) 'Reading poincare settings from poincare_settings.nml'
-    Open(99,file="poincare_settings.nml",status="old",form="formatted",iostat=iocheck)
+    Open(99,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
     If ( iocheck .ne. 0 ) Then
        if (rank .eq. 0) Write(*,*) 'Error opening namelist file'
        Call fin_mpi(.true.)
@@ -70,7 +72,27 @@ Contains
 
     verbose_bfield = .not. quiet_bfield
 
-
+    ! Step size in radians
+    dphi_line_poincare = dphi_line_deg_poincare*pi/180.d0
+    ! Number of steps to complete the required number of transits. ntransits is full toroidal transits.    
+    nsteps = Floor(ntransits*2.d0*pi/Abs(dphi_line_poincare))
+    ! Check that step size fits into the symmetric toroidal angle
+    Adphirat = Abs(360.d0/dphi_line_deg_poincare/nfp_bfield)
+    If (Adphirat - Real(Nint(Adphirat)) > 1.d-8) Then
+       Write(*,*) 'Error!: 2*pi/nfp_bfield must be an integer multiple of dphi_line_deg'
+       Write(*,*) 'Exiting'
+       Call fin_mpi(.true.)
+    Endif
+    ind_poin = Nint(Adphirat)
+    
+    Write(*,'(/1a,i0,a,i0,a)') 'Following ',num_pts,' fls for ',ntransits,' transits.'
+    Write(*,'(a,f12.3,a)') 'Toroidal step size is ',dphi_line_deg_poincare,' degrees'
+    Write(*,'(a,i0)') 'Poincare plot step size index is ',ind_poin
+    Write(*,'(a,f12.3)') 'Starting fl at phi = ',phistart_deg_poincare
+    Write(*,'(a,i0)') 'Number of steps = ',nsteps
+    
+    
+    
   End Subroutine read_poincare_namelist
 
 End Module poincare_namelist

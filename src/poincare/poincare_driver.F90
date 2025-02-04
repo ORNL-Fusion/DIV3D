@@ -6,30 +6,31 @@ Program poincare_driver
   ! Author(s): J.D. Lore 
   !
   Use kind_mod, Only: int32, real64
-  Use poincare_namelist, Only : read_poincare_namelist
+  Use poincare_namelist, Only : read_poincare_namelist, num_pts, dphi_line_poincare, &
+       Rstart_poincare, Rend_poincare, Zstart_poincare, Zend_poincare, nsteps, &
+       phistart_deg_poincare, ind_poin
   Use initialize_bfield_div3d, Only : init_bfield
   Use parallel_mod, Only : rank, nprocs, init_mpi, fin_mpi
   Use timing_mod, Only : get_elapsed_time, init_timing  
   !Use g3d_module, Only : get_psi_bicub
-  !Use math_geo_module, Only : rlinspace
-  !Use fieldline_follow_mod, Only: follow_fieldlines_rzphi
+  Use math_routines_mod, Only : rlinspace
+  Use fieldline_follow_mod, Only: follow_fieldlines_rzphi
   !Use util_routines, Only: get_psin_2d
-  !Use phys_const, Only: pi
-  !Use setup_bfield_module
+  Use phys_const, Only: pi
+  Use setup_bfield_module, Only : bfield
 
   Implicit none
 
   Integer :: tstart ! Timing variable
-  Integer(int32) :: iocheck
+  Integer(int32) :: iocheck, nstart_fl
   Logical :: verbose = .false.  
 
   !  Integer(int32) :: i, nstart_fl, nsteps
   !  Integer(int32) :: iocheck, ind_poin, ierr
-  !  Real(real64), Allocatable :: r1d(:), z1d(:),phistart_arr(:), fl_r(:,:), fl_z(:,:), fl_p(:,:), &
+  Real(real64), Allocatable :: r1d(:), z1d(:)
+  Real(real64), Allocatable :: phistart_arr(:), fl_r(:,:), fl_z(:,:), fl_p(:,:)
   !       psiout(:), psiNout(:), fl_r2(:,:), fl_z2(:,:), fl_p2(:,:)
-  !  Integer(int32), Allocatable :: ilg(:), fl_ierr(:), ilg2(:), fl_ierr2(:)
-  !  Real(real64) :: dphi_line, Adphirat
-  !  Real(Kind=4)  :: tarray(2),tres,tres0
+  Integer(int32), Allocatable :: ilg(:), fl_ierr(:) !, ilg2(:), fl_ierr2(:)
 
   
   !---------------------------------------------------------------------------
@@ -53,86 +54,30 @@ Program poincare_driver
   !----------------------------------------------------------
   Call init_bfield(verbose)
 
+  !----------------------------------------------------------
+  ! 2. Follow fieldlines
+  !----------------------------------------------------------
+  Allocate(r1d(num_pts),z1d(num_pts))
+  r1d = rlinspace(Rstart_poincare,Rend_poincare,num_pts)
+  z1d = rlinspace(Zstart_poincare,Zend_poincare,num_pts)
 
-  ! !
-  ! ! 2) Magnetic equilibrium data
-  ! !
-  ! ! Setup rmp field
-  ! Select Case (rmp_type)
-  ! Case ('g3d')
-  !    Call setup_bfield_g3d
-  ! Case ('g3d+rmpcoil')
-  !    Call setup_bfield_g_and_rmp
-  ! Case ('g3d+m3dc1')
-  !    Call setup_bfield_g_and_m3dc1
-  ! Case ('m3dc1_full_field')
-  !    Call setup_bfield_m3dc1_full
-  ! Case ('m3dc1_as')
-  !    Call setup_bfield_m3dc1_as
-  ! Case ('ipec')
-  !    Call setup_bfield_ipec
-  ! Case ('xpand')
-  !    Call setup_bfield_xpand
-  ! Case ('vmec_coils')
-  !    Call setup_bfield_vmec_coils
-  ! Case ('vmec_coils_to_fil')
-  !    Call setup_bfield_vmec_coils_to_fil
-  ! Case ('bgrid')
-  !    Call setup_bfield_bgrid
-  ! Case ('xdr')
-  !    Call setup_bfield_xdr    
-  ! Case Default
-  !    Write(*,*) 'Unknown rmp_type in poincare_driver!'
-  !    Write(*,*) 'Current options are:'
-  !    Write(*,*) '''g3d'''
-  !    Write(*,*) '''g3d+rmpcoil'''
-  !    Write(*,*) '''g3d+m3dc1'''
-  !    Write(*,*) '''m3dc1_full_field'''
-  !    Write(*,*) '''m3dc1_as'''
-  !    Write(*,*) '''ipec'''
-  !    Write(*,*) '''xpand'''
-  !    Write(*,*) '''vmec_coils'''
-  !    Write(*,*) '''vmec_coils_to_fil'''
-  !    Write(*,*) '''bgrid'''
-  !    Write(*,*) '''xdr'''    
-  !    Stop      
-  ! End Select
+  write(*,*) r1d
+  write(*,*) z1d  
+  
+  
+  nstart_fl = num_pts
+  Allocate(ilg(nstart_fl),fl_ierr(nstart_fl),phistart_arr(nstart_fl))
+  Allocate(fl_r(nstart_fl,nsteps+1),fl_z(nstart_fl,nsteps+1),fl_p(nstart_fl,nsteps+1))
+  fl_r = 0.d0; fl_z = 0.d0; fl_p = 0.d0
+  phistart_arr = phistart_deg_poincare*pi/180.d0
 
-
-  ! ! 
-  ! ! 3) Follow fls
-  ! !
-
-  ! Allocate(r1d(num_pts),z1d(num_pts))
-  ! r1d = rlinspace(rstart,rend,num_pts)
-  ! z1d = rlinspace(zstart,zend,num_pts)
-
-  ! dphi_line = dphi_line_deg*pi/180.d0
-  ! nsteps = Floor(ntransits*2.d0*pi/Abs(dphi_line))
-
-  ! Adphirat = Abs(360.d0/dphi_line_deg/Nsym)
-  ! If (Adphirat - Real(Nint(Adphirat)) > 1.d-8) Then
-  !    Write(*,*) 'Error!: 2*pi/Nsym must be an integer multiple of dphi_line_deg'
-  !    Write(*,*) 'Exiting'
-  !    Stop
-  ! Endif
-  ! ind_poin = Nint(Adphirat)
-
-
-  ! Write(*,'(/1a,i0,a,i0,a)') 'Following ',num_pts,' fls for ',ntransits,' transits.'
-  ! Write(*,'(a,f12.3,a)') 'Toroidal step size is ',dphi_line_deg,' degrees'
-  ! Write(*,'(a,i0)') 'Poincare plot step size index is ',ind_poin
-  ! Write(*,'(a,f12.3)') 'Starting fl at phi = ',phistart_deg
-  ! Write(*,'(a,i0)') 'Number of steps = ',nsteps
-
-  ! nstart_fl = num_pts
-  ! Allocate(ilg(nstart_fl),fl_ierr(nstart_fl),phistart_arr(nstart_fl))
-  ! Allocate(fl_r(nstart_fl,nsteps+1),fl_z(nstart_fl,nsteps+1),fl_p(nstart_fl,nsteps+1))
-  ! fl_r = 0.d0; fl_z = 0.d0; fl_p = 0.d0
-  ! phistart_arr = phistart_deg*pi/180.d0
-
-  ! Call follow_fieldlines_rzphi(bfield,r1d,z1d,phistart_arr,nstart_fl, dphi_line,nsteps,fl_r,fl_z,fl_p,fl_ierr,ilg)
-
+  Call follow_fieldlines_rzphi(bfield,r1d,z1d,phistart_arr,nstart_fl, dphi_line_poincare,nsteps,fl_r,fl_z,fl_p,fl_ierr,ilg)
+  
+  Write(*,*) "Time spent in total: ", get_elapsed_time(tstart), " seconds"
+  Write(*,*) "Time spent per line avg: ", get_elapsed_time(tstart)/nstart_fl, " seconds"
+  
+  Call fin_mpi(.false.)
+  
   ! If (follow_both_ways) Then
   !    Allocate(ilg2(nstart_fl),fl_ierr2(nstart_fl))
   !    Allocate(fl_r2(nstart_fl,nsteps+1),fl_z2(nstart_fl,nsteps+1),fl_p2(nstart_fl,nsteps+1))
