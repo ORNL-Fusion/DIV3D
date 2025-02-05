@@ -50,7 +50,7 @@ Real(real64) :: R1,Z1,P1,Pt1(3)
 Real(real64) :: R2,Z2,P2,Pt2(3)
 Real(real64) :: R3,Z3,P3,Pt3(3)
 Real(real64) :: R4,Z4,P4,Pt4(3), dmids(3)
-Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet
+Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet, itri_tot
 !- End of header -------------------------------------------------------------
 
 !first have to get max number of triangles for allocation
@@ -58,8 +58,8 @@ Allocate(ntri_parts(nparts))
 Do ipart=1,nparts
   ntor = nt_parts(ipart)
   npol = np_parts(ipart)
-  ntri_parts(ipart) = (ntor-1)*(npol-1)*2_int32
-Enddo
+  ntri_parts(ipart) = (ntor-1)*(npol-1)*2
+End Do
 ntri_max = Maxval(ntri_parts)
 
 Allocate(xtri(nparts,ntri_max,3) ,source=0._real64)
@@ -79,12 +79,13 @@ Open(iu_ptmid,file=fname_ptri_mid)
 Write(iu_ptmid,*) nparts
 
 ! Create triangles
+itri_tot = 0
 Do ipart=1,nparts
   write(iu_ptri,*) ipart,ntri_parts(ipart)
   write(iu_ptmid,*) ipart,ntri_parts(ipart)
   ntor = nt_parts(ipart)
   npol = np_parts(ipart)
-  itri = 1_int32
+  itri = 1
   Do itor=1,ntor-1
     Do jpol=1,npol-1
 
@@ -146,7 +147,7 @@ Do ipart=1,nparts
          dmid(ipart,itri) = maxval(dmids,1)
          write(iu_ptmid,*) itri,xmid(ipart,itri),ymid(ipart,itri),zmid(ipart,itri),dmid(ipart,itri)
 
-
+         itri_tot = itri_tot + 1
          itri = itri + 1
       End Do
 
@@ -156,7 +157,7 @@ Enddo
 Close(iu_ptri)
 Close(iu_ptmid)
 
-If (verbose) Write(*,*) "Total number of triangles:",itri-1
+If (verbose) Write(*,*) "Total number of triangles:",itri_tot
 
 End Subroutine make_triangles
 !-----------------------------------------------------------------------------

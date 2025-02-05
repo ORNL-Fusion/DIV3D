@@ -5,22 +5,16 @@ Contains
   Subroutine init_bfield(verbose)
     Use setup_bfield_module
     Use parallel_mod, Only : fin_mpi
-!    Use run_settings_namelist, Only : Rstart, Zstart
-!    Use g3d_module, Only : get_psiN_bicub
     Use bgrid_module, Only : nsym
     Use xdr_routines_mod, Only : nperio
     Implicit None
     Logical, Intent(In) :: verbose
-!    Real(real64) :: psiN(1)
-    Integer(int32) :: ierr
 
     setup_bfield_verbose = verbose
     
     Select Case (rmp_type)
     Case ('g')
        Call setup_bfield_g3d
-!       Call get_psiN_bicub(bfield%g,(/Rstart/),(/Zstart/),1,psiN,ierr)
-!       If (verbose) Write(*,*) "Psi_N of start point",psiN(1)
        If (nfp_bfield .ne. 1) Then
           Write(*,*) "Error: bfield method is g but nfp_bfield is not 1",nfp_bfield
           Call fin_mpi(.true.)

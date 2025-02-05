@@ -13,7 +13,8 @@ Subroutine trace_surface(nsteps_line)
 Use kind_mod, Only : real64, int32
 Use io_unit_spec, Only : iu_surf
 Use fieldline_follow_mod, Only : follow_fieldlines_rzphi
-Use setup_bfield_module, Only : bfield
+Use setup_bfield_module, Only : bfield, rmp_type
+Use g3d_module, Only : get_psiN_bicub
 Use parallel_mod, Only : fin_mpi
 Use phys_const, Only : pi
 Use run_settings_namelist, Only : Rstart, Zstart, Phistart, dphi_line_surf, &
@@ -24,12 +25,20 @@ Integer(int32), Intent(in) :: nsteps_line
 Integer(int32) :: ifail, ii, ip_step, nip0, ierr
 Real(real64) :: adp
 Real(real64), Dimension(nsteps_line+1) :: rsurf,zsurf,phisurf
+Real(real64) :: psiN(1)
+
 !- End of header -------------------------------------------------------------
 
 Write(*,'(/A,3(F8.2))') ' Tracing initial surface from (R,Z,Phi) = ',Rstart,Zstart,Phistart
 
-! Check periodicity
+Select Case (rmp_type)
+Case ('g')
+   Call get_psiN_bicub(bfield%g,(/Rstart/),(/Zstart/),1,psiN,ierr)
+   Write(*,*) "Axis position [R,Z]",bfield%g%rmaxis,bfield%g%zmaxis
+   Write(*,*) "Psi_N of start point",psiN(1)
+End Select
 
+! Check periodicity
 adp = Abs(dphi_line_surf)
 nip0 = floor( nsteps_line*adp/period) + 1
 ip_step = Nint(period/adp)
