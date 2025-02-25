@@ -1,0 +1,34 @@
+&bfield_nml
+rmp_type = 'g'
+gfile_name = '../bfield/g000001.00001_symm'
+nfp_bfield = 1
+/
+
+
+
+&poincare_settings_nml
+
+quiet_bfield = .true.
+
+! Fieldlines will be started along a line starting from
+! [Rstart,Zstart,Phistart] to [Rend,Zend,Phistart]
+! with num_surfs points and followed for ntransits full torioidal transits
+! at step size dphi
+!
+! By default, only the points at Phistart are returned (num_slices = 1)
+! 
+! Number of points per surface per slice will be ntransits*nfp
+! 
+Rstart_poincare   = 5.32d0 
+Zstart_poincare   = 0.d0
+Rend_poincare   = 4.5d0 
+Zend_poincare   = 0.d0
+Phistart_deg_poincare = 0.d0
+dphi_line_deg_poincare = 0.5d0
+
+num_surfs  = 10
+ntransits  = 100
+num_slices = 3
+
+follow_both_ways = .false.
+/
