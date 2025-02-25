@@ -1,0 +1,35 @@
+&bfield_nml
+rmp_type = 'vmec_coils'
+vmec_coils_file = '../bfield/coils.qps'
+vmec_extcur_set(1:9) = 5*1.d0 4*0.d0
+!vmec_extcur_set(1:9) = 5*1.E+05  0.0E+00  -2.52E+04  -4.32E+04  -8.E+03
+nfp_bfield = 2
+/
+
+
+&poincare_settings_nml
+
+quiet_bfield = .true.
+
+! Fieldlines will be started along a line starting from
+! [Rstart,Zstart,Phistart] to [Rend,Zend,Phistart]
+! with num_surfs points and followed for ntransits full torioidal transits
+! at step size dphi
+!
+! By default, only the points at Phistart are returned (num_slices = 1)
+! 
+! Number of points per surface per slice will be ntransits*nfp
+! 
+Rstart_poincare   = 1.3d0 
+Zstart_poincare   = 0.d0
+Rend_poincare   = 1.41d0 
+Zend_poincare   = 0.d0
+Phistart_deg_poincare = 0.d0
+dphi_line_deg_poincare = 0.5d0
+
+num_surfs  = 8
+ntransits  = 40
+num_slices = 1
+
+follow_both_ways = .false.
+/
