@@ -169,48 +169,48 @@ Endsubroutine int_two_lines
 !+ Returns a linearly spaced real vector given endpoints and number of elements
 !------------------------------------------------------------------------------
 Function rlinspace(xstart,xend,numel)  & 
-Result(rlinvec)
-!
-! Description: 
-!   This function returns a real vector of length(numel) with linearly spaced
-!   values from xstart to xend.  Similar to the Matlab function.
-!
-! Inputs:
-!  xstart,xend: Values of the first and last points of the array [real]
-!  numel: Number of elements in the array [integer]
-! Outputs:
-!  rlinvec: The linearly spaced array
-!         
-! History:
-!  Version   Date      Comment
-!  -------   ----      -------
-!  1.0     07/22/2009  Original Code.  JL
-!  1.1     09/01/2010  Updated for PENTA3. JL
-!  1.2     07/18/2011  Ported to w7 routines. JL
-!
-! Author(s): J. Lore 07/2009 - 7/18/2011
-!
-! Modules used:
-Use kind_mod, Only : real64, int32
+     Result(rlinvec)
+  !
+  ! Description: 
+  !   This function returns a real vector of length(numel) with linearly spaced
+  !   values from xstart to xend.  Similar to the Matlab function.
+  !
+  !   If numel == 1, then xstart is returned (unlike Matlab which returns xend)
+  !
+  ! Inputs:
+  !  xstart,xend: Values of the first and last points of the array [real]
+  !  numel: Number of elements in the array [integer]
+  ! Outputs:
+  !  rlinvec: The linearly spaced array
+  !
+  ! Author(s): J. Lore 07/2009 - 7/18/2011
+  !
+  ! Modules used:
+  Use kind_mod, Only : real64, int32
+  
+  Implicit None
+  
+  ! Input/output
+  Real(real64),    Intent(in) :: xstart
+  Real(real64),    Intent(in) :: xend
+  Integer(int32), Intent(in) :: numel
+  Real(real64)                :: rlinvec(numel)
+  
+  ! Local scalars
+  Integer(int32)   ::  ii
+  !- End of header -------------------------------------------------------------
+  
+  If (numel == 1) Then
+     rlinvec(1) = xstart
+     Return
+  Else   
+     Do ii = 1,numel
+        rlinvec(ii) = ( Real(ii,real64) - 1._real64 ) * ( xend - xstart ) &
+             / ( numel - 1._real64 ) + xstart
+     Enddo
+  End If
 
-Implicit None
-
-! Input/output                      !See above for descriptions
-Real(real64),    Intent(in) :: xstart  
-Real(real64),    Intent(in) :: xend
-Integer(int32), Intent(in) :: numel
-Real(real64)                :: rlinvec(numel)
-
-! Local scalars
-Integer(int32)   ::  ii
-!- End of header -------------------------------------------------------------
-
-Do ii = 1,numel
-  rlinvec(ii) = ( Real(ii,real64) - 1._real64 ) * ( xend - xstart ) &
-       / ( numel - 1._real64 ) + xstart
-Enddo
-
-EndFunction rlinspace
+End Function rlinspace
 
 
 !-----------------------------------------------------------------------------
