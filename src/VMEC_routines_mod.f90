@@ -19,13 +19,21 @@ Module vmec_routines_mod
   
 Contains
 
-  Subroutine read_vmec_coils_file(file_name)
+  Subroutine read_vmec_coils_file(file_name,verbose)
     Implicit None
     Character(Len=*), Intent(In) :: file_name
-    Write(*,*) 'Reading vmec coils file:',Trim(Adjustl(file_name))
+    Logical, Intent(In) :: verbose
+
+    If (verbose) Then
+       Write(*,*) 'Reading vmec coils file:',Trim(Adjustl(file_name))
+    End If
+    
     Call parse_coils_file(Trim(file_name))
     vmec_nextcur= Size(coil_group)
-    Write(*,*) 'vmec coils file had ',vmec_nextcur,' coil groups'
+
+    If (verbose) Then
+       Write(*,*) 'vmec coils file had ',vmec_nextcur,' coil groups'
+    End If
     
   End Subroutine read_vmec_coils_file
 

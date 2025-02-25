@@ -66,7 +66,7 @@ Contains
     bfield%method      = 14
     bfield%method_2d   = -1
     bfield%method_pert = -1    
-    Call read_vmec_coils_file(vmec_coils_file)
+    Call read_vmec_coils_file(vmec_coils_file,setup_bfield_verbose)
     vmec_extcur(1:vmec_nextcur) = vmec_extcur_set(1:vmec_nextcur)
 
   End Subroutine setup_bfield_vmec_coils
@@ -83,7 +83,7 @@ Contains
     bfield%method      =  6
     bfield%method_2d   = -1
     bfield%method_pert = -1    
-    Call read_vmec_coils_file(vmec_coils_file)
+    Call read_vmec_coils_file(vmec_coils_file,setup_bfield_verbose)
     vmec_extcur(1:vmec_nextcur) = vmec_extcur_set(1:vmec_nextcur)
     Call convert_vmec_coils_to_filaments
     bfield%coil = vmec_coil_new
