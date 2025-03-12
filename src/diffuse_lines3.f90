@@ -255,7 +255,7 @@ Contains
 
     ! Set up output files
     Open(iu_int,file=fname_intpts,iostat=iocheck)
-    Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
+    Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta) | t_follow (s) | t_int (s)'
 
     ! Open hitline file
     If (write_hitline_to_netcdf) Then
