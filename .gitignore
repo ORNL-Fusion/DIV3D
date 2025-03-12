@@ -31,3 +31,5 @@
 *.gz
 \#*
 *.out
+build/test
+build/*.cmake

@@ -16,7 +16,7 @@ Rstart   = 5.32d0
 Zstart   = 0.d0
 Phistart = 0.d0
 dphi_line_surf_deg = 0.1d0
-ntran_surf = 100
+ntran_surf = 5
 
 npts_start = 10
 dmag = 1.0d-5
@@ -26,7 +26,7 @@ ntran_diff = 1000
 trace_surface_opt=.true.
 myseed = 110115
 
-hit_length = 100.0d0
+hit_length = 1.0d0
 
 vessel_int_is_last_point = .false.
 /

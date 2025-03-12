@@ -52,3 +52,6 @@ include_directories(${NetCDF_INCLUDE_DIR})
 # Add the src subdirectory
 add_subdirectory(src)
 
+# Enable testing and include the 'test' folder
+enable_testing()
+add_subdirectory(test)
