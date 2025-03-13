@@ -62,7 +62,7 @@ MACHINE_ID=$(uname -n)
 echo "Building for machine $MACHINE_ID with $COMPILER compiler and $BUILD_TYPE build type."
 
 # Set machine-specific paths
-if [[ "$MACHINE_ID" == "ultrabucky" || "$MACHINE_ID" == "fusion3" || "$MACHINE_ID" == "mac145666" ]]; then
+if [[ "$MACHINE_ID" == "ultrabucky" || "$MACHINE_ID" == "fusion3" ]]; then
 
     USE_MPIF08=1
     
@@ -77,6 +77,13 @@ if [[ "$MACHINE_ID" == "ultrabucky" || "$MACHINE_ID" == "fusion3" || "$MACHINE_I
         FORTRAN_COMPILER=mpiifx
     fi
 
+elif [[ "$MACHINE_ID" == "mac145666" ]]; then
+
+    USE_MPIF08=1
+    NETCDF_INCLUDE_PATH="/opt/local/include"
+    NETCDF_LIB_PATH="/opt/local/lib"
+    FORTRAN_COMPILER=mpif90
+    
 elif [[ "$MACHINE_ID" == "THEALTANG23" ]]; then
     NETCDF_INCLUDE_PATH="/path/to/netcdf/include"
     NETCDF_LIB_PATH="/path/to/netcdf/lib64"

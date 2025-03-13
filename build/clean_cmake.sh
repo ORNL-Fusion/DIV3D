@@ -28,6 +28,7 @@ TO_REMOVE=(
     "Testing"
     "install_manifest.txt"
     "src"
+    "test"
 )
 
 # Function to remove items

@@ -75,7 +75,7 @@ target_link_libraries(div3d PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_
 # convert_ascii_bgrid_to_netcdf executable
 # -------------------------------------------
 add_executable(convert_ascii_bgrid_to_netcdf
-  convert_ascii_bgrid_to_netcdf.f90
+  util/convert_ascii_bgrid_to_netcdf.f90
 )
 set_target_properties(convert_ascii_bgrid_to_netcdf PROPERTIES OUTPUT_NAME "convert_ascii_bgrid_to_netcdf.exe")
 
