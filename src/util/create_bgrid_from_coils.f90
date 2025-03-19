@@ -84,7 +84,7 @@ Program create_bgrid_from_coils
   ! 3. Evaluate B
   !----------------------------------------------------------
   
-  Do kt = 1,nphi
+  Do kt = 1,nphi-1
      If (verbose) Write(*,*) 'Working on slice ',kt,' of ',nphi
      Do jz = 1,nz
         Do ir = 1,nr

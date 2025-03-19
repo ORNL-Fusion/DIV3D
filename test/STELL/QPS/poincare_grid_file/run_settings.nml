@@ -18,15 +18,24 @@ quiet_bfield = .true.
 ! 
 ! Number of points per surface per slice will be ntransits*nfp
 ! 
-Rstart_poincare   = 1.3d0 
+
+!Rstart_poincare   = 1.3d0 
+!Zstart_poincare   = 0.d0
+!Rend_poincare   = 1.d0 
+!Zend_poincare   = 0.8d0
+!Phistart_deg_poincare = 0.d0
+
+
+Rstart_poincare   = 0.8d0 
 Zstart_poincare   = 0.d0
-Rend_poincare   = 1.41d0 
-Zend_poincare   = 0.d0
-Phistart_deg_poincare = 0.d0
+Rend_poincare   = 0.8d0 
+Zend_poincare   = 0.6d0
+Phistart_deg_poincare = 90.d0
+
 dphi_line_deg_poincare = 0.5d0
 
-num_surfs  = 8
-ntransits  = 40
+num_surfs  = 40
+ntransits  = 400
 num_slices = 1
 
 ! Not currently used

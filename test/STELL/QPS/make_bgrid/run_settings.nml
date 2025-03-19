@@ -12,11 +12,11 @@ nfp_bfield = 2
 outfile_prefix = '../bfield/Bgrid_vac_QPS_modular_only_90x150x180'
 
 quiet_bfield = .true.
-Rmin = 0.45d0
-Rmax = 1.5d0
+Rmin = 0.40d0
+Rmax = 1.55d0
 
-Zmin = -0.85d0
-Zmax = 0.85d0
+Zmin = -0.9d0
+Zmax = 0.9d0
 
 nr = 90
 nz = 150
