@@ -39,7 +39,7 @@ Contains
        Endif
     Case Default
        If (verbose) Then
-          Write(*,*) 'Unknown rmp_type in div3d!'
+          Write(*,*) 'Unknown rmp_type in div3d: ',Trim(rmp_type)
           Write(*,*) 'Current options are:'
           Write(*,*) '''g'''      
           Write(*,*) '''vmec_coils'''

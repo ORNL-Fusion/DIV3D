@@ -42,7 +42,7 @@ Contains
     ! -------------------------------    
     
     ! Open file
-    If (verbose) Write(*,*) 'Reading poincare settings from poincare_settings.nml'
+    If (verbose) Write(*,*) 'Reading poincare settings from run_settings.nml'
     Open(99,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
     If ( iocheck .ne. 0 ) Then
        if (rank .eq. 0) Write(*,*) 'Error opening namelist file'

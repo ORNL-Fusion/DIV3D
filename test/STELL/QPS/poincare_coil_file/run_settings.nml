@@ -31,5 +31,6 @@ num_surfs  = 8
 ntransits  = 40
 num_slices = 1
 
+! Not currently used
 follow_both_ways = .false.
 /

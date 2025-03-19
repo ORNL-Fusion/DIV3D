@@ -103,3 +103,21 @@ endif()
 
 # Link libraries to poincare
 target_link_libraries(poincare PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+
+
+# -------------------------------
+# create_bgrid executable
+# -------------------------------
+add_executable(create_bgrid_from_coils
+  util/create_bgrid_from_coils.f90
+  util/create_bgrid_from_coils_namelist.f90
+)
+set_target_properties(create_bgrid_from_coils PROPERTIES OUTPUT_NAME "create_bgrid_from_coils.exe")
+
+# Apply USE_MPIF08 to create_bgrid_from_coils
+if(USE_MPIF08)
+    target_compile_definitions(create_bgrid_from_coils PRIVATE USE_MPIF08)
+endif()
+
+# Link libraries to create_bgrid_from_coils
+target_link_libraries(create_bgrid_from_coils PRIVATE libcommon libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
