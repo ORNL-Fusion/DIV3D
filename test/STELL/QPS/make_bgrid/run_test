@@ -1,0 +1,1 @@
+mpirun -np 1 ../../../../bin/create_bgrid_from_coils.exe

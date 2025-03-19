@@ -1,0 +1,4 @@
+#!/bin/bash
+cd ../bfield
+../../../../bin/convert_ascii_bgrid_to_netcdf.exe Bgrid_vac_QPS_modular_only_90x150x180
+

@@ -31,5 +31,9 @@
 *.gz
 \#*
 *.out
+*.out.*
 build/test
 build/*.cmake
+
+test/STELL/QPS/bfield/*.nc
+test/STELL/QPS/bfield/*.dat

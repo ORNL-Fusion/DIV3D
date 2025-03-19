@@ -1,0 +1,28 @@
+&bfield_nml
+rmp_type = 'vmec_coils'
+vmec_coils_file = '../bfield/coils.qps'
+vmec_extcur_set(1:9) = 5*1.d0 4*0.d0
+!vmec_extcur_set(1:9) = 5*1.E+05  0.0E+00  -2.52E+04  -4.32E+04  -8.E+03
+nfp_bfield = 2
+/
+
+
+&create_bgrid_settings_nml
+
+outfile_prefix = '../bfield/Bgrid_vac_QPS_modular_only_90x150x180'
+
+quiet_bfield = .true.
+Rmin = 0.45d0
+Rmax = 1.5d0
+
+Zmin = -0.85d0
+Zmax = 0.85d0
+
+nr = 90
+nz = 150
+
+! Number of planes including 0 and 2*pi/nfp_bfield.
+! The last (redundant) slice is not written to the grid file
+nphi = 180
+
+/
