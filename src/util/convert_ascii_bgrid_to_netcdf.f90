@@ -4,7 +4,7 @@ program write_to_netcdf
   use netcdf
   implicit none
 
-  Character(len=1000) :: fname_base = 'Bgrid_thea_C640'
+  Character(len=1000) :: fname_base = 'Bgrid_file'
   Character(len=1000) :: fname
 
   
@@ -17,6 +17,14 @@ program write_to_netcdf
   Real(real64) :: R_min,R_max,Z_min,Z_max
   Integer(int32) :: nphi_minus_one
 
+  ! Get the file prefix
+  If (Command_argument_count() >= 1) Then
+     Call get_command_argument(1, fname_base)
+  Else
+     Write(*,*) "Enter the Bgrid prefix"
+     Read(*,*) fname_base
+  End If
+  
   
   Call read_ascii_version(fname_base,.true.,R_min,R_max,Z_min,Z_max,nphi_minus_one)
   
@@ -56,15 +64,11 @@ program write_to_netcdf
   ierr = nf90_put_var(ncid, varid_nz, bgrid_nz)
   ierr = nf90_put_var(ncid, varid_nphi, nphi_minus_one)
   ierr = nf90_put_var(ncid, varid_nsym, nsym)
-    write(*,*) 'jdl 1',r_min
   ierr = nf90_put_var(ncid, varid_rmin, R_min)
-  if (ierr /= nf90_noerr) stop "Error put_var  R_min"  
   ierr = nf90_put_var(ncid, varid_rmax, R_max)
   ierr = nf90_put_var(ncid, varid_zmin, Z_min)
   ierr = nf90_put_var(ncid, varid_zmax, Z_max)
 
-  write(*,*) 'jdl 2',r_min
-  
   ! Write grid data
   ierr = nf90_put_var(ncid, varid_br, bgrid_br(:,:,1:nphi_minus_one))
   ierr = nf90_put_var(ncid, varid_bz, bgrid_bz(:,:,1:nphi_minus_one))
