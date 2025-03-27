@@ -33,8 +33,8 @@ Contains
     Implicit None
 
     ! initialize mpi
-    call MPI_INIT(ierr_mpi)
-    If (ierr_mpi .ne. MPI_SUCCESS) then
+    Call MPI_INIT(ierr_mpi)
+    If (ierr_mpi .ne. MPI_SUCCESS) Then
        Write(*,*) 'Error starting MPI program. Terminating.'
        Call MPI_ABORT(MPI_COMM_WORLD, ret_code, ierr_mpi)
     End If
@@ -43,6 +43,11 @@ Contains
     Call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr_mpi)
     ! Determine # of processes
     Call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr_mpi)
+
+    If (nprocs .le. 1) Then
+       if (rank .eq. 0) Write(*,*) 'Error: At least two MPI processes are required!'
+       Call fin_mpi(.true.)
+    End If
 
   End Subroutine init_mpi
 
