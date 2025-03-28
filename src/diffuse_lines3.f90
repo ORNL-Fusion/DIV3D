@@ -18,7 +18,8 @@ Contains
     Use kind_mod, Only : real64, int32
     Use fieldline_follow_mod, Only : follow_fieldlines_rzphi_diffuse
     Use setup_bfield_module, Only : bfield
-    Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta, ns_line_diff
+    Use run_settings_namelist, Only : dmag, dphi_line_diff, calc_lc, calc_theta, ns_line_diff, &
+         lambda_par, randomize_start_dir
     Use timing_mod, Only : get_elapsed_time
     Implicit None
 
@@ -39,7 +40,7 @@ Contains
     ! Follow
     Call system_clock(tstart)
     Call follow_fieldlines_rzphi_diffuse(bfield,[Rstart],[Zstart],[Phistart],1,&
-         dphi_line_diff,ns_line_diff,rout,zout,phiout,ierr,ilg,dmag)
+         dphi_line_diff,ns_line_diff,rout,zout,phiout,ierr,ilg,dmag,lambda_par,randomize_start_dir)
     ifail = ilg(1)
     etime_follow = get_elapsed_time(tstart)
 
@@ -167,7 +168,7 @@ Contains
     Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
     Use output_routines, Only : init_hitline_netcdf, write_hitline_data_netcdf
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
-         fname_hit, fname_intpts, fname_nhit, nhitline
+         fname_hit, fname_intpts, fname_nhit, nhitline, lambda_par
     Implicit none
 
     Logical, Parameter :: write_hitline_to_netcdf = .false.
@@ -205,11 +206,16 @@ Contains
     Allocate(R0(numl),Z0(numl),Phi0(numl))
     Do ii = 1,numl
        Read(iu_launch,*) R0(ii),Z0(ii),Phi0(ii)
-    Enddo
+    End Do
     Close(iu_launch)
 
     Write(*,*) 'Total number of fieldlines to follow:',numl
     Write(*,*) 'Diffusing fieldlines with D_mag (m**2/m) = ',dmag
+    If (lambda_par .ge. 0._real64) Then       
+       Write(*,*) 'Parallel scattering mean free path (m) = ',lambda_par
+    Else
+       Write(*,*) 'Parallel scattering deactivated'
+    End If
     Write(*,*)
 
     Allocate(this_job_done(nprocs-1),is_working_arr(nprocs-1),req_arr(nprocs-1))

@@ -6,7 +6,7 @@ Module run_settings_namelist
   Implicit None
 
   Real(real64) :: Rstart, Zstart, Phistart
-  Real(real64) :: dmag, lsfi_tol
+  Real(real64) :: dmag, lsfi_tol, lambda_par
   Real(real64) :: dphi_line_surf, dphi_line_diff, period
   Real(real64) :: dphi_line_surf_deg, dphi_line_diff_deg, hit_length
 
@@ -19,6 +19,7 @@ Module run_settings_namelist
   Logical :: trace_surface_opt, calc_lc, calc_theta, quiet_bfield
   Logical :: vessel_int_is_last_point
   Logical :: vessel_is_nearest_slice
+  Logical :: randomize_start_dir
   
   Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
   Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
@@ -31,7 +32,8 @@ Module run_settings_namelist
        npts_start, dmag, dphi_line_diff_deg, ntran_diff, myseed, &
        fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
        fname_ptri, fname_ptri_mid, calc_lc, calc_theta, quiet_bfield, &
-       vessel_is_nearest_slice, vessel_int_is_last_point
+       vessel_is_nearest_slice, vessel_int_is_last_point, lambda_par, &
+       randomize_start_dir
   
 Contains
   
@@ -70,6 +72,9 @@ Contains
 
     lsfi_tol = 1.d-12
     hit_length = -1._real64
+
+    lambda_par = 0._real64  ! 0 deactivates parallel flipping
+    randomize_start_dir = .false.
     
     ! -------------------------------
     ! Read settings namelists
@@ -155,6 +160,14 @@ Contains
           Write(*,*) 'Not computing one-directional connection length'   
        Endif
     Endif
+
+    If (verbose) Then
+       If (randomize_start_dir) Then
+          Write(*,*) 'Initial tracing direction during diffusion is randomized'
+       Else
+          Write(*,*) 'Initial tracing direction during diffusion is uni-directional'
+       End If
+    End If
     
     verbose_bfield = .not. quiet_bfield
     

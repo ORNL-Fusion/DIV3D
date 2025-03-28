@@ -7,6 +7,7 @@
 !     Subroutine fl_derivs_fun
 !     Subroutine rk45_fixed_step_integrate
 !     Subroutine rk4_core
+!     Subroutine follow_fieldlines_rzphi_diffuse
 !   
 !-----------------------------------------------------------------------------
 
@@ -38,7 +39,8 @@ Contains
 !-----------------------------------------------------------------------------
 !+ Follows fieldlines in cylindrical coords with diffusion
 !-----------------------------------------------------------------------------
-Subroutine follow_fieldlines_rzphi_diffuse(bfield,rstart,zstart,phistart,Npts,dphi,nsteps,r,z,phi,ierr,i_last_good,dmag)
+Subroutine follow_fieldlines_rzphi_diffuse(bfield,rstart,zstart,phistart,Npts,dphi,nsteps,r,z,phi, &
+       ierr,i_last_good,dmag,lambda_par,randomize_direction)
 !
 ! Description: 
 !  Follows fieldlines by integrating along toroidal angle in cylindrical coordinates. 
@@ -51,6 +53,8 @@ Subroutine follow_fieldlines_rzphi_diffuse(bfield,rstart,zstart,phistart,Npts,dp
 !  dphi : real64 : Integration step size (radians)
 !  nsteps : int32 : Number of integration steps to take
 !  dmag : magnetic diffusivity (m^2/m)
+!  lambda_par : real64 : parallel mean free path for direction flips (m)
+!  randomize_direction : logical : randomly flips initial direction 
 ! Output:
 !  r,z,phi : real64(Npts,nsteps+1) : Field line trajectories (m,m,radians)
 !  ierr : int32(Npts) : Error flag for each fl. 0 indicates no error, 1 indicates an error from bfield_geq_bicub
@@ -73,9 +77,10 @@ Implicit None
 Type(bfield_type), Intent(In) :: bfield
 Integer(int32),Intent(in) :: Npts, nsteps
 Real(real64),Intent(in),Dimension(Npts) :: rstart(Npts),zstart(Npts),phistart(Npts)
-Real(real64),Intent(in) :: dphi, dmag
+Real(real64),Intent(in) :: dphi, dmag, lambda_par
 Real(real64),Intent(out),Dimension(Npts,nsteps+1) :: r,z,phi
 Integer(int32),Intent(out) :: ierr(Npts), i_last_good(Npts)
+Logical, Intent(In) :: randomize_direction
 ! Local variables
 Integer(int32), Parameter :: n = 2
 Real(real64) :: y(n),x,dx,xout(nsteps+1),yout(n,nsteps+1)
@@ -91,7 +96,8 @@ Do ipt = 1,Npts
   y(1) = rstart(ipt)
   y(2) = zstart(ipt)
   x = phistart(ipt)
-  Call rk45_fixed_step_integrate_diffuse(bfield,y,n,x,dx,nsteps,fl_derivs_fun,yout,xout,ierr_rk45,i_last_good_rk45,dmag)
+  Call rk45_fixed_step_integrate_diffuse(bfield,y,n,x,dx,nsteps,fl_derivs_fun,yout,xout,&
+       ierr_rk45,i_last_good_rk45,dmag,lambda_par,randomize_direction)
   r(ipt,1:nsteps+1)   = yout(1,1:nsteps+1)
   z(ipt,1:nsteps+1)   = yout(2,1:nsteps+1)
   phi(ipt,1:nsteps+1) = xout
@@ -536,10 +542,15 @@ End Subroutine rk45_fixed_step_integrate
 !-----------------------------------------------------------------------------
 !+ Main routine for RK45 fixed step integration with diffusion
 !-----------------------------------------------------------------------------
-Subroutine rk45_fixed_step_integrate_diffuse(bfield,y0,n,x0,dx,nsteps,odefun,yout,xout,ierr,i_last_good,dmag)
+Subroutine rk45_fixed_step_integrate_diffuse(bfield,y0,n,x0,dx,nsteps,odefun,yout,xout, &
+     ierr,i_last_good,dmag,lambda_par,randomize_direction)
 !
 ! Description: 
-!  Should be a general implementation of RK45 fixed step integration
+!  RK45 fixed step integration with perpendicular stochastic diffusion.
+!  This version includes random direction reversal along the field line to
+!  simulate pitch-angle scattering or decorrelation, using a specified
+!  parallel mean free path (lambda_par). Optionally randomizes the initial
+!  tracing direction if randomize_direction is present and true. 
 !
 ! Input:
 !  y0     : real64(n) : initial values
@@ -547,8 +558,10 @@ Subroutine rk45_fixed_step_integrate_diffuse(bfield,y0,n,x0,dx,nsteps,odefun,you
 !  x0     : real64    : Location of initial value
 !  dx     : real64    : Step size
 !  dmag   : real64    : Magnetic diffusivity (m^2/m)
+!  lambda_par : real64 : parallel mean free path (m)  
 !  nsteps : int32    : Number of integration steps
 !  odefun : External function that evaluates derivatives
+!  randomize_direction : logical, optional : If present and true, randomly sets initial tracing direction
 ! 
 ! Output:
 !  yout : real64(n,nsteps+1) : Solution
@@ -576,16 +589,18 @@ Implicit None
 Type(bfield_type), Intent(In) :: bfield
 Integer(int32), Intent(In) :: n, nsteps
 Real(real64), Intent(In), Dimension(n) :: y0
-Real(real64), Intent(In) :: x0, dx, dmag
+Real(real64), Intent(In) :: x0, dx, dmag, lambda_par
+Logical, Intent(In), Optional :: randomize_direction
 Real(real64), Intent(Out), Dimension(n,nsteps+1) :: yout
 Real(real64), Intent(Out), Dimension(nsteps+1) :: xout
 Integer(int32), Intent(Out) :: ierr, i_last_good
 Integer(int32) :: i, ierr_odefun, ierr_rk4core
 Real(real64), Dimension(n) :: y, dydx, ytmp
-Real(real64) :: x, RZ(2), perpdir1(3), perpdir2(3), alpha, dca, dsa, delta_x, dL
-Real(real64) :: bval(1,3), phi_tmp(1), phi, rnum
+Real(real64) :: x, dx_eff, RZ(2), perpdir1(3), perpdir2(3), alpha, dca, dsa, delta_x, dL
+Real(real64) :: bval(1,3), rnum
 Integer(int32) :: ierr_b
 Real(real64) :: Bz, Br, Bphi
+Logical :: do_random_start
 
 Interface
   Subroutine odefun(bfield,n,x,y,dydx,ierr)
@@ -610,7 +625,23 @@ xout(1) = x0
 y = y0
 x = x0
 ierr = 0
-i_last_good = nsteps+1
+i_last_good = nsteps + 1
+
+! Determine if initial direction should be randomized
+If (Present(randomize_direction)) Then
+  do_random_start = randomize_direction
+Else
+  do_random_start = .false.
+End If
+
+! Possibly flip initial direction
+dx_eff = dx
+
+If (do_random_start) Then
+  Call Random_number(rnum)
+  If (rnum < 0.5d0) dx_eff = -dx_eff
+End If
+
 Do i=1,nsteps
   Call odefun(bfield,n,x,y,dydx,ierr_odefun)
   If (ierr_odefun == 1) Then
@@ -618,14 +649,14 @@ Do i=1,nsteps
     i_last_good = i
     Return
   Endif
-  Call rk4_core(bfield,y,dydx,n,x,dx,odefun,ytmp,ierr_rk4core)
+  Call rk4_core(bfield,y,dydx,n,x,dx_eff,odefun,ytmp,ierr_rk4core)
   If (ierr_rk4core == 1) Then
     ierr = 1
     i_last_good = i
     Return
   Endif
 
-  x = x + dx
+  x = x + dx_eff
 
   !
   ! Diffuse
@@ -633,11 +664,9 @@ Do i=1,nsteps
 
   RZ(1) = ytmp(1)
   RZ(2) = ytmp(2)
-  phi = x
   bval = 0._real64
   ierr_b = 0
-  phi_tmp(1) = phi
-  Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),phi_tmp,1,bval(1,1),bval(1,2),bval(1,3),ierr_b)
+  Call calc_B_rzphi_general(bfield,RZ(1),RZ(2),[x],1,bval(1,1),bval(1,2),bval(1,3),ierr_b)
   Br   = bval(1,1)
   Bz   = bval(1,2)
   Bphi = bval(1,3)
@@ -647,7 +676,7 @@ Do i=1,nsteps
     Return
   Endif
   
-  dL = sqrt(ytmp(1)*ytmp(1) + y(1)*y(1) - 2._real64*ytmp(1)*y(1)*cos(dx) & 
+  dL = sqrt(ytmp(1)*ytmp(1) + y(1)*y(1) - 2._real64*ytmp(1)*y(1)*cos(dx_eff) & 
           + ytmp(2)*ytmp(2) + y(2)*y(2) - 2._real64*ytmp(2)*y(2))
   
   ! B cross z^hat
@@ -664,17 +693,21 @@ Do i=1,nsteps
 
   Call Random_number(rnum)
   
-  alpha = 2.d0*pi*(-1.d0 + 2.d0*rnum) ! -2pi to 2pi kick    
+  alpha = 2.d0*pi*rnum  ! 0 to 2pi kick
   dca = Cos(alpha)
   dsa = Sin(alpha)
   
-  delta_x = Sqrt(dmag*dL)
-  
+  delta_x = Sqrt(dmag*dL)  
   
   ytmp(1)   = ytmp(1)   + delta_x*(dca*perpdir1(1) + dsa*perpdir2(1))
   x         = x         + delta_x*(dca*perpdir1(2) + dsa*perpdir2(2))
   ytmp(2)   = ytmp(2)   + delta_x*(dca*perpdir1(3) + dsa*perpdir2(3))
 
+  ! Probabilistic direction flip
+  If (lambda_par > 0._real64 .and. rnum < dL / lambda_par) Then
+     dx_eff = -dx_eff
+  End If
+  
   yout(:,i+1) = ytmp
   xout(i+1) = x
   y = ytmp
