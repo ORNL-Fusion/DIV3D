@@ -51,7 +51,7 @@ Contains
     bfield%method      = 0
     bfield%method_2d   = 0
     bfield%method_pert = -1
-    Call readg_g3d(gfile_name,g)
+    Call readg_g3d(gfile_name,g,setup_bfield_verbose)
     bfield%g = g
   End Subroutine setup_bfield_g3d
 

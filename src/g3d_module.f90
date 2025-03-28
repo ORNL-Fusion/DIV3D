@@ -160,7 +160,7 @@ Contains
   !-----------------------------------------------------------------------------
   !+ reads a g file
   !-----------------------------------------------------------------------------
-  Subroutine readg_g3d(filename,g)
+  Subroutine readg_g3d(filename,g,verbose)
     !
     ! Description: 
     !  Abbreviated function to read gfiles.  Assumes formatted file
@@ -180,6 +180,7 @@ Contains
     ! Input/output                      !See above for descriptions
     Character(len=*), Intent(In) :: filename
     Type(g_type), Intent(Out) :: g
+    Logical, Intent(In) :: verbose
     
     ! Local scalars
     Integer(int32) :: iocheck,idum,i,j
@@ -193,7 +194,7 @@ Contains
 
     !- End of header -------------------------------------------------------------
 
-    Write(*,*) 'Reading gfile: ',trim(filename)
+    If(verbose) Write(*,*) 'Reading gfile: ',trim(filename)
 
     Open(UNIT=99,FILE=filename,STATUS="old",IOSTAT=iocheck)
     If ( iocheck /= 0 ) Then
