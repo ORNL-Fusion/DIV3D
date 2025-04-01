@@ -18,30 +18,19 @@ Module g_typedef
   Use kind_mod, Only : int32, real64
   Implicit None
   Private
-  Public :: get_g_bspl_ord
   Type, Public :: g_type
     Integer(int32) :: mw, mh, nbdry, limitr
     Character(Len=6) :: ecase
     Real(real64) :: xdim, zdim, rzero, rgrid1, zmid, rmaxis, zmaxis, &
          ssimag, ssibry, bcentr, cpasma, dr, dz, ip_sign
     Real(real64), Allocatable, Dimension(:) :: fpol, pres, ffprim, &
-         pprime, qpsi, r, z, pn
+         pprime, qpsi, r, z, pn, fpol_spl
     Real(real64), Allocatable, Dimension(:,:) :: bdry, lim, psirz
-    Real(real64), Allocatable, Dimension(:) :: pnknot, fpol_bscoef    
     Real(real64), Allocatable, Dimension(:,:,:) :: bicub_coeffs
-    ! Private
-    Integer, Private :: bspl_ord = 3
   End Type g_type
 
 Contains
 
-  Function get_g_bspl_ord(g) Result(bspl_ord)
-    Use kind_mod, Only : int32
-    Implicit None
-    Type(g_type), Intent(In) :: g
-    Integer(int32) :: bspl_ord
-    bspl_ord = g%bspl_ord
-  End Function get_g_bspl_ord
 End Module g_typedef
 
 !-----------------------------------------------------------------------------
@@ -49,7 +38,7 @@ End Module g_typedef
 !-----------------------------------------------------------------------------
 Module g3d_module
   Use kind_mod, Only : int32, real64
-  Use g_typedef, Only : g_type, get_g_bspl_ord
+  Use g_typedef, Only : g_type
   Implicit None
   Private
   Public :: g_type
@@ -67,17 +56,11 @@ Contains
     ! Output:
     !   Bout = (:,[Br,Bz,Bt])
     !
-    !         
-    ! History:
-    !  Version   Date      Comment
-    !  -------   ----      -------
-    !  1.0     04/14/2011  Ported from Canik's idl routines.  JDL
-    ! 
     ! Author(s): J.D. Lore 04/14/2011 
     !
     ! Modules used:
     Use kind_mod, Only : int32, real64
-    Use bspline, Only : dbsval
+    Use math_routines_mod, Only : spline_eval
     Implicit None
 
     ! Input/output                      !See above for descriptions
@@ -144,8 +127,8 @@ Contains
 
       ! Toroidal field
       If (psiN .ge. 0._real64 .AND. psiN .le. 1._real64) Then 
-        fpol = dbsval(psiN,get_g_bspl_ord(g),g%pnknot,g%mw,g%fpol_bscoef)
-        bt1 = fpol/R1(ii)
+        fpol = spline_eval(g%mw,g%pn,g%fpol,g%fpol_spl,psiN)
+        bt1 = fpol/R1(ii)        
       Else
         bt1 = g%bcentr*g%rzero/R1(ii)
       Endif
@@ -174,7 +157,7 @@ Contains
     !
     ! Modules used:
     Use kind_mod, Only: real64, int32
-    Use bspline
+    Use math_routines_mod, Only : spline_fit
     Implicit None
 
     ! Input/output                      !See above for descriptions
@@ -273,12 +256,9 @@ Contains
     Allocate(g%bicub_coeffs(g%mw*g%mh,4,4))
     g%bicub_coeffs = get_psi_bicub_coeffs(g)
 
-    ! B-Spline fit poloidal current function
-    Allocate(g%pnknot(get_g_bspl_ord(g)+g%mw))
-    Allocate(g%fpol_bscoef(g%mw))
-    Call dbsnak(g%mw,g%pn,get_g_bspl_ord(g),g%pnknot)
-    Call dbsint(g%mw,g%pn,g%fpol,get_g_bspl_ord(g),g%pnknot,g%fpol_bscoef)
-
+    ! Spline fit poloidal current function
+    Allocate(g%fpol_spl(g%mw))
+    Call spline_fit(g%mw,g%pn,g%fpol,g%fpol_spl)
   End Subroutine readg_g3d
 
 
@@ -585,8 +565,7 @@ Contains
     Deallocate(g%lim)
     Deallocate(g%r,g%z,g%pn)
     Deallocate(g%bicub_coeffs)
-    Deallocate(g%pnknot)
-    Deallocate(g%fpol_bscoef)
+    Deallocate(g%fpol_spl)
   End Subroutine close_gfile
 
   !-----------------------------------------------------------------------------
@@ -594,7 +573,6 @@ Contains
   !-----------------------------------------------------------------------------
   Subroutine get_psiN_bicub(g,R1,Z1,Npts,psiNout,ierr)
     Use kind_mod, Only: real64, int32
-    Use bspline
     Implicit None
 
     ! Input/output                      !See above for descriptions
@@ -617,7 +595,6 @@ Contains
   !-----------------------------------------------------------------------------
   Subroutine get_psi_bicub(g,R1,Z1,Npts,psiout,ierr)
     Use kind_mod, Only: real64, int32
-    Use bspline
     Implicit None
 
     ! Input/output                      !See above for descriptions

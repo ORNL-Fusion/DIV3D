@@ -14,7 +14,6 @@ add_library(libcommon STATIC
   bgrid_routines_mod.f90
   biotsavart_module.f90
   bfield_module.f90
-  bspline90_22.f90
   coil_typedef.f90
   fieldline_follow_mod.F90
   g3d_module.f90  
