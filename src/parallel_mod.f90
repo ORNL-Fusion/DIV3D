@@ -4,13 +4,13 @@
 ! Use precompiler flag USE_MPIF08 to control MPI interface
 !-----------------------------------------------------------------------------
 Module parallel_mod
-  
+
 #ifdef USE_MPIF08
   Use mpi_f08      ! Modern MPI interface
 #else
   Use mpi          ! Legacy MPI interface
 #endif
-  
+
   Implicit None
 
   Integer :: nprocs, ierr_mpi, rank, ret_code

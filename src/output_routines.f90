@@ -1,8 +1,8 @@
 Module output_routines
   Implicit None
 
-  Contains
-  
+Contains
+
   Subroutine init_hitline_netcdf(fname,nhitline)
     use netcdf
     implicit none
@@ -150,9 +150,5 @@ Module output_routines
     End If
 
   End Subroutine write_hitline_data_netcdf
-
-
-
-  
 
 End Module output_routines

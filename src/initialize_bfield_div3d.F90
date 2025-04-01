@@ -11,7 +11,7 @@ Contains
     Logical, Intent(In) :: verbose
 
     setup_bfield_verbose = verbose
-    
+
     Select Case (rmp_type)
     Case ('g')
        Call setup_bfield_g3d
@@ -52,8 +52,8 @@ Contains
        Call fin_mpi(.true.)
     End Select
 
-    
-    
+
+
   End Subroutine init_bfield
 
 End Module initialize_bfield_div3d

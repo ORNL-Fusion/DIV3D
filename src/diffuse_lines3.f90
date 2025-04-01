@@ -36,7 +36,7 @@ Contains
     !- End of header -------------------------------------------------------------
 
     Allocate(rout(ns_line_diff+1),zout(ns_line_diff+1),phiout(ns_line_diff+1))
-    
+
     ! Follow
     Call system_clock(tstart)
     Call follow_fieldlines_rzphi_diffuse(bfield,[Rstart],[Zstart],[Phistart],1,&
@@ -65,7 +65,7 @@ Contains
     Use kind_mod, Only : real64, int32, int16
     Use run_settings_namelist, Only : dmag, nhitline,calc_lc, calc_theta
     Use parallel_mod!, Only : ierr_mpi, rank, status, &
-!         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
+    !         MPI_COMM_WORLD, MPI_INTEGER, MPI_DOUBLE_PRECISION
     Implicit None
 
     Real(real64), Dimension(3) :: line_start_data_r
@@ -107,7 +107,7 @@ Contains
           Rstart_local    = line_start_data_r(1)
           Zstart_local    = line_start_data_r(2)
           Pstart_local    = line_start_data_r(3)
-!          nsteps_line_local = line_start_data_i(1)
+          !          nsteps_line_local = line_start_data_i(1)
           iline_local       = line_start_data_i(3)
 
           ! Follow the line
@@ -231,7 +231,7 @@ Contains
 #else
     req_arr(:) = 0
 #endif
-    
+
     Do dest = 1,nprocs - 1
 
        tag = dest
@@ -495,7 +495,7 @@ Contains
           Y1a = Ytmp(ind_min(1))
           Z1a = Ztmp(ind_min(1))
           R1a = Rtmp(ind_min(1))
-          
+
           X2a = Xtmp(ind_max(1))
           Y2a = Ytmp(ind_max(1))
           Z2a = Ztmp(ind_max(1))

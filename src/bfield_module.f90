@@ -5,13 +5,13 @@ Module bfield_typedef
   Implicit None
   Private
   Type, Public :: bfield_type
-    Integer(int32) :: method = -1
-    Type(g_type) :: g
-    Type(coil_type) :: coil
-    Integer(int32) :: method_2d = -1    ! Method corresponding to AS fields
-    Integer(int32) :: method_pert = -1  ! Method corresponding to pert only
-    Integer(int32) :: method_save = -1  ! Used to save standard method
-    Logical :: method_switched = .false.
+     Integer(int32) :: method = -1
+     Type(g_type) :: g
+     Type(coil_type) :: coil
+     Integer(int32) :: method_2d = -1    ! Method corresponding to AS fields
+     Integer(int32) :: method_pert = -1  ! Method corresponding to pert only
+     Integer(int32) :: method_save = -1  ! Used to save standard method
+     Logical :: method_switched = .false.
   End Type bfield_type
 End Module bfield_typedef
 
@@ -55,7 +55,7 @@ Contains
     Integer(int32), Intent(Out), Optional :: ierr_out
     Real(real64) :: btmp(n,3)
     Integer(int32) :: ierr
-    
+
     ierr = 0
     If (Present(ierr_out)) ierr_out = 0
 
@@ -63,37 +63,37 @@ Contains
     bz   = 0._real64
     bphi = 0._real64
     btmp = 0._real64
-    
+
     Select Case (bfield%method)
     Case (0)
-      Call bfield_geq_bicub(bfield%g,r,z,n,btmp,ierr,verbose_bfield)
-      br   = btmp(:,1)
-      bz   = btmp(:,2)
-      bphi = btmp(:,3)       
+       Call bfield_geq_bicub(bfield%g,r,z,n,btmp,ierr,verbose_bfield)
+       br   = btmp(:,1)
+       bz   = btmp(:,2)
+       bphi = btmp(:,3)       
     Case (6) ! just coils
-      Call bfield_bs_cyl(r,phi,z,n,bfield%coil,br,bphi,bz)
+       Call bfield_bs_cyl(r,phi,z,n,bfield%coil,br,bphi,bz)
     Case (14) ! VMEC coils
-      Call bfield_vmec_coils(r,phi,z,n,btmp,ierr)
-      br   = btmp(:,1)
-      bz   = btmp(:,2)
-      bphi = btmp(:,3)
+       Call bfield_vmec_coils(r,phi,z,n,btmp,ierr)
+       br   = btmp(:,1)
+       bz   = btmp(:,2)
+       bphi = btmp(:,3)
     Case (15) ! Xdr
 #ifdef HAVE_FXDR         
-      Call bint_xdr_n(r,phi,z,n,btmp,ierr)
-      br   = btmp(:,1)
-      bz   = btmp(:,3)  ! Note order!
-      bphi = btmp(:,2)
+       Call bint_xdr_n(r,phi,z,n,btmp,ierr)
+       br   = btmp(:,1)
+       bz   = btmp(:,3)  ! Note order!
+       bphi = btmp(:,2)
 #else
-      Stop "Compiled without fxdr support"
+       Stop "Compiled without fxdr support"
 #endif      
     Case (16) ! bgrid
-      Call bfield_bgrid(r,phi,z,n,btmp,ierr)
-      br   = btmp(:,1)
-      bz   = btmp(:,2)
-      bphi = btmp(:,3)
+       Call bfield_bgrid(r,phi,z,n,btmp,ierr)
+       br   = btmp(:,1)
+       bz   = btmp(:,2)
+       bphi = btmp(:,3)
     Case Default
-      Write(*,*) 'Unknown bfield%method:',bfield%method
-      Stop "Exiting from bfield general"
+       Write(*,*) 'Unknown bfield%method:',bfield%method
+       Stop "Exiting from bfield general"
     End Select
     If (Present(ierr_out)) ierr_out = ierr
   End Subroutine calc_B_rzphi_general

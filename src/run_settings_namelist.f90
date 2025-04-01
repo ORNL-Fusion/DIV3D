@@ -15,17 +15,17 @@ Module run_settings_namelist
 
   Integer(int32) :: ntran_surf, ns_line_surf
   Integer(int32) :: ntran_diff, ns_line_diff
-  
+
   Logical :: trace_surface_opt, calc_lc, calc_theta, quiet_bfield
   Logical :: vessel_int_is_last_point
   Logical :: vessel_is_nearest_slice
   Logical :: randomize_start_dir
-  
+
   Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
   Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
   Character(len=300) :: fname_plist, fname_nhit  
 
-  
+
   Namelist / run_settings / fname_plist, fname_ves,  &
        fname_surf, fname_launch, fname_parts, fname_hit, fname_intpts, &
        Rstart, Zstart, Phistart, dphi_line_surf_deg, ntran_surf, &
@@ -34,9 +34,9 @@ Module run_settings_namelist
        fname_ptri, fname_ptri_mid, calc_lc, calc_theta, quiet_bfield, &
        vessel_is_nearest_slice, vessel_int_is_last_point, lambda_par, &
        randomize_start_dir
-  
+
 Contains
-  
+
 
   Subroutine read_run_settings_namelist(verbose)    
     Use io_unit_spec, Only: iu_nl 
@@ -75,11 +75,11 @@ Contains
 
     lambda_par = 0._real64  ! 0 deactivates parallel flipping
     randomize_start_dir = .false.
-    
+
     ! -------------------------------
     ! Read settings namelists
     ! -------------------------------
-    
+
     ! Open file
     If (verbose) Write(*,*) 'Reading run settings from run_settings.nml'
     Open(iu_nl,file="run_settings.nml",status="old",form="formatted",iostat=iocheck)
@@ -115,12 +115,12 @@ Contains
        If (verbose) Write(*,*) 'Vessel representation is: Interpolated at constant phi index'
        ! ToDo: need to check at least 2 slices or some minimum phi resolution
     End If
-    
+
     ! npts_start
     If (npts_start .lt. nprocs) Then
        if (rank .eq. 0) Write(*,*) 'Error: nprocs must be less than npts_start!!!'
        Call fin_mpi(.true.)
-    Endif   
+    Endif
 
     ! nfp_bfield, default 0 comes from setup_bfield
     If (nfp_bfield .eq. 0) Then
@@ -129,11 +129,11 @@ Contains
     Endif
 
 
-    
+
     ! --------------------------
     ! Process inputs
     ! --------------------------
-    
+
     period = 2.d0*pi/Real(nfp_bfield,real64)
     If (verbose) Write(*,*) 'Magnetic field set to have toroidal symmetry mode number ',nfp_bfield,period*180./pi,' deg.'
     dphi_line_surf = dphi_line_surf_deg * pi/180.d0
@@ -143,7 +143,7 @@ Contains
 
     If (verbose) Write(*,*) 'Initializing random number with base seed:',myseed
     Call init_random_seed(myseed*(rank+1))
-    
+
     If (verbose) Write(*,'(A,G0.3)') ' hit_length: ',hit_length
     If (hit_length .le. 0.d0) Then
        If (verbose) Write(*,'(A)') ' Turning off hitline because hit_length <= 0'
@@ -152,7 +152,7 @@ Contains
        nhitline = Floor(hit_length/Rstart/abs(dphi_line_diff))
        If (verbose) Write(*,'(A,I0,A)') ' Returning ',nhitline,' points along intersecting lines'
     Endif
-    
+
     If (verbose) Then
        If (calc_lc) Then
           Write(*,*) 'Computing one-directional connection length'
@@ -168,9 +168,9 @@ Contains
           Write(*,*) 'Initial tracing direction during diffusion is uni-directional'
        End If
     End If
-    
+
     verbose_bfield = .not. quiet_bfield
-    
+
   End Subroutine read_run_settings_namelist
-  
+
 End Module run_settings_namelist

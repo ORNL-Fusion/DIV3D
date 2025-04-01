@@ -103,12 +103,12 @@ Contains
 
           ! This section (and back conversion) commented out because how do we set periodicity
           ! for triangle parts? For now assume this has been done.
-!          ! Map to first period
-!          Do itri = 1,ntri_parts(ipart)
-!             Do j = 1,3
-!                Call wrap_phi(ptri_part(itri,j),2._real64*pi/Real(msym,real64))
-!             End Do
-!          End Do
+          !          ! Map to first period
+          !          Do itri = 1,ntri_parts(ipart)
+          !             Do j = 1,3
+          !                Call wrap_phi(ptri_part(itri,j),2._real64*pi/Real(msym,real64))
+          !             End Do
+          !          End Do
 
           ! Get min/max of Phi for filtering out intersection checks
           Pmins(ipart) = Minval(ptri_part(1:ntri_parts(ipart),:))
@@ -118,9 +118,9 @@ Contains
              pmaxtri(ipart,itri) = Maxval(ptri_part(itri,:))
           End Do
 
-!          ! Convert back to cartesian
-!          xtri(ipart,:,:) = rtri_part*Cos(ptri_part)
-!          ytri(ipart,:,:) = rtri_part*Sin(ptri_part)
+          !          ! Convert back to cartesian
+          !          xtri(ipart,:,:) = rtri_part*Cos(ptri_part)
+          !          ytri(ipart,:,:) = rtri_part*Sin(ptri_part)
 
           If (verbose) Then
              Write(*,*) 'Triangle part ',ipart,'extends from Phi = ',Pmins(ipart)*180./pi,' to ',Pmaxs(ipart)*180./pi,' deg.'
@@ -308,13 +308,13 @@ Contains
 
     num_tri = 0
 
-  Do
-     Read(iu_thispart, '(A)', iostat=iostat) dummy_line
-     If (iostat /= 0) Exit
-     If (len_trim(dummy_line) == 0) Cycle
-     num_tri = num_tri + 1
-  End Do
-  Close(iu_thispart)
+    Do
+       Read(iu_thispart, '(A)', iostat=iostat) dummy_line
+       If (iostat /= 0) Exit
+       If (len_trim(dummy_line) == 0) Cycle
+       num_tri = num_tri + 1
+    End Do
+    Close(iu_thispart)
 
   End Subroutine query_tri_part
   !-----------------------------------------------------------------------------
@@ -648,7 +648,7 @@ Contains
           Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
        Else If (part_type(ipart) .EQ. 2) Then
           ! For triangle parts here we just want to know how many triangles (lines) each has
-!          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
+          !          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
        Else
           If (verbose) Write(*,*) 'Did not recognize part_type',part_type(ipart),'for part',ipart
        Endif
@@ -699,8 +699,8 @@ Contains
                + Maxval(Abs(Zpart(i,1:npol) - Zpart(1,1:npol))),check_AS)
        Enddo
        If (       (check_AS .lt. check_AS_tol) &
-            !       .and. (Pmins(ipart)          .le. phi_period_tol) &
-            !       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
+                                !       .and. (Pmins(ipart)          .le. phi_period_tol) &
+                                !       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
             ) Then
           If (force_non_AS(ipart)) Then
              If (part_type(ipart) .eq. 2) Then

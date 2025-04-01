@@ -1,23 +1,23 @@
 Module setup_bfield_module
   Use kind_mod, Only: int32, real64
   Use bfield_module, Only : bfield_type, coil_type, g_type
-  
+
   Implicit None
-  
+
   Type(bfield_type) :: bfield
   Type(g_type) :: g  
   Type(coil_type) :: coil
-  
+
   Integer(int32), Parameter :: max_extcur = 100
   Logical :: setup_bfield_verbose = .true. ! To be used by calling routines to supress output (particularly in MPI runs)
   ! ------------ BFIELD NAMELIST VARIABLES ----------------
-  
+
   Real(real64) :: &
        vmec_extcur_set(max_extcur)            = 0.d0
 
   Integer(int32) :: &
        nfp_bfield = 0
-  
+
   Character(Len=300) :: &
        rmp_type                         = 'none', &
        gfile_name                       = 'none', &       
@@ -28,17 +28,17 @@ Module setup_bfield_module
   Logical :: &
        xdr_check   = .true.,   &
        xdr_verbose = .true.
-  
+
   Namelist / bfield_nml / &
        rmp_type, &
        gfile_name, &       
        vmec_coils_file, vmec_extcur_set, &
        xdr_fname, xdr_check, xdr_verbose, &
        bgrid_fname, nfp_bfield
-  
+
   ! ------------ BFIELD NAMELIST VARIABLES ----------------
-  
-!  Private
+
+  !  Private
 
 Contains
   ! *********************************************
@@ -88,7 +88,7 @@ Contains
     Call convert_vmec_coils_to_filaments
     bfield%coil = vmec_coil_new
   End Subroutine setup_bfield_vmec_coils_to_fil
-    
+
 #ifdef HAVE_FXDR    
   ! *********************************************
   ! ***************  XDR  ***********************
@@ -103,21 +103,21 @@ Contains
     bfield%method_pert = -1
   End Subroutine setup_bfield_xdr
 #endif
-  
+
   ! *********************************************
   ! *************** BGRID ***********************
   ! *********************************************    
   Subroutine setup_bfield_bgrid
     Use bgrid_module, Only: open_bgrid_fields
     Implicit None
-    
+
     If (setup_bfield_verbose) Write(*,'(a)') '-----> BFIELD METHOD IS BGRID'
-      bfield%method      = 16
-      bfield%method_2d   = -1
-      bfield%method_pert = -1
+    bfield%method      = 16
+    bfield%method_2d   = -1
+    bfield%method_pert = -1
     Call open_bgrid_fields(bgrid_fname,setup_bfield_verbose)
   End Subroutine setup_bfield_bgrid
 
-  
+
 End Module setup_bfield_module
-  
+

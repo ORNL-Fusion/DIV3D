@@ -11,4 +11,3 @@ Module kind_mod
   Use Iso_fortran_env , Only: int16, int32, int64, real32, real64
   Implicit none
 End module kind_mod
-
