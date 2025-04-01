@@ -211,7 +211,7 @@ Contains
 
     Write(*,*) 'Total number of fieldlines to follow:',numl
     Write(*,*) 'Diffusing fieldlines with D_mag (m**2/m) = ',dmag
-    If (lambda_par .ge. 0._real64) Then       
+    If (lambda_par .gt. 0._real64) Then       
        Write(*,*) 'Parallel scattering mean free path (m) = ',lambda_par
     Else
        Write(*,*) 'Parallel scattering deactivated'
@@ -395,10 +395,8 @@ Contains
   !+
   !-----------------------------------------------------------------------------
   ! Todo: cleanup
-  Subroutine check_line_for_intersections(pint,iout, &
-       r_hitline,z_hitline,phi_hitline,nhitline,linenum,nsteps_line,rout,zout,phiout,ifail,totL, &
-       calc_lc,calc_theta,theta)
-
+  Subroutine check_line_for_intersections(pint,iout,r_hitline,z_hitline,phi_hitline,nhitline,
+    linenum,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
     Use kind_mod, Only : real64, int32
     Use read_parts_mod
     Use inside_vessel_mod, Only : inside_vessel, find_vessel_intersection, &

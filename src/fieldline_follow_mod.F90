@@ -693,7 +693,8 @@ Contains
 
        Call Random_number(rnum)
 
-       alpha = 2.d0*pi*rnum  ! 0 to 2pi kick
+       !  alpha = 2.d0*pi*rnum  ! 0 to 2pi kick
+       alpha = 2.d0*pi*(-1.d0 + 2.d0*rnum) ! -2pi to 2pi kick
        dca = Cos(alpha)
        dsa = Sin(alpha)
 
