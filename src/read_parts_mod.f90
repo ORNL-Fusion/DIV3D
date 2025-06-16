@@ -106,7 +106,7 @@ Contains
           ! Map to first period
           Do itri = 1,ntri_parts(ipart)
              Do j = 1,3
-                Call wrap_phi(ptri_part(itri,j),2._real64*pi/period)  ! ASSUMING TRI PARTS HAVE TOROIDAL SYMMETRY OF BFIELD!
+                Call wrap_phi(ptri_part(itri,j),period)  ! ASSUMING TRI PARTS HAVE TOROIDAL SYMMETRY OF BFIELD!
              End Do
           End Do
 
