@@ -309,8 +309,8 @@ Contains
                    rint = Sqrt(pint(1)*pint(1)+pint(2)*pint(2))
                    zint = pint(3)
                    phiint = Atan2(pint(2),pint(1))
-!                   Write(iu_int,*)   rint,zint,pint,iout,totL,theta,etime_follow,etime_int
-                   Write(iu_int,*)   linnum,rint,zint,phiint,iout,totL !,theta,etime_follow,etime_int                   
+                   Write(iu_int,*)   rint,zint,pint,iout,totL,theta,etime_follow,etime_int
+!                   Write(iu_int,*)   linnum,rint,zint,phiint,iout,totL !,theta,etime_follow,etime_int                   
 
                    If (nhitline .gt. 0) Then
                       r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
@@ -397,7 +397,7 @@ Contains
   !+
   !-----------------------------------------------------------------------------
   ! Todo: cleanup
-  Subroutine check_line_for_intersections(pint,iout,r_hitline,z_hitline,phi_hitline,nhitline,
+  Subroutine check_line_for_intersections(pint,iout,r_hitline,z_hitline,phi_hitline,nhitline, &
     linenum,nsteps_line,rout,zout,phiout,ifail,totL,calc_lc,calc_theta,theta)
     Use kind_mod, Only : real64, int32
     Use read_parts_mod

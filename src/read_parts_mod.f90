@@ -53,7 +53,7 @@ Contains
     Real(real64) :: R2,Z2,P2,Pt2(3)
     Real(real64) :: R3,Z3,P3,Pt3(3)
     Real(real64) :: R4,Z4,P4,Pt4(3), dmids(3)
-    Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet, itri_tot
+    Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet, itri_tot, j
     Real(real64), Allocatable :: rtri_part(:,:), ptri_part(:,:)
     Real(real64), Allocatable :: xtri_tmp(:,:),ytri_tmp(:,:),ztri_tmp(:,:)
     !- End of header -------------------------------------------------------------
@@ -101,14 +101,18 @@ Contains
           rtri_part(:,:) = Sqrt(xtri(ipart,:,:)**2 + ytri(ipart,:,:)**2)
           ptri_part(:,:) = Atan2(ytri(ipart,:,:),xtri(ipart,:,:))
 
-          ! This section (and back conversion) commented out because how do we set periodicity
+         ! This section (and back conversion) commented out because how do we set periodicity
           ! for triangle parts? For now assume this has been done.
-          !          ! Map to first period
-          !          Do itri = 1,ntri_parts(ipart)
-          !             Do j = 1,3
-          !                Call wrap_phi(ptri_part(itri,j),2._real64*pi/Real(msym,real64))
-          !             End Do
-          !          End Do
+          ! Map to first period
+          Do itri = 1,ntri_parts(ipart)
+             Do j = 1,3
+                Call wrap_phi(ptri_part(itri,j),2._real64*pi/period)  ! ASSUMING TRI PARTS HAVE TOROIDAL SYMMETRY OF BFIELD!
+             End Do
+          End Do
+
+          ! Convert back to cartesian
+          xtri(ipart,:,:) = rtri_part*Cos(ptri_part)
+          ytri(ipart,:,:) = rtri_part*Sin(ptri_part)
 
           ! Get min/max of Phi for filtering out intersection checks
           Pmins(ipart) = Minval(ptri_part(1:ntri_parts(ipart),:))
@@ -118,14 +122,13 @@ Contains
              pmaxtri(ipart,itri) = Maxval(ptri_part(itri,:))
           End Do
 
-          !          ! Convert back to cartesian
-          !          xtri(ipart,:,:) = rtri_part*Cos(ptri_part)
-          !          ytri(ipart,:,:) = rtri_part*Sin(ptri_part)
-
           If (verbose) Then
              Write(*,*) 'Triangle part ',ipart,'extends from Phi = ',Pmins(ipart)*180./pi,' to ',Pmaxs(ipart)*180./pi,' deg.'
              If (Pmaxs(ipart) .gt. period) Then
-                Write(*,*) 'Warning: Part extends beyond Bfield period, extra range is not used!'
+                Write(*,*) 'Warning: Part extends beyond Bfield period (in + phi), extra range is not used!'
+             End If
+             If (Pmins(ipart) .lt. 0._real64) Then
+                Write(*,*) 'Warning: Part extends beyond Bfield period (in - phi), extra range is not used!'
              End If
           End If
           Deallocate(rtri_part)
@@ -704,7 +707,7 @@ Contains
             ) Then
           If (force_non_AS(ipart)) Then
              If (part_type(ipart) .eq. 2) Then
-                If (verbose) Write(*,*) '  Triangle parts are always treated as non-axistymmetric'
+                If (verbose) Write(*,*) '  Triangle parts are always treated as non-axisymmetric'
              Else
                 If (verbose) Write(*,*) '  Part appears AS but AS treatment overridden in part file'
              End If
