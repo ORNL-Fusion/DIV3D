@@ -634,6 +634,7 @@ Contains
     Pmins  = 0._real64
     Pmaxs  = 0._real64
     is_AS_part = .false.
+    force_non_AS(:) = .true.
 
     ! Part coordinates are written to file
     Open(iu_parts,file=fname_parts)
@@ -652,7 +653,8 @@ Contains
           Call load_2d_jpart(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
        Else If (part_type(ipart) .EQ. 2) Then
           ! For triangle parts here we just want to know how many triangles (lines) each has
-!          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
+          !          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
+          force_non_AS(ipart) = .true.
        Else
           If (verbose) Write(*,*) 'Did not recognize part_type',part_type(ipart),'for part',ipart
        Endif
