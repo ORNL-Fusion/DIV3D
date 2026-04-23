@@ -106,7 +106,7 @@ Contains
           ! Map to first period
           Do itri = 1,ntri_parts(ipart)
              Do j = 1,3
-                Call wrap_phi(ptri_part(itri,j),2._real64*pi/period)  ! ASSUMING TRI PARTS HAVE TOROIDAL SYMMETRY OF BFIELD!
+                Call wrap_phi(ptri_part(itri,j),period)  ! ASSUMING TRI PARTS HAVE TOROIDAL SYMMETRY OF BFIELD!
              End Do
           End Do
 
@@ -652,6 +652,7 @@ Contains
        Else If (part_type(ipart) .EQ. 2) Then
           ! For triangle parts here we just want to know how many triangles (lines) each has
           !          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
+          force_non_AS(ipart) = .true.
        Else
           If (verbose) Write(*,*) 'Did not recognize part_type',part_type(ipart),'for part',ipart
        Endif
