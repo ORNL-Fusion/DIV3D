@@ -37,3 +37,7 @@ build/*.cmake
 
 test/STELL/QPS/bfield/*.nc
 test/STELL/QPS/bfield/*.dat
+
+# Local editor/tool state
+.codex/
+.vscode/

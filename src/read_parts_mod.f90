@@ -633,6 +633,7 @@ Contains
     Pmins  = 0._real64
     Pmaxs  = 0._real64
     is_AS_part = .false.
+    force_non_AS(:) = .true.
 
     ! Part coordinates are written to file
     Open(iu_parts,file=fname_parts)
