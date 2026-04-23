@@ -216,7 +216,7 @@ End Function rlinspace
 !-----------------------------------------------------------------------------
 !+ 
 !-----------------------------------------------------------------------------
-Subroutine line_seg_facet_int(pa,pb,pc,p1,p2,ithit,p,tol,calc_theta,sin_theta)
+Subroutine line_seg_facet_int_old(pa,pb,pc,p1,p2,ithit,p,tol,calc_theta,sin_theta)
 !
 ! Description: 
 !  Based on code from Paul Bourke
@@ -342,7 +342,148 @@ If ((ithit .eq. 1_int32) .and. (calc_theta)) Then
 Endif
 
 
+End Subroutine line_seg_facet_int_old
+
+
+Subroutine line_seg_facet_int(pa,pb,pc,p1,p2,ithit,p,tol,calc_theta,sin_theta)
+!
+! Description: 
+!  Based on code from Paul Bourke
+! Inputs: 
+!
+! Outputs:
+!   none
+!
+! History:
+!  Version   Date      Comment
+!  -------   ----      -------
+!  1.0     12/07/2011   JDL
+! Author(s): J.D. Lore - 12/07/2011 - xxx
+
+! Modules used:
+Use kind_mod, Only : real64, int32
+Use phys_const, Only : pi
+Implicit none
+
+! Input/output
+Real(real64), Dimension(3), Intent(In) :: pa,pb,pc,p1,p2
+Real(real64), Dimension(3), Intent(Out) :: p
+Integer(int32), Intent(Out) :: ithit
+real(real64), Intent(In) :: tol
+Real(real64), Intent(Out) :: sin_theta
+Logical, Intent(In) :: calc_theta
+
+
+!local variables and arrays
+Real(real64), Dimension(3) :: n, pa1, pa2, pa3, v
+Real(real64) :: d, denom, mu, total, a1, a2, a3, n2
+
+Real(real64) :: mag_v, dot_nv
+
+! --- additional locals for barycentric optimisation ---
+Real(real64), Dimension(3) :: e1, e2, ap
+Real(real64) :: dot00, dot01, dot02, dot11, dot12, invden, ub, vb
+!- End of header -------------------------------------------------------------
+
+
+!tol = 1.d-12
+
+! Calc unit vector normal to plane of pa-pc (gives plane components A-C)
+! Cross product of AB and AC
+n(1) = (pb(2) - pa(2))*(pc(3) - pa(3)) - (pb(3) - pa(3))*(pc(2) - pa(2))
+n(2) = (pb(3) - pa(3))*(pc(1) - pa(1)) - (pb(1) - pa(1))*(pc(3) - pa(3))
+n(3) = (pb(1) - pa(1))*(pc(2) - pa(2)) - (pb(2) - pa(2))*(pc(1) - pa(1))
+n2=Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
+n2 = 1._real64/n2
+n=n*n2
+!n=n/Sqrt(n(1)*n(1) + n(2)*n(2) + n(3)*n(3))
+
+! Calculate plane component D
+d = - n(1)*pa(1) - n(2)*pa(2) - n(3)*pa(3)
+
+! Calculate the position on the line that intersects the plane
+denom = n(1)*(p2(1) - p1(1)) + n(2)*(p2(2) - p1(2)) + n(3)*(p2(3) - p1(3))
+
+p(:) = 0._real64
+
+If (abs(denom) .lt. tol) Then
+   ! line is parallel to plane
+   ithit = 0
+   stop
+else
+    ! how far along line intersection occurs [0,1]
+    mu = - (d + n(1) * p1(1) + n(2) * p1(2) + n(3) * p1(3)) / denom
+
+    if ((mu .lt. -tol) .or. (mu .gt. 1._real64 + tol)) Then   !Intersection not along line segment
+        ithit = 0
+    else        
+        p(1) = p1(1) + mu * (p2(1) - p1(1))
+        p(2) = p1(2) + mu * (p2(2) - p1(2))
+        p(3) = p1(3) + mu * (p2(3) - p1(3))
+
+        !  Determine whether or not the intersection point is bounded by pa,pb,pc
+        !  (barycentric coordinate test replaces angle–sum test)
+        e1(1) = pb(1) - pa(1)
+        e1(2) = pb(2) - pa(2)
+        e1(3) = pb(3) - pa(3)
+
+        e2(1) = pc(1) - pa(1)
+        e2(2) = pc(2) - pa(2)
+        e2(3) = pc(3) - pa(3)
+
+        ap(1) = p(1) - pa(1)
+        ap(2) = p(2) - pa(2)
+        ap(3) = p(3) - pa(3)
+
+        dot00 = e1(1)*e1(1) + e1(2)*e1(2) + e1(3)*e1(3)
+        dot01 = e1(1)*e2(1) + e1(2)*e2(2) + e1(3)*e2(3)
+        dot02 = e1(1)*ap(1) + e1(2)*ap(2) + e1(3)*ap(3)
+        dot11 = e2(1)*e2(1) + e2(2)*e2(2) + e2(3)*e2(3)
+        dot12 = e2(1)*ap(1) + e2(2)*ap(2) + e2(3)*ap(3)
+
+        invden = 1._real64 / (dot00*dot11 - dot01*dot01)
+
+        ub = ( dot11*dot02 - dot01*dot12 ) * invden
+        vb = ( dot00*dot12 - dot01*dot02 ) * invden
+
+        if ( (ub .ge. -tol) .and. (vb .ge. -tol) .and. (ub + vb .le. 1._real64 + tol) ) then
+            ithit = 1_int32
+        else
+            ithit = 0_int32
+        endif
+    endif
+endif
+
+sin_theta = 0._real64
+If ((ithit .eq. 1_int32) .and. (calc_theta)) Then
+!   Write(*,*) 'computing angle between the line and the plane'
+
+   ! Below assumes |n| = 1, as done above
+   
+   ! Compute direction vector of the line
+   v(1) = p2(1) - p1(1)
+   v(2) = p2(2) - p1(2)
+   v(3) = p2(3) - p1(3)
+
+   ! Compute dot product between the normalized normal vector n and the direction vector v
+   dot_nv = n(1) * v(1) + n(2) * v(2) + n(3) * v(3)
+
+   ! Compute magnitudes of n and v
+   mag_v = Sqrt(v(1)*v(1) + v(2)*v(2) + v(3)*v(3))
+
+   ! Calculate sin of the angle between the line and the plane
+   sin_theta = dot_nv / (mag_v)
+
+   ! Ensure sin_theta is within valid range due to potential floating-point inaccuracies
+   sin_theta = max(-1.0_real64, min(1.0_real64, sin_theta))
+
+Endif
+
+
 End Subroutine line_seg_facet_int
+
+
+
 
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
