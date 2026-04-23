@@ -39,5 +39,5 @@ test/STELL/QPS/bfield/*.nc
 test/STELL/QPS/bfield/*.dat
 
 # Local editor/tool state
-.codex/
+.codex
 .vscode/
