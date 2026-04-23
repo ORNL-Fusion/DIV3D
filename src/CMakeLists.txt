@@ -68,7 +68,7 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to div3d
-target_link_libraries(div3d PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(div3d PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})
 
 # --------------------------------------------
 # convert_ascii_bgrid_to_netcdf executable
@@ -101,7 +101,7 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to poincare
-target_link_libraries(poincare PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(poincare PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})
 
 
 # -------------------------------
@@ -119,4 +119,4 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to create_bgrid_from_coils
-target_link_libraries(create_bgrid_from_coils PRIVATE libcommon libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ lapack)
+target_link_libraries(create_bgrid_from_coils PRIVATE libcommon libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})

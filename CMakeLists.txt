@@ -37,6 +37,9 @@ find_path(NetCDF_INCLUDE_DIR NAMES netcdf.mod PATHS ${NetCDF_INCLUDE_DIR})
 find_library(NetCDF_Fortran_LIBRARY NAMES netcdff PATHS ${NetCDF_LIBRARY_DIR})
 find_library(NetCDF_C_LIBRARY NAMES netcdf PATHS ${NetCDF_LIBRARY_DIR})
 
+# Locate LAPACK
+find_package(LAPACK REQUIRED)
+
 # Check if both libraries were found
 if(NOT NetCDF_Fortran_LIBRARY OR NOT NetCDF_C_LIBRARY)
     message(FATAL_ERROR "NetCDF Fortran or C library not found. Please specify the correct paths.")

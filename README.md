@@ -27,6 +27,20 @@ Other applications:
 
 To build the code, follow these steps:
 
+### Ubuntu packages
+
+On Ubuntu, the following packages provide the tools and libraries needed for a GNU build:
+
+```bash
+sudo apt install cmake make gfortran openmpi-bin libopenmpi-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev libtirpc-dev python3
+```
+
+Notes:
+- `gfortran`, `openmpi-bin`, and `libopenmpi-dev` provide the MPI Fortran compiler wrapper (`mpif90`) and MPI launcher (`mpirun`).
+- `libnetcdf-dev` and `libnetcdff-dev` provide the C and Fortran NetCDF libraries.
+- `libblas-dev` and `liblapack-dev` provide the linear algebra libraries required by CMake.
+- `libtirpc-dev` provides the RPC/TIRPC headers and library needed by `fxdr`.
+
 1. Navigate to the `build` directory:
    ```bash
    cd build
@@ -53,12 +67,12 @@ To build the code, follow these steps:
 - The `setup_cmake.sh` script simplifies the build process by setting machine-specific paths and configurations.
 - The code has been successfully compiled using both `gfortran` and Intel OneAPI compilers.
 - Ensure that the required dependencies are installed and accessible on your system.
-- If HDF5 (or LAPACK) is not detected by CMake, check the default installation path.
+- If NetCDF or LAPACK is not detected by CMake, check the installation path or loaded modules.
 
 ### Dependencies:
 - Fortran compiler with MPI support (e.g., `gfortran` + `openmpi`)
 - CMake
-- HDF5, LAPACK, and MPI libraries
+- NetCDF, BLAS/LAPACK, RPC/TIRPC, and MPI libraries
 
 ---
 
