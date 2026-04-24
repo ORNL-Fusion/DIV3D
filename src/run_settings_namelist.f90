@@ -23,7 +23,7 @@ Module run_settings_namelist
 
   Character(len=300) :: fname_hit, fname_ptri, fname_ptri_mid
   Character(len=300) :: fname_launch,fname_surf, fname_parts, fname_intpts, fname_ves
-  Character(len=300) :: fname_plist, fname_nhit  
+  Character(len=300) :: fname_plist, fname_nhit, fname_timing
 
 
   Namelist / run_settings / fname_plist, fname_ves,  &
@@ -33,7 +33,7 @@ Module run_settings_namelist
        fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
        fname_ptri, fname_ptri_mid, calc_lc, calc_theta, quiet_bfield, &
        vessel_is_nearest_slice, vessel_int_is_last_point, lambda_par, &
-       randomize_start_dir
+       randomize_start_dir, fname_timing
 
 Contains
 
@@ -66,6 +66,7 @@ Contains
     fname_parts    = 'allparts.out'
     fname_hit      = 'hitline.out'
     fname_intpts   = 'int_pts.out'
+    fname_timing   = 'timing_data.out'
     fname_nhit     = 'hitcount.out'
     fname_ptri     = 'part_triangles.out'
     fname_ptri_mid = 'part_triangle_mids.out'

@@ -4,7 +4,7 @@ Module diffusion
 
   ! Message array sizes
   Integer, Private, Parameter :: size_rdata = 7
-  Integer, Private, Parameter :: size_idata = 5
+  Integer, Private, Parameter :: size_idata = 6
 
 Contains
 
@@ -126,8 +126,9 @@ Contains
           buffer = 1
           Call MPI_SEND(buffer,1,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
-          line_done_data_i(1) = ierr_follow
-          line_done_data_i(2:5) = iout
+          line_done_data_i(1) = iline_local
+          line_done_data_i(2) = ierr_follow
+          line_done_data_i(3:6) = iout
           Call MPI_SEND(line_done_data_i,size_idata,MPI_INTEGER,dest,tag,MPI_COMM_WORLD,ierr_mpi)
 
           line_done_data_r(1:3) = pint
@@ -165,15 +166,15 @@ Contains
     ! Modules used:
     Use kind_mod, Only : int32, real64
     Use parallel_mod
-    Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int
+    Use io_unit_spec, Only: iu_hit, iu_launch, iu_nhit, iu_int, iu_time
     Use output_routines, Only : init_hitline_netcdf, write_hitline_data_netcdf
     Use run_settings_namelist, Only : dmag, fname_launch, ns_line_diff, &
-         fname_hit, fname_intpts, fname_nhit, nhitline, lambda_par
+         fname_hit, fname_intpts, fname_nhit, fname_timing, nhitline, lambda_par
     Implicit none
 
     Logical, Parameter :: write_hitline_to_netcdf = .false.
 
-    Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck, launch_line_id
+    Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck, launch_line_id, iline_done
     Real(real64) :: Rstart, Zstart, Phistart
 
     Integer(int32) :: work_done, work_done_count
@@ -266,7 +267,10 @@ Contains
 
     ! Set up output files
     Open(iu_int,file=fname_intpts,iostat=iocheck)
-    Write(iu_int,*) '# R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta) | t_follow (s) | t_int (s)'
+    Write(iu_int,*) '# line_index | R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
+
+    Open(iu_time,file=fname_timing,iostat=iocheck)
+    Write(iu_time,*) '# line_index | t_follow (s) | t_int (s)'
 
     ! Open hitline file
     If (write_hitline_to_netcdf) Then
@@ -299,13 +303,15 @@ Contains
                 If (nhitline .gt. 0) Then
                    Call MPI_RECV(line_done_data_r2,nhitline*3,MPI_DOUBLE_PRECISION,dest,tag,MPI_COMM_WORLD,status,ierr_mpi)
                 Endif
-                ihit        = line_done_data_i(2)
+                iline_done = line_done_data_i(1)
+                ihit        = line_done_data_i(3)
                 etime_follow = line_done_data_r(6)
                 etime_int = line_done_data_r(7)
+                Write(iu_time,*) iline_done,etime_follow,etime_int
 
                 if ( ihit .ge. 1 ) Then
                    hitcount = hitcount + 1
-                   iout = line_done_data_i(2:5)
+                   iout = line_done_data_i(3:6)
                    pint = line_done_data_r(1:3) ! X,Y,Z
                    totL = line_done_data_r(4)
                    theta = line_done_data_r(5)
@@ -314,7 +320,7 @@ Contains
                    rint = Sqrt(pint(1)*pint(1)+pint(2)*pint(2))
                    zint = pint(3)
                    phiint = Atan2(pint(2),pint(1))
-                   Write(iu_int,*)   rint,zint,pint,iout,totL,theta,etime_follow,etime_int
+                   Write(iu_int,*)   iline_done,rint,zint,pint,iout,totL,theta
 !                   Write(iu_int,*)   linnum,rint,zint,phiint,iout,totL !,theta,etime_follow,etime_int                   
 
                    If (nhitline .gt. 0) Then
@@ -384,6 +390,7 @@ Contains
 
     Close(iu_hit)
     close(iu_int)
+    Close(iu_time)
 
     Write(*,*) ' We had ',hitcount,' lines -hit-'
 

@@ -30,7 +30,8 @@ Module io_unit_spec
        iu_launch=36,         &   ! Launch points (output)
        iu_axis=37,           &   ! Axis data file (output)
        iu_ptri=38,           &   ! Part_triangles (output)
-       iu_ptmid=39               ! Part triangle midpoints (output)
+       iu_ptmid=39,          &   ! Part triangle midpoints (output)
+       iu_time=40                ! Timing data (output)
 
 End module io_unit_spec
 !- End of header -------------------------------------------------------------
