@@ -283,19 +283,21 @@ echo "  MPI launcher: $DETECTED_MPI_LAUNCHER"
 
 
 # Run cmake
-cmake -DCMAKE_Fortran_COMPILER=$FORTRAN_COMPILER \
-      -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-      -DNetCDF_INCLUDE_DIR="$NETCDF_INCLUDE_PATH" \
-      -DNetCDF_LIBRARY_DIR="$NETCDF_LIB_PATH" \
-      -DCMAKE_PREFIX_PATH="$NETCDF_ROOT_DIR" \
-      -DUSE_MPIF08="$USE_MPIF08" \
-      ..
+if ! cmake -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER" \
+           -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+           -DNetCDF_INCLUDE_DIR="$NETCDF_INCLUDE_PATH" \
+           -DNetCDF_LIBRARY_DIR="$NETCDF_LIB_PATH" \
+           -DCMAKE_PREFIX_PATH="$NETCDF_ROOT_DIR" \
+           -DUSE_MPIF08="$USE_MPIF08" \
+           ..; then
+    echo
+    echo "CMake configuration failed. Build step not started."
+    exit 1
+fi
 
 # Build the project
 if [ $VERBOSE_BUILD -eq 1 ]; then
-    make VERBOSE=1
+    cmake --build . --verbose
 else
-    make
+    cmake --build .
 fi
-
-make

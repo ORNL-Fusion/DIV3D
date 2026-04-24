@@ -1,9 +1,5 @@
-# Set source and binary directories
+# Set source directory
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(BIN_DIR ${CMAKE_BINARY_DIR}/../bin)
-
-# Ensure binaries are built in ../bin
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 # Add fxdr library
 add_subdirectory(fxdr)

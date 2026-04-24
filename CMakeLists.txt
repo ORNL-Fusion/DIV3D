@@ -5,6 +5,10 @@ project(div3d LANGUAGES C Fortran)
 set(CMAKE_Fortran_STANDARD 90)
 set(CMAKE_Fortran_STANDARD_REQUIRED ON)
 
+# Build executables into the project bin directory by default.
+set(DIV3D_RUNTIME_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin" CACHE PATH "Directory for DIV3D executables")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${DIV3D_RUNTIME_OUTPUT_DIR}")
+
 # Default to Release build if none specified
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
