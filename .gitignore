@@ -33,6 +33,7 @@
 *.out
 *.out.*
 build/test
+build/Testing/
 build/*.cmake
 
 test/STELL/QPS/bfield/*.nc

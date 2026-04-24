@@ -48,7 +48,7 @@ Contains
        rand_ind = Nint(npts_line*rnum)
        P1 = phisurf(rand_ind)
        Call wrap_phi(P1,period)
-       Write(iu_launch,*) rsurf(rand_ind),zsurf(rand_ind),P1
+       Write(iu_launch,*) ii,rsurf(rand_ind),zsurf(rand_ind),P1
     Enddo
     Close(iu_launch)
 

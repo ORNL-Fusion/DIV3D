@@ -173,7 +173,7 @@ Contains
 
     Logical, Parameter :: write_hitline_to_netcdf = .false.
 
-    Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck
+    Integer(int32) :: numl, iline, ii, hitcount, ihit, iocheck, launch_line_id
     Real(real64) :: Rstart, Zstart, Phistart
 
     Integer(int32) :: work_done, work_done_count
@@ -205,7 +205,12 @@ Contains
     Read(iu_launch,*) numl
     Allocate(R0(numl),Z0(numl),Phi0(numl))
     Do ii = 1,numl
-       Read(iu_launch,*) R0(ii),Z0(ii),Phi0(ii)
+       Read(iu_launch,*) launch_line_id,R0(ii),Z0(ii),Phi0(ii)
+       If (launch_line_id .ne. ii) Then
+          Write(*,*) 'Error: launch point indices must start at 1 and increase by 1.'
+          Write(*,*) 'Expected index ',ii,' but found ',launch_line_id
+          Call fin_mpi(.true.)
+       End If
     End Do
     Close(iu_launch)
 
