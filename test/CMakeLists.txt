@@ -19,6 +19,12 @@ add_test(
 )
 
 add_test(
+  NAME test_poincare_tok
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/TOK/CAT/poincare
+  COMMAND ${Python3_EXECUTABLE} compare_outputs.py
+)
+
+add_test(
   NAME test_switch_cases
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/TOK/CAT
   COMMAND ${Python3_EXECUTABLE} test_switch_cases.py

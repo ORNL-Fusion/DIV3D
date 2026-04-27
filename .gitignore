@@ -34,6 +34,7 @@
 *.out.*
 !test/**/ref/
 !test/**/ref/*.out
+!test/**/ref/*.out.*
 build/test
 build/Testing/
 build/*.cmake

@@ -26,6 +26,9 @@ ctest -R test_intersections --output-on-failure
   files against files in `test_ves_only/ref`.
 - `test/TOK/CAT/test_ves_and_parts`: vessel-plus-parts reference integration
   case comparing output files against files in `test_ves_and_parts/ref`.
+- `test/TOK/CAT/poincare`: tokamak Poincare reference integration case
+  comparing rank-local `surface_data.out.*` files against files in
+  `poincare/ref`.
 - `test/TOK/CAT/test_switch_cases.py`: integration checks that run modified
   copies of the `TOK/CAT/test_ves_only` case.
 - `test/unit`: Fortran unit tests built against `libdiv3d_core`.
@@ -134,6 +137,16 @@ case with selected namelist changes:
   that externally supplied launch-point indices remain ordered.
 - `npts_surf_out = 100`: verifies that `surface_line.out` is thinned to the
   requested count and that the screen output reports surface point writing.
+
+## Poincare Integration Test
+
+`test_poincare_tok` runs the `TOK/CAT/poincare` case with four MPI ranks. The
+case traces 10 surfaces for 100 transits using the CAT g-file field, saves three
+toroidal slices, and compares the four rank-local `surface_data.out.*` files
+against references.
+
+The Poincare driver writes one output file per MPI rank, so this test is tied to
+the `mpirun -np 4` setting in `test/TOK/CAT/poincare/run_test`.
 
 ## Adding Fortran Unit Tests
 
