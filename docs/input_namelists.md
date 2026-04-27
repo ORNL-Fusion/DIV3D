@@ -18,6 +18,7 @@ This document describes all parameters available in the two primary namelists us
 | `fname_parts` | Output file for field-line endpoints/intersections | `'allparts.out'` |
 | `fname_hit` | Output for evenly spaced points along hitlines | `'hitline.out'` |
 | `fname_intpts` | Output for field line intersections with parts | `'int_pts.out'` |
+| `fname_timing` | Output for per-line follow and intersection timing data | `'timing_data.out'` |
 | `fname_nhit` | Output histogram of hit counts | `'hitcount.out'` |
 | `fname_ptri` | Output triangles hit by field lines | `'part_triangles.out'` |
 | `fname_ptri_mid` | Output midpoints of hit triangles | `'part_triangle_mids.out'` |

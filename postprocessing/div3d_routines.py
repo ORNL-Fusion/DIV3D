@@ -195,7 +195,9 @@ def read_hitline(filename):
 
     i = 0
     while i < len(lines):
-        npts = int(lines[i].strip())
+        line_info = [int(val) for val in lines[i].split()]
+        line_index = line_info[0]
+        npts = line_info[1]
         i += 1  # Move to the data lines
 
         r = np.array([float(val) for val in lines[i].split()])
@@ -205,7 +207,7 @@ def read_hitline(filename):
         phi = np.array([float(val) for val in lines[i].split()])
         i += 1
 
-        hitlines.append({"R": r, "Z": z, "phi": phi})
+        hitlines.append({"line_index": line_index, "R": r, "Z": z, "phi": phi})
 
     return hitlines
 
@@ -288,7 +290,7 @@ def read_int_pts_file(filename):
         pd.DataFrame: DataFrame containing the parsed data.
     """
     column_names = [
-        "R", "Z", "Phi", "ihit", "ipart", "itri", "i", "Lc", "sin(theta)", "t_follow", "t_int"
+        "line_index", "R", "Z", "Phi", "ihit", "ipart", "itri", "i", "Lc", "sin(theta)"
     ]
     
     # Read the file, skipping the first line (header)

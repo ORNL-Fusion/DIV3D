@@ -329,9 +329,9 @@ Contains
                       phi_hitline = line_done_data_r2(1+2*nhitline:3*nhitline)
 
                       If (write_hitline_to_netcdf) Then
-                         Call write_hitline_data_netcdf(fname_hit, r_hitline, z_hitline, phi_hitline)
+                         Call write_hitline_data_netcdf(fname_hit, iline_done, r_hitline, z_hitline, phi_hitline)
                       Else
-                         Write(iu_hit,*) nhitline
+                         Write(iu_hit,*) iline_done,nhitline
                          Write(iu_hit,*) r_hitline
                          Write(iu_hit,*) z_hitline
                          Write(iu_hit,*) phi_hitline

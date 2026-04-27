@@ -32,7 +32,7 @@ To build the code, follow these steps:
 On Ubuntu, the following packages provide the tools and libraries needed for a GNU build:
 
 ```bash
-sudo apt install cmake make gfortran openmpi-bin libopenmpi-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev libtirpc-dev python3
+sudo apt install cmake make gfortran openmpi-bin libopenmpi-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev libtirpc-dev python3 python3-numpy python3-pandas python3-matplotlib
 ```
 
 Notes:
@@ -40,6 +40,7 @@ Notes:
 - `libnetcdf-dev` and `libnetcdff-dev` provide the C and Fortran NetCDF libraries.
 - `libblas-dev` and `liblapack-dev` provide the linear algebra libraries required by CMake.
 - `libtirpc-dev` provides the RPC/TIRPC headers and library needed by `fxdr`.
+- `python3-numpy`, `python3-pandas`, and `python3-matplotlib` support Python test and postprocessing utilities.
 
 1. Navigate to the `build` directory:
    ```bash
