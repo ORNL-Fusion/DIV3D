@@ -24,7 +24,7 @@ def main():
     ref_dir = "./ref"
 
     # 1. Run the test script
-    proc = subprocess.run([run_test_script])
+    proc = subprocess.run(["bash", run_test_script])
     if proc.returncode != 0:
         print("Error: run_test script returned non-zero exit code.")
         sys.exit(1)

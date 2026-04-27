@@ -40,6 +40,23 @@ target_include_directories(libcommon PUBLIC ${SRC_DIR} ${CMAKE_CURRENT_BINARY_DI
 target_link_libraries(libcommon PRIVATE libfxdr)
 target_link_libraries(libcommon PRIVATE libstell)
 
+add_library(libdiv3d_core STATIC
+  diffuse_lines3.f90
+  find_nearby_triangles.f90
+  init_points_line.f90
+  inside_vessel_mod.f90
+  output_routines.f90
+  read_parts_mod.f90
+)
+
+target_include_directories(libdiv3d_core PUBLIC ${SRC_DIR})
+
+if(USE_MPIF08)
+    target_compile_definitions(libdiv3d_core PRIVATE USE_MPIF08)
+endif()
+
+target_link_libraries(libdiv3d_core PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})
+
 # -------------------------------
 # Define executables
 # -------------------------------
@@ -48,14 +65,8 @@ target_link_libraries(libcommon PRIVATE libstell)
 # div3d executable
 # -------------------------------
 add_executable(div3d
-  diffuse_lines3.f90
   div3d_follow_and_int.F90
-  find_nearby_triangles.f90
-  init_points_line.f90
-  inside_vessel_mod.f90
-  output_routines.f90
-  read_parts_mod.f90
-  )
+)
 set_target_properties(div3d PROPERTIES OUTPUT_NAME "div3d.exe")
 
 # Apply USE_MPIF08 to div3d
@@ -64,7 +75,7 @@ if(USE_MPIF08)
 endif()
 
 # Link libraries to div3d
-target_link_libraries(div3d PRIVATE libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})
+target_link_libraries(div3d PRIVATE libdiv3d_core libcommon libfxdr libstell ${NetCDF_Fortran_LIBRARY} ${NetCDF_C_LIBRARY} z stdc++ ${LAPACK_LIBRARIES})
 
 # --------------------------------------------
 # convert_ascii_bgrid_to_netcdf executable

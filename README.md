@@ -162,9 +162,11 @@ See [`docs/outputs.md`](docs/outputs.md) for detailed descriptions.
 
 ---
 
-## Testing (Stub)
+## Testing
 
-Testing instructions will be added here. For now, refer to the examples in [`docs/examples.md`](docs/examples.md) and compare outputs to reference files in the `test_ves_only/ref` directory.
+DIV3D uses CTest for regression, integration, and Fortran unit tests. See
+[`docs/testing.md`](docs/testing.md) for commands, test coverage, and notes on
+the synthetic geometries used by the unit tests.
 
 ---
 
