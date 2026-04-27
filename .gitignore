@@ -30,6 +30,8 @@
 *~
 *.gz
 \#*
+__pycache__/
+*.py[cod]
 *.out
 *.out.*
 !test/**/ref/

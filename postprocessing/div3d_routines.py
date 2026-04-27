@@ -1,7 +1,13 @@
 import pandas as pd
-import f90nml
-import matplotlib
-matplotlib.use('Qt5Agg')
+import os
+import tempfile
+from pathlib import Path
+
+if "MPLCONFIGDIR" not in os.environ:
+    mpl_config_dir = Path(tempfile.gettempdir()) / "div3d_matplotlib"
+    mpl_config_dir.mkdir(exist_ok=True)
+    os.environ["MPLCONFIGDIR"] = str(mpl_config_dir)
+
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
@@ -256,12 +262,202 @@ def read_part_file(filename):
     return {"metadata": metadata, "phi": phi_value, "coordinates": df}
 
 
+def read_part_slices(filename):
+    """
+    Reads a DIV3D .part file and returns metadata plus one coordinate table per
+    toroidal slice. Coordinates are converted from cm to m.
+    """
+    with open(filename, 'r') as file:
+        lines = [line.strip() for line in file.readlines() if line.strip()]
+
+    parts = lines[1].split()
+    metadata = {
+        "filename": str(filename),
+        "label": lines[0],
+        "ntor": int(parts[0]),
+        "npol": int(parts[1]),
+        "nfp": int(parts[2]),
+        "rshift": float(parts[3]),
+        "zshift": float(parts[4]),
+        "force_non_AS": False,
+    }
+
+    if len(parts) > 5:
+        metadata["force_non_AS"] = bool(int(parts[5]))
+
+    slices = []
+    line_index = 2
+    for _ in range(metadata["ntor"]):
+        phi = float(lines[line_index])
+        line_index += 1
+
+        coords = []
+        for _ in range(metadata["npol"]):
+            r_cm, z_cm = [float(value) for value in lines[line_index].split(",")]
+            coords.append([r_cm / 100.0, z_cm / 100.0])
+            line_index += 1
+
+        slices.append(
+            {
+                "phi": phi,
+                "phi_rad": np.deg2rad(phi),
+                "coordinates": pd.DataFrame(coords, columns=["R", "Z"]),
+            }
+        )
+
+    metadata["is_axisymmetric"] = part_is_axisymmetric({"metadata": metadata, "slices": slices})
+
+    return {"metadata": metadata, "slices": slices}
+
+
+def read_part_files(filenames):
+    """Read a list of DIV3D .part files."""
+    return [read_part_slices(filename) for filename in filenames]
+
+
+def part_is_axisymmetric(part, tol=1.e-8):
+    """
+    Return true if all toroidal slices have the same R-Z contour.
+
+    This mirrors the DIV3D check used for part/vessel axisymmetry: compare each
+    toroidal slice against the first slice in R and Z.
+    """
+    slices = part["slices"]
+    if len(slices) < 2:
+        return True
+
+    reference = slices[0]["coordinates"][["R", "Z"]].to_numpy()
+    for slice_data in slices[1:]:
+        candidate = slice_data["coordinates"][["R", "Z"]].to_numpy()
+        if candidate.shape != reference.shape:
+            return False
+        check_as = (
+            np.max(np.abs(candidate[:, 0] - reference[:, 0]))
+            + np.max(np.abs(candidate[:, 1] - reference[:, 1]))
+        )
+        if check_as >= tol:
+            return False
+
+    return True
+
+
+def wrap_phi(phi, period=2.0 * np.pi):
+    """Wrap a toroidal angle in radians into [0, period)."""
+    return phi % period
+
+
+def get_part_slice_at_phi(part, phi_rad, period=2.0 * np.pi):
+    """
+    Select the R-Z contour for a part at a toroidal location.
+
+    Axisymmetric parts use the first toroidal contour, matching DIV3D's
+    intersection logic. DIV3D builds triangles for non-axisymmetric parts; this
+    2D plot helper does not yet mirror that triangle path.
+    """
+    if part["metadata"].get("is_axisymmetric", False):
+        return part["slices"][0]
+
+    return None
+
+
+def plot_parts_at_phi(
+    parts,
+    phi_rad,
+    ax=None,
+    period=2.0 * np.pi,
+    label_parts=True,
+    linestyle="-",
+    color="black",
+    alpha=0.7,
+):
+    """Overlay DIV3D part contours selected at a toroidal angle."""
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 8))
+
+    for part in parts:
+        part_slice = get_part_slice_at_phi(part, phi_rad, period=period)
+        if part_slice is None:
+            print(
+                f"Skipping non-axisymmetric part '{part['metadata']['label']}' "
+                "in R-Z overlay; DIV3D uses triangles for this case."
+            )
+            continue
+
+        coords = part_slice["coordinates"]
+        label = part["metadata"]["label"]
+        plot_label = f"{label} (AS)"
+
+        ax.plot(
+            coords["R"],
+            coords["Z"],
+            linestyle=linestyle,
+            color=color,
+            alpha=alpha,
+            linewidth=1.2,
+            label=plot_label,
+        )
+
+        if label_parts:
+            ax.text(
+                coords["R"].mean(),
+                coords["Z"].mean(),
+                label,
+                ha="center",
+                va="center",
+                fontsize=8,
+                color=color,
+            )
+
+    return ax
+
+
+def plot_part_files(parts, ax=None, slice_index=0, label_parts=True):
+    """
+    Plot one toroidal slice from each DIV3D .part file in an R-Z view.
+    """
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 8))
+
+    for part in parts:
+        metadata = part["metadata"]
+        if slice_index >= len(part["slices"]):
+            continue
+
+        coords = part["slices"][slice_index]["coordinates"]
+        label = metadata["label"]
+        ax.plot(coords["R"], coords["Z"], marker=".", linestyle="-", label=label)
+
+        if label_parts:
+            ax.text(
+                coords["R"].mean(),
+                coords["Z"].mean(),
+                label,
+                ha="center",
+                va="center",
+            )
+
+    ax.set_xlabel("R [m]")
+    ax.set_ylabel("Z [m]")
+    ax.set_aspect("equal", adjustable="box")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+
+    return ax
+
+
+def find_part_files(data_dir="."):
+    """Return sorted .part files from a directory."""
+    return sorted(Path(data_dir).glob("*.part"))
+
+
     
 def read_run_settings(filename,verbose=True):
     """
     Returns:
         dict: Dictionary with namelist names as keys and their variables as sub-dictionaries.
     """
+    import f90nml
+
     namelists = ["bfield_nml", "run_settings"]
     nml = f90nml.read(filename)
 

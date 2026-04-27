@@ -148,6 +148,24 @@ against references.
 The Poincare driver writes one output file per MPI rank, so this test is tied to
 the `mpirun -np 4` setting in `test/TOK/CAT/poincare/run_test`.
 
+For a manual visual check, run the local plotting helper:
+
+```bash
+cd test/TOK/CAT/poincare
+bash run_test
+python3 plot_results.py
+```
+
+To plot the committed reference files or save a non-interactive PNG:
+
+```bash
+python3 plot_results.py --ref
+python3 plot_results.py --ref --parts
+python3 plot_results.py --ref --save poincare_check.png --no-show
+```
+
+This plotting helper is intentionally not registered with CTest.
+
 ## Adding Fortran Unit Tests
 
 Add a new Fortran test program under `test/unit` and register it in
