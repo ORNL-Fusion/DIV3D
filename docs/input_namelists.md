@@ -38,6 +38,7 @@ This document describes all parameters available in the two primary namelists us
 |----------|-------------|---------------|
 | `dphi_line_surf_deg` | Toroidal step size for surface tracing [deg] | None |
 | `ntran_surf` | Number of toroidal turns to trace surface lines | None |
+| `npts_surf_out` | Number of points to write to `fname_surf`; <=0 writes all traced points | `0` |
 | `trace_surface_opt` | If true, enable surface line tracing | None |
 
 ### 🔹 Diffusion Tracing

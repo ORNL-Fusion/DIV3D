@@ -18,11 +18,12 @@ Contains
     Use parallel_mod, Only : fin_mpi
     Use phys_const, Only : pi
     Use run_settings_namelist, Only : Rstart, Zstart, Phistart, dphi_line_surf, &
-         period, fname_surf
+         period, fname_surf, npts_surf_out
     Implicit none
 
     Integer(int32), Intent(in) :: nsteps_line
     Integer(int32) :: ifail, ii, ip_step, nip0, ierr
+    Integer(int32) :: npts_line, npts_write, iwrite
     Real(real64) :: adp
     Real(real64), Dimension(nsteps_line+1) :: rsurf,zsurf,phisurf
     Real(real64) :: psiN(1)
@@ -61,14 +62,33 @@ Contains
     Endif
 
     ! Write line data
+    npts_line = nsteps_line + 1
+    If ((npts_surf_out .gt. 0) .and. (npts_surf_out .lt. npts_line)) Then
+       npts_write = npts_surf_out
+    Else
+       npts_write = npts_line
+    End If
+
     Write(*,*) 'Writing surface data to ',Trim(Adjustl(fname_surf))
-    Open(iu_surf,file=fname_surf)
+    If (npts_write .lt. npts_line) Then
+       Write(*,*) 'Writing ',npts_write,' of ',npts_line,' traced surface points'
+    Else
+       Write(*,*) 'Writing all ',npts_line,' traced surface points'
+    End If
+    Open(iu_surf,file=fname_surf,status='replace')
     Write(iu_surf,*) period, nip0, ip_step
-    Write(iu_surf,*) nsteps_line + 1
-    Do ii = 1,nsteps_line + 1 
-       Write(iu_surf,*) rsurf(ii)
-       Write(iu_surf,*) zsurf(ii)
-       Write(iu_surf,*) phisurf(ii)
+    Write(iu_surf,*) npts_write
+    Do ii = 1,npts_write
+       If (npts_write .eq. npts_line) Then
+          iwrite = ii
+       Else If (npts_write .eq. 1) Then
+          iwrite = 1
+       Else
+          iwrite = 1 + Nint(Real(ii-1,real64)*Real(npts_line-1,real64)/Real(npts_write-1,real64))
+       End If
+       Write(iu_surf,*) rsurf(iwrite)
+       Write(iu_surf,*) zsurf(iwrite)
+       Write(iu_surf,*) phisurf(iwrite)
     Enddo
     Close(iu_surf)
 

@@ -17,6 +17,7 @@ Zstart   = 0.d0
 Phistart = 0.d0
 dphi_line_surf_deg = 0.1d0
 ntran_surf = 5
+npts_surf_out = 100
 
 npts_start = 10
 dmag = 1.0d-5

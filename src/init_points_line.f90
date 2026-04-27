@@ -39,13 +39,13 @@ Contains
     Close(iu_surf)
 
     Write(*,*) 'Writing launch point data to ',Trim(Adjustl(fname_launch))
-    Open(iu_launch,file=fname_launch)
+    Open(iu_launch,file=fname_launch,status='replace')
     Write(iu_launch,*) npts_start
 
     Do ii = 1,npts_start
        ! Choose an integer between 1 and npts_line
        Call Random_number(rnum)
-       rand_ind = Nint(npts_line*rnum)
+       rand_ind = Floor(npts_line*rnum) + 1
        P1 = phisurf(rand_ind)
        Call wrap_phi(P1,period)
        Write(iu_launch,*) ii,rsurf(rand_ind),zsurf(rand_ind),P1

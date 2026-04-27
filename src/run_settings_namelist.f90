@@ -13,7 +13,7 @@ Module run_settings_namelist
   Integer(int32) :: myseed, nhitline
   Integer(int32) :: npts_start
 
-  Integer(int32) :: ntran_surf, ns_line_surf
+  Integer(int32) :: ntran_surf, ns_line_surf, npts_surf_out
   Integer(int32) :: ntran_diff, ns_line_diff
 
   Logical :: trace_surface_opt, calc_lc, calc_theta, quiet_bfield
@@ -33,7 +33,7 @@ Module run_settings_namelist
        fname_nhit, hit_length, lsfi_tol, trace_surface_opt, &
        fname_ptri, fname_ptri_mid, calc_lc, calc_theta, quiet_bfield, &
        vessel_is_nearest_slice, vessel_int_is_last_point, lambda_par, &
-       randomize_start_dir, fname_timing
+       randomize_start_dir, fname_timing, npts_surf_out
 
 Contains
 
@@ -73,6 +73,8 @@ Contains
 
     lsfi_tol = 1.d-12
     hit_length = -1._real64
+
+    npts_surf_out = 0
 
     lambda_par = 0._real64  ! 0 deactivates parallel flipping
     randomize_start_dir = .false.

@@ -266,17 +266,17 @@ Contains
 
 
     ! Set up output files
-    Open(iu_int,file=fname_intpts,iostat=iocheck)
+    Open(iu_int,file=fname_intpts,status='replace',iostat=iocheck)
     Write(iu_int,*) '# line_index | R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
 
-    Open(iu_time,file=fname_timing,iostat=iocheck)
+    Open(iu_time,file=fname_timing,status='replace',iostat=iocheck)
     Write(iu_time,*) '# line_index | t_follow (s) | t_int (s)'
 
     ! Open hitline file
     If (write_hitline_to_netcdf) Then
        Call init_hitline_netcdf(fname_hit,nhitline)
     Else
-       Open(iu_hit,file=fname_hit,iostat=iocheck)
+       Open(iu_hit,file=fname_hit,status='replace',iostat=iocheck)
     End If
 
     !-----------------------------------------------------------
@@ -394,7 +394,7 @@ Contains
 
     Write(*,*) ' We had ',hitcount,' lines -hit-'
 
-    Open(iu_nhit,file=fname_nhit)
+    Open(iu_nhit,file=fname_nhit,status='replace')
     Write(iu_nhit,*) hitcount
     Close(iu_nhit)
     Deallocate(R0,Z0,Phi0)
@@ -452,6 +452,7 @@ Contains
     iout(:) = -1
     iout(1) = ihit
     totL = 0._real64
+    theta = 0._real64
     r_hitline(:) = 0._real64
     z_hitline(:) = 0._real64
     phi_hitline(:) = 0._real64

@@ -193,7 +193,7 @@ Contains
     If (verbose) Write(*,*) "Total number of triangles:",itri_tot
 
     ! Write full triangle file
-    Open(iu_ptri,file=fname_ptri)
+    Open(iu_ptri,file=fname_ptri,status='replace')
     Write(iu_ptri,*) nparts
     Do ipart = 1,nparts
        write(iu_ptri,*) ipart,ntri_parts(ipart)
@@ -212,7 +212,7 @@ Contains
     Allocate(zmid(nparts,ntri_max)   ,source=0._real64)
     Allocate(dmid(nparts,ntri_max)   ,source=0._real64)
 
-    Open(iu_ptmid,file=fname_ptri_mid)
+    Open(iu_ptmid,file=fname_ptri_mid,status='replace')
     Write(iu_ptmid,*) nparts
     Do ipart = 1,nparts
        Write(iu_ptmid,*) ipart,ntri_parts(ipart)
@@ -636,7 +636,7 @@ Contains
     force_non_AS(:) = .true.
 
     ! Part coordinates are written to file
-    Open(iu_parts,file=fname_parts)
+    Open(iu_parts,file=fname_parts,status='replace')
     Write(iu_parts,*) nparts,nt_max,np_max
 
     ! Load part coordinates
