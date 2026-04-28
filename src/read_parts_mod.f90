@@ -60,16 +60,20 @@ Contains
 
     ! First have to get max number of triangles for allocation
     Allocate(ntri_parts(nparts))
-    Do ipart=1,nparts
-       If (part_type(ipart) .eq. 2) Then
-          Call query_tri_part(part_names(ipart),ntri_parts(ipart))
-       Else
-          ntor = nt_parts(ipart)
-          npol = np_parts(ipart)
-          ntri_parts(ipart) = (ntor-1)*(npol-1)*2
-       End If
-    End Do
-    ntri_max = Maxval(ntri_parts)
+    If (nparts .gt. 0) Then
+       Do ipart=1,nparts
+          If (part_type(ipart) .eq. 2) Then
+             Call query_tri_part(part_names(ipart),ntri_parts(ipart))
+          Else
+             ntor = nt_parts(ipart)
+             npol = np_parts(ipart)
+             ntri_parts(ipart) = (ntor-1)*(npol-1)*2
+          End If
+       End Do
+       ntri_max = Maxval(ntri_parts)
+    Else
+       ntri_max = 0
+    End If
 
     Allocate(xtri(nparts,ntri_max,3) ,source=0._real64)
     Allocate(ytri(nparts,ntri_max,3) ,source=0._real64)
@@ -247,6 +251,7 @@ Contains
     Use kind_mod
     Use io_unit_spec, Only : iu_thispart
     Use phys_const, Only : pi
+    Use parallel_mod, Only : fin_mpi
     Implicit none
     ! Dummy variables
     Character(len=300), Intent(in) :: fname
@@ -266,7 +271,21 @@ Contains
     ! Parse header, allowing for optional logical force_non_AS
     force_non_AS = .false.
     Read(iu_thispart, '(A)') line
+    Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift
+    If (iostat /= 0) Then
+       Write(*,*) "Error: Unable to read part header for file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
     Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
+
+    If ((ntor_dum /= ntor) .or. (npol_dum /= npol)) Then
+       Write(*,*) "Error: Part header dimensions changed while reading file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
+    If (msym <= 0) Then
+       Write(*,*) "Error: Part header nfp must be positive in file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
 
     ! When read [R,Z] = cm and Phi = degrees
     Do itor = 1,ntor
@@ -435,7 +454,21 @@ Contains
     !Read(iu_thispart,*) ntor_dum, npol_dum, msym, rshift, zshift
     force_non_AS = .false.
     Read(iu_thispart, '(A)') line
+    Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift
+    If (iostat /= 0) Then
+       Write(*,*) "Error: Unable to read part header for file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
     Read(line, *, IOSTAT=iostat) ntor_dum, npol_dum, msym, rshift, zshift, force_non_AS
+
+    If ((ntor_dum /= ntor) .or. (npol_dum /= npol)) Then
+       Write(*,*) "Error: Part header dimensions changed while reading file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
+    If (msym <= 0) Then
+       Write(*,*) "Error: Part header nfp must be positive in file: ",Trim(fname)
+       Call fin_mpi(.true.)
+    End If
 
     ! When read [R,Z] = cm and Phi = degrees
     Do itor = 1,ntor
@@ -478,7 +511,15 @@ Contains
        Call fin_mpi(.true.) ! True means this is an exit-on-error
     Endif
     Read(iu_thispart,*) label
-    Read(iu_thispart,*) ntor, npol, nfp_part, rshift, zshift
+    Read(iu_thispart,*,iostat=iostat) ntor, npol, nfp_part, rshift, zshift
+    If (iostat /= 0) Then
+       Write(*,*) "Error: Unable to read part header for file: ",trim(fname)
+       Call fin_mpi(.true.)
+    End If
+    If ((ntor <= 0) .or. (npol <= 0) .or. (nfp_part <= 0)) Then
+       Write(*,*) "Error: Part header ntor, npol, and nfp must be positive in file: ",trim(fname)
+       Call fin_mpi(.true.)
+    End If
     Close(iu_thispart)
   Endsubroutine query_part
   !-----------------------------------------------------------------------------
@@ -564,14 +605,16 @@ Contains
     Use parallel_mod, Only : fin_mpi
     Implicit none
     Logical, Intent(in) :: verbose
-    Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:)
-    Real(real64) :: check_AS
+    Real(real64),Allocatable :: Rpart(:,:),Zpart(:,:),Ppart(:,:),Ppart_raw(:,:)
+    Real(real64) :: check_AS, msym_period
     Integer(int32) :: i, j, ipart, ntor, npol, nfp_part, msym, msym_ves, iostat, name_len
+    Logical :: crosses_msym_plane, msym_wrap_crossing
     Character(len=300) :: part_name, label
 
     ! Parameters
     ! Tolerance on checking phi limits against bfield periodicity.
     Real(real64), Parameter :: phi_period_tol = 1.e-3_real64
+    Real(real64), Parameter :: phi_wrap_tol = 1.e-10_real64
     ! Tolerance on part R,Z contour comparison
     Real(real64), Parameter :: check_AS_tol   = 1.e-8_real64
 
@@ -619,8 +662,13 @@ Contains
     Close(iu_plist)
 
     ! Allocate arrays for part coordinates
-    nt_max = Maxval(nt_parts)
-    np_max = Maxval(np_parts)
+    If (nparts .gt. 0) Then
+       nt_max = Maxval(nt_parts)
+       np_max = Maxval(np_parts)
+    Else
+       nt_max = 0
+       np_max = 0
+    End If
     Allocate(Rparts(nparts,nt_max,np_max))
     Allocate(Zparts(nparts,nt_max,np_max))
     Allocate(Pparts(nparts,nt_max,np_max))
@@ -644,7 +692,7 @@ Contains
        ntor = nt_parts(ipart)
        npol = np_parts(ipart)
 
-       Allocate( Ppart(ntor,npol),Rpart(ntor,npol),Zpart(ntor,npol) )
+       Allocate( Ppart(ntor,npol),Rpart(ntor,npol),Zpart(ntor,npol),Ppart_raw(ntor,npol) )
        ! Read part
        If (part_type(ipart) .EQ. 0) Then
           Call load_w7_part(part_names(ipart),label,ntor,npol,msym,Rpart,Zpart,Ppart,force_non_AS(ipart))
@@ -658,6 +706,8 @@ Contains
           If (verbose) Write(*,*) 'Did not recognize part_type',part_type(ipart),'for part',ipart
        Endif
 
+       Ppart_raw = Ppart
+
        ! Set R,Z arrays
        Rparts(ipart,1:ntor,1:npol) = Rpart
        Zparts(ipart,1:ntor,1:npol) = Zpart
@@ -668,6 +718,45 @@ Contains
              Call wrap_phi(Ppart(i,j),2._real64*pi/Real(msym,real64))
           Enddo
        Enddo
+
+       If (part_type(ipart) .le. 1) Then
+          crosses_msym_plane = .false.
+          msym_wrap_crossing = .false.
+          Do i=2,ntor
+             Do j=1,npol
+                If (Ppart(i,j) + phi_wrap_tol .lt. Ppart(i-1,j)) Then
+                   crosses_msym_plane = .true.
+                   If (Ppart_raw(i,j) + phi_wrap_tol .ge. Ppart_raw(i-1,j)) Then
+                      msym_wrap_crossing = .true.
+                   End If
+                   Exit
+                End If
+             End Do
+             If (crosses_msym_plane) Exit
+          End Do
+
+          If (crosses_msym_plane) Then
+             msym_period = 2._real64*pi/Real(msym,real64)
+             Write(*,*) 'Error: Part crosses a toroidal symmetry-period boundary after phi wrapping.'
+             Write(*,*) '  Part index: ',ipart
+             Write(*,*) '  Part label: ',Trim(Adjustl(label))
+             Write(*,*) '  Part file:  ',Trim(Adjustl(part_names(ipart)))
+             Write(*,*) '  msym: ',msym,' period: ',msym_period*180._real64/pi,' deg.'
+             Write(*,*) '  Offending toroidal cuts: ',i-1,' and ',i
+             Write(*,*) '  Wrapped phi range at these cuts: ', &
+                  Minval(Ppart(i-1:i,1:npol))*180._real64/pi,' to ', &
+                  Maxval(Ppart(i-1:i,1:npol))*180._real64/pi,' deg.'
+             If (msym_wrap_crossing) Then
+                Write(*,*) '  This appears to be caused by msym wrapping an otherwise ordered part.'
+                Write(*,*) '  Split the part at the symmetry plane or choose an msym/phi placement that avoids crossing it.'
+             Else
+                Write(*,*) '  The toroidal cuts are not monotonic after wrapping.'
+                Write(*,*) '  Reorder or split the part so adjacent cuts do not cross the symmetry plane.'
+             End If
+             Call fin_mpi(.true.)
+          End If
+       End If
+
        Pparts(ipart,1:ntor,1:npol) = Ppart
 
        ! Get min/max of Phi for filtering out intersection checks and to determine if part is AS
@@ -696,17 +785,15 @@ Contains
           Write(*,*) 'Warning: Part extends beyond Bfield period, extra range is not used!'
        End If
 
-       ! Part is AS if the points are the same across each phi cut
-       ! AND the phi range is equal to the Bfield period
+       ! Part is AS if the R,Z points are the same across each phi cut.
+       ! Finite toroidal extent is allowed; Pmins/Pmaxs filter the AS
+       ! intersection checks to the part's phi range.
        check_AS = 0._real64
        Do i=2,ntor
           check_AS = Max(Maxval(Abs(Rpart(i,1:npol) - Rpart(1,1:npol))) &
                + Maxval(Abs(Zpart(i,1:npol) - Zpart(1,1:npol))),check_AS)
        Enddo
-       If (       (check_AS .lt. check_AS_tol) &
-                                !       .and. (Pmins(ipart)          .le. phi_period_tol) &
-                                !       .and. (period - Pmaxs(ipart) .le. phi_period_tol) &
-            ) Then
+       If (check_AS .lt. check_AS_tol) Then
           If (force_non_AS(ipart)) Then
              If (part_type(ipart) .eq. 2) Then
                 If (verbose) Write(*,*) '  Triangle parts are always treated as non-axisymmetric'
@@ -720,7 +807,7 @@ Contains
        Endif
 
        ! Clean up
-       Deallocate(Rpart,Zpart,Ppart)
+       Deallocate(Rpart,Zpart,Ppart,Ppart_raw)
 
        ! Write all parts file
        Write(iu_parts,*) ntor,npol

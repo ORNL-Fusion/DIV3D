@@ -267,7 +267,9 @@ Contains
 
     ! Set up output files
     Open(iu_int,file=fname_intpts,status='replace',iostat=iocheck)
-    Write(iu_int,*) '# line_index | R (m) | Z (m) | Phi (rad) | ihit | ipart | itri | i | Lc | sin(theta)'
+    Write(iu_int,'(A)') '# line_index   R (m)                     Z (m)                     X (m)                     ' // &
+         'Y (m)                     Z_cart (m)                        ihit       ipart       itri      ' // &
+         'i      Lc                        sin(theta)'
 
     Open(iu_time,file=fname_timing,status='replace',iostat=iocheck)
     Write(iu_time,*) '# line_index | t_follow (s) | t_int (s)'
@@ -316,7 +318,7 @@ Contains
                    totL = line_done_data_r(4)
                    theta = line_done_data_r(5)
 
-                   !R,Z,phi,ihit,ipart,itri,i,totL,theta
+                   ! R, Z, X, Y, Z_cart, ihit, ipart, itri, i, totL, sin(theta)
                    rint = Sqrt(pint(1)*pint(1)+pint(2)*pint(2))
                    zint = pint(3)
                    phiint = Atan2(pint(2),pint(1))
