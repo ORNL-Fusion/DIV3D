@@ -1,12 +1,6 @@
 import pandas as pd
-import os
-import tempfile
+import shlex
 from pathlib import Path
-
-if "MPLCONFIGDIR" not in os.environ:
-    mpl_config_dir = Path(tempfile.gettempdir()) / "div3d_matplotlib"
-    mpl_config_dir.mkdir(exist_ok=True)
-    os.environ["MPLCONFIGDIR"] = str(mpl_config_dir)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -63,6 +57,15 @@ def read_surface_line_file(filename):
         "Z": np.array(z_vals),
         "phi": np.array(phi_vals),
     }
+
+
+def read_launch_pts_file(filename):
+    """Read launch_pts.out and return the launch point data."""
+    data = np.loadtxt(filename, skiprows=1)
+    if data.ndim == 1:
+        data = data.reshape(1, -1)
+
+    return pd.DataFrame(data, columns=["line_index", "R", "Z", "phi"])
 
     
 def plot_hitlines_3d(hitline_data, num_hitlines_plot, ax=None):
@@ -140,6 +143,42 @@ def plot_surface_line(surf_line, ax=None, num_points=1000):
     ax.set_title("3D Plot of Hitlines and Surface Line")
 
 #    plt.show()
+
+
+def plot_surface_line_rz(surf_line, ax=None):
+    """Plot the initial surface data as R-Z dots."""
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 8), constrained_layout=True)
+
+    ax.plot(
+        surf_line["R"],
+        surf_line["Z"],
+        marker=".",
+        linestyle="None",
+        color="tab:green",
+        markersize=4,
+        label="Surface line",
+    )
+
+    return ax
+
+
+def plot_launch_pts_rz(launch_pts, ax=None):
+    """Plot launch points as R-Z dots."""
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 8), constrained_layout=True)
+
+    ax.plot(
+        launch_pts["R"],
+        launch_pts["Z"],
+        marker=".",
+        linestyle="None",
+        color="tab:purple",
+        markersize=6,
+        label="Launch points",
+    )
+
+    return ax
 
 def temp():    
     # Read int_pts.out
@@ -243,10 +282,9 @@ def read_part_file(filename):
         "force_non_AS": False  # Default value
     }
     
-    # Handle optional force_non_AS field
     parts = lines[1].split()
     if len(parts) > 5:
-        metadata["force_non_AS"] = bool(int(parts[5]))
+        metadata["force_non_AS"] = parse_part_force_non_AS(parts[5])
     
     phi_value = float(lines[2].strip())
     
@@ -255,11 +293,22 @@ def read_part_file(filename):
     for line in lines[3:]:
         parts = line.strip().split(',')
         if len(parts) == 2:
-            data.append([float(parts[0]), float(parts[1])])
+            data.append(
+                [
+                    float(parts[0]) + metadata["rshift"],
+                    float(parts[1]) + metadata["zshift"],
+                ]
+            )
     
     df = pd.DataFrame(data, columns=["R", "Z"])/100
     
     return {"metadata": metadata, "phi": phi_value, "coordinates": df}
+
+
+def parse_part_force_non_AS(value):
+    """Parse the optional force_non_AS part-header value."""
+    value = str(value).strip().lower()
+    return value in ["1", "t", "true", ".true."]
 
 
 def read_part_slices(filename):
@@ -283,24 +332,33 @@ def read_part_slices(filename):
     }
 
     if len(parts) > 5:
-        metadata["force_non_AS"] = bool(int(parts[5]))
+        metadata["force_non_AS"] = parse_part_force_non_AS(parts[5])
 
     slices = []
     line_index = 2
+    period = 2.0 * np.pi / metadata["nfp"]
     for _ in range(metadata["ntor"]):
         phi = float(lines[line_index])
+        phi_rad_raw = np.deg2rad(phi)
+        phi_rad = wrap_phi(phi_rad_raw, period=period)
         line_index += 1
 
         coords = []
         for _ in range(metadata["npol"]):
             r_cm, z_cm = [float(value) for value in lines[line_index].split(",")]
-            coords.append([r_cm / 100.0, z_cm / 100.0])
+            coords.append(
+                [
+                    (r_cm + metadata["rshift"]) / 100.0,
+                    (z_cm + metadata["zshift"]) / 100.0,
+                ]
+            )
             line_index += 1
 
         slices.append(
             {
                 "phi": phi,
-                "phi_rad": np.deg2rad(phi),
+                "phi_rad_raw": phi_rad_raw,
+                "phi_rad": phi_rad,
                 "coordinates": pd.DataFrame(coords, columns=["R", "Z"]),
             }
         )
@@ -319,10 +377,14 @@ def part_is_axisymmetric(part, tol=1.e-8):
     """
     Return true if all toroidal slices have the same R-Z contour.
 
-    This mirrors the DIV3D check used for part/vessel axisymmetry: compare each
-    toroidal slice against the first slice in R and Z.
+    This mirrors the DIV3D part check. Finite toroidal extent is allowed for
+    AS parts; DIV3D uses Pmins/Pmaxs to filter intersections to that phi range.
     """
     slices = part["slices"]
+
+    if part["metadata"].get("force_non_AS", False):
+        return False
+
     if len(slices) < 2:
         return True
 
@@ -360,6 +422,57 @@ def get_part_slice_at_phi(part, phi_rad, period=2.0 * np.pi):
     return None
 
 
+def plot_part_rz_cuts(
+    part,
+    ax,
+    label_parts=True,
+    linestyle="-",
+    color=None,
+    alpha=0.8,
+    linewidth=1.4,
+):
+    """Plot every toroidal cut of a 3D part collapsed into the R-Z plane."""
+    label = part["metadata"]["label"]
+    line_color = color
+
+    for islice, slice_data in enumerate(part["slices"]):
+        coords = slice_data["coordinates"]
+        plot_kwargs = {}
+        if line_color is not None:
+            plot_kwargs["color"] = line_color
+
+        line, = ax.plot(
+            coords["R"],
+            coords["Z"],
+            marker=".",
+            linestyle=linestyle,
+            alpha=alpha,
+            linewidth=linewidth,
+            markersize=4,
+            label=f"{label} (3D cuts)" if islice == 0 else None,
+            **plot_kwargs,
+        )
+        if line_color is None:
+            line_color = line.get_color()
+
+    if label_parts:
+        all_coords = pd.concat(
+            [slice_data["coordinates"] for slice_data in part["slices"]],
+            ignore_index=True,
+        )
+        ax.text(
+            all_coords["R"].mean(),
+            all_coords["Z"].mean(),
+            label,
+            ha="center",
+            va="center",
+            fontsize=8,
+            color=line_color,
+        )
+
+    return ax
+
+
 def plot_parts_at_phi(
     parts,
     phi_rad,
@@ -377,9 +490,14 @@ def plot_parts_at_phi(
     for part in parts:
         part_slice = get_part_slice_at_phi(part, phi_rad, period=period)
         if part_slice is None:
-            print(
-                f"Skipping non-axisymmetric part '{part['metadata']['label']}' "
-                "in R-Z overlay; DIV3D uses triangles for this case."
+            plot_part_rz_cuts(
+                part,
+                ax,
+                label_parts=label_parts,
+                linestyle=linestyle,
+                color=color,
+                alpha=0.8,
+                linewidth=1.4,
             )
             continue
 
@@ -420,21 +538,25 @@ def plot_part_files(parts, ax=None, slice_index=0, label_parts=True):
 
     for part in parts:
         metadata = part["metadata"]
-        if slice_index >= len(part["slices"]):
-            continue
-
-        coords = part["slices"][slice_index]["coordinates"]
         label = metadata["label"]
-        ax.plot(coords["R"], coords["Z"], marker=".", linestyle="-", label=label)
+        if metadata.get("is_axisymmetric", False):
+            if slice_index >= len(part["slices"]):
+                continue
 
-        if label_parts:
-            ax.text(
-                coords["R"].mean(),
-                coords["Z"].mean(),
-                label,
-                ha="center",
-                va="center",
-            )
+            coords = part["slices"][slice_index]["coordinates"]
+            ax.plot(coords["R"], coords["Z"], marker=".", linestyle="-", label=f"{label} (AS)")
+
+            if label_parts:
+                ax.text(
+                    coords["R"].mean(),
+                    coords["Z"].mean(),
+                    label,
+                    ha="center",
+                    va="center",
+                )
+        else:
+            plot_part_rz_cuts(part, ax, label_parts=label_parts)
+
 
     ax.set_xlabel("R [m]")
     ax.set_ylabel("Z [m]")
@@ -445,9 +567,252 @@ def plot_part_files(parts, ax=None, slice_index=0, label_parts=True):
     return ax
 
 
+def cyl_to_cart(R, phi, Z):
+    """Convert cylindrical R,phi,Z coordinates to Cartesian X,Y,Z."""
+    return R * np.cos(phi), R * np.sin(phi), Z
+
+
+def toroidal_segments(phis, tol=1.e-12):
+    """Return contiguous slice index ranges, split at wrapped toroidal jumps."""
+    if len(phis) == 0:
+        return []
+
+    segments = []
+    start = 0
+    for iphi in range(1, len(phis)):
+        if phis[iphi] + tol < phis[iphi - 1]:
+            segments.append(slice(start, iphi))
+            start = iphi
+
+    segments.append(slice(start, len(phis)))
+
+    return segments
+
+
+def plot_part_files_3d(parts, ax=None, nphi_AS_to_3D=16, label_parts=True):
+    """
+    Plot DIV3D .part files in Cartesian 3D.
+
+    Non-axisymmetric parts are shown as DIV3D sees them: mapped into the part's
+    base symmetry period. Axisymmetric parts are swept around the torus using
+    nphi_AS_to_3D toroidal cuts.
+    """
+    if ax is None:
+        fig = plt.figure(figsize=(9, 8))
+        ax = fig.add_subplot(111, projection="3d")
+
+    for part in parts:
+        metadata = part["metadata"]
+        label = metadata["label"]
+        is_AS = metadata.get("is_axisymmetric", False)
+        part_dim = "AS" if is_AS else "3D"
+        plot_label = f"{label} ({part_dim})"
+
+        if is_AS:
+            phis = np.linspace(0.0, 2.0 * np.pi, nphi_AS_to_3D, endpoint=False)
+            coords = part["slices"][0]["coordinates"]
+            R = np.tile(coords["R"].to_numpy(), (nphi_AS_to_3D, 1))
+            Z = np.tile(coords["Z"].to_numpy(), (nphi_AS_to_3D, 1))
+            Phi = np.tile(phis[:, None], (1, len(coords)))
+            nphi_copies = 1
+            phi_period = 2.0 * np.pi
+        else:
+            phis = np.array([slice_data["phi_rad"] for slice_data in part["slices"]])
+            R = np.array([slice_data["coordinates"]["R"].to_numpy() for slice_data in part["slices"]])
+            Z = np.array([slice_data["coordinates"]["Z"].to_numpy() for slice_data in part["slices"]])
+            Phi = np.tile(phis[:, None], (1, R.shape[1]))
+            nphi_copies = 1
+            phi_period = 0.0
+            tor_segments = toroidal_segments(phis)
+
+        line_color = None
+        text_xyz = []
+
+        for icopy in range(nphi_copies):
+            X, Y, Zcart = cyl_to_cart(R, Phi + icopy * phi_period, Z)
+            text_xyz.append([X.mean(), Y.mean(), Zcart.mean()])
+
+            for itor in range(X.shape[0]):
+                plot_kwargs = {}
+                if line_color is not None:
+                    plot_kwargs["color"] = line_color
+
+                line, = ax.plot(
+                    X[itor, :],
+                    Y[itor, :],
+                    Zcart[itor, :],
+                    marker=".",
+                    linestyle="-",
+                    linewidth=1.0,
+                    label=plot_label if (icopy == 0 and itor == 0) else None,
+                    **plot_kwargs,
+                )
+                if line_color is None:
+                    line_color = line.get_color()
+
+            if not is_AS:
+                for ipol in range(X.shape[1]):
+                    for tor_segment in tor_segments:
+                        if tor_segment.stop - tor_segment.start < 2:
+                            continue
+                        ax.plot(
+                            X[tor_segment, ipol],
+                            Y[tor_segment, ipol],
+                            Zcart[tor_segment, ipol],
+                            linestyle="-",
+                            linewidth=0.8,
+                            color=line_color,
+                            alpha=0.7,
+                        )
+
+        if label_parts:
+            text_xyz = np.array(text_xyz)
+            ax.text(
+                text_xyz[:, 0].mean(),
+                text_xyz[:, 1].mean(),
+                text_xyz[:, 2].mean(),
+                label,
+                ha="center",
+                va="center",
+                color=line_color,
+            )
+
+    ax.set_xlabel("X [m]")
+    ax.set_ylabel("Y [m]")
+    ax.set_zlabel("Z [m]")
+    ax.set_box_aspect([1, 1, 0.5])
+    ax.legend()
+
+    return ax
+
+
 def find_part_files(data_dir="."):
     """Return sorted .part files from a directory."""
     return sorted(Path(data_dir).glob("*.part"))
+
+
+def read_vessel_from_run_settings(filename="run_settings.nml", verbose=False):
+    """Read the vessel .part file named in run_settings.nml."""
+    filename = Path(filename)
+    namelist_data = read_run_settings(filename, verbose=verbose)
+    fname_ves = namelist_data["run_settings"]["fname_ves"]
+    fname_ves = Path(fname_ves)
+
+    if not fname_ves.is_absolute():
+        fname_ves = filename.parent / fname_ves
+
+    return read_part_slices(fname_ves)
+
+
+def read_parts_from_run_settings(filename="run_settings.nml", verbose=False):
+    """Read the part files named by fname_plist in run_settings.nml."""
+    filename = Path(filename)
+    namelist_data = read_run_settings(filename, verbose=verbose)
+    fname_plist = namelist_data["run_settings"]["fname_plist"]
+    fname_plist = Path(fname_plist)
+
+    if not fname_plist.is_absolute():
+        fname_plist = filename.parent / fname_plist
+
+    with open(fname_plist, "r") as file:
+        lines = [line.strip() for line in file.readlines() if line.strip()]
+
+    nparts = int(lines[0].split()[0])
+    part_files = []
+    for line in lines[1:nparts + 1]:
+        part_name = shlex.split(line)[0]
+        part_file = Path(part_name)
+        if not part_file.is_absolute():
+            part_file = fname_plist.parent / part_file
+        part_files.append(part_file)
+
+    return read_part_files(part_files)
+
+
+def plot_hits_axisymmetric(
+    run_settings_file="run_settings.nml",
+    int_pts_file="int_pts.out",
+    ax=None,
+    plot_parts=False,
+    verbose=False,
+):
+    """Plot vessel R-Z contour and intersection points for an axisymmetric case."""
+    vessel = read_vessel_from_run_settings(run_settings_file, verbose=verbose)
+    int_pts = read_int_pts_file(int_pts_file)
+
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 8), constrained_layout=True)
+
+    vessel_slice = vessel["slices"][0]
+    coords = vessel_slice["coordinates"]
+
+    ax.plot(coords["R"], coords["Z"], color="black", linewidth=1.2, label="Vessel")
+    if plot_parts:
+        parts = read_parts_from_run_settings(run_settings_file, verbose=verbose)
+        plot_parts_at_phi(
+            parts,
+            0.0,
+            ax=ax,
+            label_parts=True,
+            color="tab:blue",
+            alpha=0.85,
+        )
+
+    ax.plot(
+        int_pts["R"],
+        int_pts["Z"],
+        marker=".",
+        linestyle="None",
+        color="tab:red",
+        markersize=5,
+        label="Intersections",
+    )
+
+    ax.set_xlabel("R [m]")
+    ax.set_ylabel("Z [m]")
+    ax.set_aspect("equal", adjustable="box")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+
+    return ax
+
+
+def plot_hits_3d(
+    run_settings_file="run_settings.nml",
+    int_pts_file="int_pts.out",
+    ax=None,
+    plot_parts=False,
+    nphi_AS_to_3D=16,
+    verbose=False,
+):
+    """Plot vessel, optional parts, and intersection points in Cartesian 3D."""
+    vessel = read_vessel_from_run_settings(run_settings_file, verbose=verbose)
+    int_pts = read_int_pts_file(int_pts_file)
+
+    if ax is None:
+        fig = plt.figure(figsize=(9, 8))
+        ax = fig.add_subplot(111, projection="3d")
+
+    plot_part_files_3d([vessel], ax=ax, nphi_AS_to_3D=nphi_AS_to_3D, label_parts=False)
+
+    if plot_parts:
+        parts = read_parts_from_run_settings(run_settings_file, verbose=verbose)
+        plot_part_files_3d(parts, ax=ax, nphi_AS_to_3D=nphi_AS_to_3D)
+
+    ax.plot(
+        int_pts["X"],
+        int_pts["Y"],
+        int_pts["Z_cart"],
+        marker=".",
+        linestyle="None",
+        color="tab:red",
+        markersize=5,
+        label="Intersections",
+    )
+
+    ax.legend()
+
+    return ax
 
 
     
@@ -472,9 +837,6 @@ def read_run_settings(filename,verbose=True):
     return {name: nml.get(name, {}) for name in namelists}
 
 
-
-    
-
 def read_int_pts_file(filename):
     """
     Reads an int_pts.out file and returns a pandas DataFrame.
@@ -486,7 +848,18 @@ def read_int_pts_file(filename):
         pd.DataFrame: DataFrame containing the parsed data.
     """
     column_names = [
-        "line_index", "R", "Z", "Phi", "ihit", "ipart", "itri", "i", "Lc", "sin(theta)"
+        "line_index",
+        "R",
+        "Z",
+        "X",
+        "Y",
+        "Z_cart",
+        "ihit",
+        "ipart",
+        "itri",
+        "i",
+        "Lc",
+        "sin(theta)",
     ]
     
     # Read the file, skipping the first line (header)

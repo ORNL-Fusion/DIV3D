@@ -32,7 +32,9 @@ To build the code, follow these steps:
 On Ubuntu, the following packages provide the tools and libraries needed for a GNU build:
 
 ```bash
-sudo apt install cmake make gfortran openmpi-bin libopenmpi-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev libtirpc-dev python3 python3-numpy python3-pandas python3-matplotlib
+sudo apt install cmake make gfortran openmpi-bin libopenmpi-dev libnetcdf-dev libnetcdff-dev libblas-dev liblapack-dev libtirpc-dev python3 python3-pip python3-numpy python3-pandas python3-matplotlib
+python3 -m venv .venv
+.venv/bin/python -m pip install f90nml numpy pandas matplotlib
 ```
 
 Notes:
@@ -40,7 +42,7 @@ Notes:
 - `libnetcdf-dev` and `libnetcdff-dev` provide the C and Fortran NetCDF libraries.
 - `libblas-dev` and `liblapack-dev` provide the linear algebra libraries required by CMake.
 - `libtirpc-dev` provides the RPC/TIRPC headers and library needed by `fxdr`.
-- `python3-numpy`, `python3-pandas`, and `python3-matplotlib` support Python test and postprocessing utilities.
+- NumPy, pandas, matplotlib, and f90nml support Python test and postprocessing utilities. On externally managed Python installs, install them in a virtual environment.
 
 1. Navigate to the `build` directory:
    ```bash
@@ -74,6 +76,7 @@ Notes:
 - Fortran compiler with MPI support (e.g., `gfortran` + `openmpi`)
 - CMake
 - NetCDF, BLAS/LAPACK, RPC/TIRPC, and MPI libraries
+- Python packages for plotting/postprocessing: NumPy, pandas, matplotlib, and f90nml
 
 ---
 

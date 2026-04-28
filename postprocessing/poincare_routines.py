@@ -1,6 +1,4 @@
 import glob
-import os
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -72,11 +70,6 @@ def collect_surfaces(files):
 
 
 def _prepare_matplotlib(output_file=None, show_plot=True):
-    if "MPLCONFIGDIR" not in os.environ:
-        mpl_config_dir = Path(tempfile.gettempdir()) / "div3d_matplotlib"
-        mpl_config_dir.mkdir(exist_ok=True)
-        os.environ["MPLCONFIGDIR"] = str(mpl_config_dir)
-
     if output_file or not show_plot:
         import matplotlib
 

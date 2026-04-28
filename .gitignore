@@ -47,3 +47,4 @@ test/STELL/QPS/bfield/*.dat
 # Local editor/tool state
 .codex
 .vscode/
+.venv/

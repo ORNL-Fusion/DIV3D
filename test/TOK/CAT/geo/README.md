@@ -34,6 +34,9 @@ python3 plot_parts.py --save parts_check.png --no-show
 - `full_pfc.part`: axisymmetric vessel contour used by the vessel-only test.
 - `box.part`: simple box vessel used by the vessel-plus-parts test.
 - `lo_div.part`: small divertor-like part used by `test_ves_and_parts`.
+- `lim_omp_3d*.part`: five explicit non-axisymmetric outboard-midplane
+  limiter files used by `test_ves_and_3D_parts`. These are separate physical
+  copies rather than copies generated from `msym`.
 
 Generated intermediate files such as `simplified.ogr` are local working files
 and do not need to be committed unless they are intentionally becoming a test

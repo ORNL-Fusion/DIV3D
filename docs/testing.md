@@ -156,6 +156,15 @@ bash run_test
 python3 plot_results.py
 ```
 
+The Python plotting helpers use NumPy, pandas, matplotlib, and f90nml. If
+f90nml is not available from your package manager, install it in a virtual
+environment:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install f90nml numpy pandas matplotlib
+```
+
 To plot the committed reference files or save a non-interactive PNG:
 
 ```bash

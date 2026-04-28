@@ -737,21 +737,21 @@ Contains
 
           If (crosses_msym_plane) Then
              msym_period = 2._real64*pi/Real(msym,real64)
-             Write(*,*) 'Error: Part crosses a toroidal symmetry-period boundary after phi wrapping.'
+             Write(*,*) 'Error: Part crosses a toroidal part-mapping boundary after phi wrapping.'
              Write(*,*) '  Part index: ',ipart
              Write(*,*) '  Part label: ',Trim(Adjustl(label))
              Write(*,*) '  Part file:  ',Trim(Adjustl(part_names(ipart)))
-             Write(*,*) '  msym: ',msym,' period: ',msym_period*180._real64/pi,' deg.'
+             Write(*,*) '  msym: ',msym,' mapped period: ',msym_period*180._real64/pi,' deg.'
              Write(*,*) '  Offending toroidal cuts: ',i-1,' and ',i
              Write(*,*) '  Wrapped phi range at these cuts: ', &
                   Minval(Ppart(i-1:i,1:npol))*180._real64/pi,' to ', &
                   Maxval(Ppart(i-1:i,1:npol))*180._real64/pi,' deg.'
              If (msym_wrap_crossing) Then
-                Write(*,*) '  This appears to be caused by msym wrapping an otherwise ordered part.'
-                Write(*,*) '  Split the part at the symmetry plane or choose an msym/phi placement that avoids crossing it.'
+                Write(*,*) '  This appears to be caused by msym mapping an otherwise ordered part.'
+                Write(*,*) '  Split the part at the mapping boundary or choose an msym/phi placement that avoids crossing it.'
              Else
                 Write(*,*) '  The toroidal cuts are not monotonic after wrapping.'
-                Write(*,*) '  Reorder or split the part so adjacent cuts do not cross the symmetry plane.'
+                Write(*,*) '  Reorder or split the part so adjacent cuts do not cross the mapping boundary.'
              End If
              Call fin_mpi(.true.)
           End If
