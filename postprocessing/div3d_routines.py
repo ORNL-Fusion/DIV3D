@@ -4,27 +4,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-
-
-def main():
-    filename = 'hitline.out'
-    hitline_data = read_hitline(filename)
-    num_hitlines_plot = 10
-#    plot_hitlines_3d(hitline_data, num_hitlines_plot)
-
-    filename = 'surface_line.out'
-    surf_line = read_surface_line_file(filename)
-
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection='3d')
-
-    plot_hitlines_3d(hitline_data, num_hitlines_plot, ax=ax)  # Pass ax
-    plot_surface_line(surf_line, ax=ax,num_points=2000)  # Add surface line to the same plot
-    ax.legend()
-    plt.show()
-
-    print(surf_line["Z"][0:10])
     
 
 def read_surface_line_file(filename):
@@ -102,8 +81,6 @@ def plot_hitlines_3d(hitline_data, num_hitlines_plot, ax=None):
     ax.set_ylabel("Y (m)")
     ax.set_zlabel("Z (m)")
     ax.set_title("3D Plot of Hitlines in Cartesian Coordinates")
-#    ax.legend()
-#    plt.show()
 
 def plot_surface_line(surf_line, ax=None, num_points=1000):
     """
@@ -142,8 +119,6 @@ def plot_surface_line(surf_line, ax=None, num_points=1000):
     ax.set_zlabel("Z (m)")
     ax.set_title("3D Plot of Hitlines and Surface Line")
 
-#    plt.show()
-
 
 def plot_surface_line_rz(surf_line, ax=None):
     """Plot the initial surface data as R-Z dots."""
@@ -180,47 +155,6 @@ def plot_launch_pts_rz(launch_pts, ax=None):
 
     return ax
 
-def temp():    
-    # Read int_pts.out
-    file_path = 'int_pts.out'
-    int_pts = read_int_pts_file(file_path)
-    print(int_pts.head(10))
-
-    # Read int_pts
-    filename = "run_settings.nml"
-    namelist_data = read_run_settings(filename)
-
-    fname_ves = namelist_data["run_settings"]["fname_ves"]
-
-    filename = 'hitline.out'
-    hitline_data = read_hitline(filename)
-    
-
-    print(fname_ves)
-
-    ves_part = read_part_file(fname_ves)
-    label = ves_part["metadata"]["label"]
-    print(label)
-
-    """
-    Plots the first slice of R,Z data from ves_part as lines and overlays R,Z points from int_pts as x's.
-    """
-    num_hitlines_plot = 10
-    
-    plt.figure(figsize=(8, 6))
-    plt.plot(ves_part["coordinates"]["R"], ves_part["coordinates"]["Z"], label="Vessel Part", linestyle='-', color='blue')
-    plt.scatter(int_pts["R"], int_pts["Z"], label="Int Points", color='red', marker='x')
-    num_hitlines_plot = min(num_hitlines_plot, len(hitline_data))  # Ensure we don't exceed available hitlines
-    for i in range(num_hitlines_plot):
-        plt.plot(hitline_data[i]["R"], hitline_data[i]["Z"], color='black', linestyle='-')
-
-    plt.xlabel("R (m)")
-    plt.ylabel("Z (m)")
-    plt.title("First Slice of Vessel Part and Intersection Points")
-    plt.legend()
-    plt.grid()
-    plt.show()
-
 def read_hitline(filename):
     """
     Reads a hitline file and returns a list of dictionaries, each containing r, z, and phi arrays.
@@ -231,8 +165,6 @@ def read_hitline(filename):
     Returns:
         list: A list of dictionaries, each with 'r', 'z', and 'phi' keys containing numpy arrays.
     """
-    import numpy as np
-
     hitlines = []
 
     with open(filename, 'r') as file:

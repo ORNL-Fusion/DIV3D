@@ -182,7 +182,7 @@ Contains
     Logical :: flag
 
     Real(real64), Dimension(3) :: pint
-    Real(real64) :: totL, theta, rint, zint, phiint
+    Real(real64) :: totL, theta, rint, zint
     Integer(int32), Dimension(4) :: iout
     Real(real64), Allocatable :: R0(:),Z0(:),Phi0(:)
     Real(real64), Dimension(nhitline) :: r_hitline,z_hitline,phi_hitline
@@ -333,9 +333,7 @@ Contains
                    ! R, Z, X, Y, Z_cart, ihit, ipart, itri, i, totL, sin(theta)
                    rint = Sqrt(pint(1)*pint(1)+pint(2)*pint(2))
                    zint = pint(3)
-                   phiint = Atan2(pint(2),pint(1))
                    Write(iu_int,*)   iline_done,rint,zint,pint,iout,totL,theta
-!                   Write(iu_int,*)   linnum,rint,zint,phiint,iout,totL !,theta,etime_follow,etime_int                   
 
                    If (nhitline .gt. 0) Then
                       r_hitline   = line_done_data_r2(1+0*nhitline:1*nhitline)
