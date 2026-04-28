@@ -53,6 +53,7 @@ Contains
     Real(real64) :: R2,Z2,P2,Pt2(3)
     Real(real64) :: R3,Z3,P3,Pt3(3)
     Real(real64) :: R4,Z4,P4,Pt4(3), dmids(3)
+    Real(real64) :: tri_phi_span
     Integer(int32) :: ipart, jpol, itor, itri, npol, ntor, ifacet, itri_tot, j
     Real(real64), Allocatable :: rtri_part(:,:), ptri_part(:,:)
     Real(real64), Allocatable :: xtri_tmp(:,:),ytri_tmp(:,:),ztri_tmp(:,:)
@@ -124,6 +125,19 @@ Contains
           Do itri = 1,ntri_parts(ipart)
              pmintri(ipart,itri) = Minval(ptri_part(itri,:))
              pmaxtri(ipart,itri) = Maxval(ptri_part(itri,:))
+             tri_phi_span = pmaxtri(ipart,itri) - pmintri(ipart,itri)
+             If (tri_phi_span .gt. 0.5_real64*period) Then
+                Write(*,*) 'Error: Triangle part crosses a bfield-period boundary after phi wrapping.'
+                Write(*,*) '  Part index: ',ipart
+                Write(*,*) '  Part file:  ',Trim(Adjustl(part_names(ipart)))
+                Write(*,*) '  Triangle:   ',itri
+                Write(*,*) '  Bfield period: ',period*180._real64/pi,' deg.'
+                Write(*,*) '  Wrapped triangle phi range: ', &
+                     pmintri(ipart,itri)*180._real64/pi,' to ', &
+                     pmaxtri(ipart,itri)*180._real64/pi,' deg.'
+                Write(*,*) '  Split the triangle part at the bfield-period boundary or provide pre-wrapped triangles.'
+                Call fin_mpi(.true.)
+             End If
           End Do
 
           If (verbose) Then
@@ -635,9 +649,9 @@ Contains
        Read(iu_plist,*) part_name
        part_names(ipart) = part_name
        name_len = Len_trim(part_name)
-       If ( part_name(name_len-8:name_len) == '.2d.jpart' ) Then
+       If ((name_len >= 9) .and. (part_name(name_len-8:name_len) == '.2d.jpart')) Then
           part_type(ipart) = 1
-       Else If ( part_name(name_len-3:name_len) == '.txt' ) Then
+       Else If ((name_len >= 4) .and. (part_name(name_len-3:name_len) == '.txt')) Then
           part_type(ipart) = 2
        Else
           part_type(ipart) = 0

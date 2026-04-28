@@ -267,11 +267,19 @@ Contains
 
     ! Set up output files
     Open(iu_int,file=fname_intpts,status='replace',iostat=iocheck)
+    If (iocheck /= 0) Then
+       Write(*,*) 'Error: Unable to open int_pts output file: ',Trim(fname_intpts)
+       Call fin_mpi(.true.)
+    End If
     Write(iu_int,'(A)') '# line_index   R (m)                     Z (m)                     X (m)                     ' // &
          'Y (m)                     Z_cart (m)                        ihit       ipart       itri      ' // &
          'i      Lc                        sin(theta)'
 
     Open(iu_time,file=fname_timing,status='replace',iostat=iocheck)
+    If (iocheck /= 0) Then
+       Write(*,*) 'Error: Unable to open timing output file: ',Trim(fname_timing)
+       Call fin_mpi(.true.)
+    End If
     Write(iu_time,*) '# line_index | t_follow (s) | t_int (s)'
 
     ! Open hitline file
@@ -279,6 +287,10 @@ Contains
        Call init_hitline_netcdf(fname_hit,nhitline)
     Else
        Open(iu_hit,file=fname_hit,status='replace',iostat=iocheck)
+       If (iocheck /= 0) Then
+          Write(*,*) 'Error: Unable to open hitline output file: ',Trim(fname_hit)
+          Call fin_mpi(.true.)
+       End If
     End If
 
     !-----------------------------------------------------------
