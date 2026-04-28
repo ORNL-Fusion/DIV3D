@@ -19,7 +19,7 @@ Contains
     Else
        Write(6,*) 'Using clock seed'
        Call SYSTEM_CLOCK(COUNT=clock)          
-       seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+       seed(:) = clock + 37 * (/ (i - 1, i = 1, n) /)
     Endif
 
     Call RANDOM_SEED(PUT = seed)

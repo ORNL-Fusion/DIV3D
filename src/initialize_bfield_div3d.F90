@@ -6,7 +6,9 @@ Contains
     Use setup_bfield_module
     Use parallel_mod, Only : fin_mpi
     Use bgrid_module, Only : nsym
+#ifdef HAVE_FXDR
     Use xdr_routines_mod, Only : nperio
+#endif
     Implicit None
     Logical, Intent(In) :: verbose
 

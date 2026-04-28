@@ -46,8 +46,8 @@ Subroutine find_nearby_triangles_v2(rr,pp,zz,dL,period)
 
 
   allocate(near_part(ic_near),near_tri(ic_near))
-  near_part = near_part_tmp(1:ic_near)
-  near_tri = near_tri_tmp(1:ic_near)
+  near_part(:) = near_part_tmp(1:ic_near)
+  near_tri(:) = near_tri_tmp(1:ic_near)
 
   deallocate(near_part_tmp,near_tri_tmp)
 

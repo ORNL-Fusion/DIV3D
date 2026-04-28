@@ -13,17 +13,19 @@ Program test_read_parts
 Contains
 
   Subroutine test_load_2d_jpart
-    Character(len=300) :: label
+    Character(len=300) :: label, fname
     Integer(int32) :: ntor, npol, msym
     Real(real64) :: Rpart(2,3), Zpart(2,3), Phipart(2,3)
     Logical :: force_non_AS_local
 
-    Call query_part('fixtures/tiny.2d.jpart',ntor,npol,msym)
+    fname = 'fixtures/tiny.2d.jpart'
+
+    Call query_part(fname,ntor,npol,msym)
     Call assert_equal_int(ntor,2_int32,'query_part ntor')
     Call assert_equal_int(npol,3_int32,'query_part npol')
     Call assert_equal_int(msym,1_int32,'query_part nfp')
 
-    Call load_2d_jpart('fixtures/tiny.2d.jpart',label,ntor,npol,msym, &
+    Call load_2d_jpart(fname,label,ntor,npol,msym, &
          Rpart,Zpart,Phipart,force_non_AS_local)
 
     Call assert_near(Rpart(1,1),1._real64,1.e-12_real64,'load_2d_jpart converts R cm to m')

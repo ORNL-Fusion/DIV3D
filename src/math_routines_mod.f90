@@ -316,7 +316,6 @@ Contains
 
     ! Modules used:
     Use kind_mod, Only : real64, int32
-    Use phys_const, Only : pi
     Implicit none
 
     ! Input/output

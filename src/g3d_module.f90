@@ -254,7 +254,7 @@ Contains
     g%ip_sign = -g%cpasma/abs(g%cpasma)
 
     Allocate(g%bicub_coeffs(g%mw*g%mh,4,4))
-    g%bicub_coeffs = get_psi_bicub_coeffs(g)
+    g%bicub_coeffs(:,:,:) = get_psi_bicub_coeffs(g)
 
     ! Spline fit poloidal current function
     Allocate(g%fpol_spl(g%mw))
@@ -649,6 +649,5 @@ Contains
   
   
 End Module g3d_module
-
 
 

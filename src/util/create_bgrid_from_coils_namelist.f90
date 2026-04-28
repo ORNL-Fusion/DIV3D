@@ -19,12 +19,11 @@ Contains
   Subroutine read_create_bgrid_from_coils_namelist(verbose)
     Use parallel_mod, Only : fin_mpi, rank
     Use setup_bfield_module, Only : bfield_nml, nfp_bfield
-    Use bfield_module, Only : verbose_bfield
     Use phys_const, Only : pi
     Implicit None
     Logical, Intent(In) :: verbose
     Character(len=256) :: iomsg
-    Integer(int32) :: iocheck, i
+    Integer(int32) :: iocheck
 
     ! --------------------------------
     ! Defaults

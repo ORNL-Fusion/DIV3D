@@ -72,9 +72,9 @@ Program create_bgrid_from_coils
   Allocate(Z(nz))
   Allocate(P(nphi))
   
-  R = rlinspace(Rmin,Rmax,nr)
-  Z = rlinspace(Zmin,Zmax,nz)
-  P = rlinspace(0.d0,period,nphi)
+  R(:) = rlinspace(Rmin,Rmax,nr)
+  Z(:) = rlinspace(Zmin,Zmax,nz)
+  P(:) = rlinspace(0.d0,period,nphi)
 
   Allocate(Br(nr,nz,nphi-1))
   Allocate(Bz(nr,nz,nphi-1))

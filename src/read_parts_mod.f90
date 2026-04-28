@@ -369,9 +369,8 @@ Contains
     Character(len=300), Intent(in) :: fname
     Integer(int32), Intent(in) :: num_tri
     Real(real64), Intent(out) :: xtri(num_tri,3),ytri(num_tri,3),ztri(num_tri,3)
-    Integer(int32) :: iostat, i, id, pos, pos_open, pos_close, comma1, comma2, itri, sp
+    Integer(int32) :: iostat, i, id, pos, pos_open, pos_close, itri, sp
     character(len=500)  :: line, token
-    Real(real64) :: v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z
     real(8), dimension(3,3) :: v  ! v(i,1:3) for each vertex
     !- End of header -------------------------------------------------------------
 
@@ -720,7 +719,7 @@ Contains
           If (verbose) Write(*,*) 'Did not recognize part_type',part_type(ipart),'for part',ipart
        Endif
 
-       Ppart_raw = Ppart
+       Ppart_raw(:,:) = Ppart(:,:)
 
        ! Set R,Z arrays
        Rparts(ipart,1:ntor,1:npol) = Rpart
